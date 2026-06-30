@@ -11,6 +11,8 @@
     "lint:js": "eslint .",
     "lint:deno": "cd services/polaris-functions && deno lint",
     "lint": "bun run lint:js && bun run lint:deno",
+    "coaligned": "npx @forwardimpact/libcoaligned",
+    "check": "bun run lint && bunx tsc --noEmit && npx @forwardimpact/libcoaligned",
     "test:js": "bun test products/polaris/handlers products/polaris/cli",
     "test:site": "cd products/polaris/site && bun run test",
     "test:deno": "cd services/polaris-functions && deno test --allow-net --allow-read --allow-env",
