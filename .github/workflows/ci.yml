@@ -9,7 +9,7 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: oven-sh/setup-bun@v2
       - run: bun install
       - run: bun run lint:js
@@ -21,7 +21,7 @@ jobs:
   typecheck:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: oven-sh/setup-bun@v2
       - run: bun install
       - run: bunx tsc --noEmit
@@ -29,7 +29,7 @@ jobs:
   coaligned:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: oven-sh/setup-bun@v2
       - run: bun install
       # Enforce the Co-Aligned instruction layers, jobs, and invariants.
@@ -40,7 +40,7 @@ jobs:
   compose-validate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - run: cp .env.example .env
       - run: docker compose config --quiet
 
@@ -48,7 +48,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 6
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: oven-sh/setup-bun@v2
       - run: bun install
       # The libterrain release carrying prerequisites A+B is not yet on npm;
@@ -70,7 +70,7 @@ jobs:
   edge-functions:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: denoland/setup-deno@v2
         with:
           deno-version: "2.8.3"
@@ -85,7 +85,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [lint, seed-build, edge-functions]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: oven-sh/setup-bun@v2
       - run: bun install
       - run: cp .env.example .env
