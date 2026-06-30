@@ -1,0 +1,15 @@
+{
+  "name": "bionova-polaris",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "bin": { "bionova-polaris": "bin/bionova-polaris.js" },
+  "dependencies": {
+    "@forwardimpact/libcli": "0.1.16",
+    "@forwardimpact/librepl": "0.1.15",
+    "@forwardimpact/libformat": "0.1.20",
+    "@forwardimpact/libtemplate": "0.2.13",
+    "@forwardimpact/libutil": "0.1.98",
+    "@bionova/polaris-handlers": "workspace:*"
+  }
+}

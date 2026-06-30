@@ -12,6 +12,21 @@
         "typescript": "5.4.5",
       },
     },
+    "products/polaris/cli": {
+      "name": "bionova-polaris",
+      "version": "0.0.0",
+      "bin": {
+        "bionova-polaris": "bin/bionova-polaris.js",
+      },
+      "dependencies": {
+        "@bionova/polaris-handlers": "workspace:*",
+        "@forwardimpact/libcli": "0.1.16",
+        "@forwardimpact/libformat": "0.1.20",
+        "@forwardimpact/librepl": "0.1.15",
+        "@forwardimpact/libtemplate": "0.2.13",
+        "@forwardimpact/libutil": "0.1.98",
+      },
+    },
     "products/polaris/handlers": {
       "name": "@bionova/polaris-handlers",
       "version": "0.0.0",
@@ -188,6 +203,8 @@
     "argparse": ["argparse@2.0.1", "", {}, "sha512-8+9WqebbFzpX9OR+Wa6O29asIogeRMzcGtAINdpMHHyAg10f05aSFVBbcEqGf/PXw1EjAZ+q2/bEBg3DvurK3Q=="],
 
     "balanced-match": ["balanced-match@1.0.2", "", {}, "sha512-3oSeUO0TMV67hN1AmbXsK4yaqU7tjiHlbxRDZOpH0KW9+CeX4bRAaX0Anxt0tx2MrpRpWwQaPwIlISEJhYU5Pw=="],
+
+    "bionova-polaris": ["bionova-polaris@workspace:products/polaris/cli"],
 
     "bowser": ["bowser@2.14.1", "", {}, "sha512-tzPjzCxygAKWFOJP011oxFHs57HzIhOEracIgAePE4pqB3LikALKnSzUyU4MGs9/iCEUuHlAJTjTc5M+u7YEGg=="],
 
