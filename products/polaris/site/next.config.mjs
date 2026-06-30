@@ -15,9 +15,18 @@ const templatesStub = fileURLToPath(
   new URL("./src/lib/templates-dir-stub.js", import.meta.url),
 );
 
+// Trace from the monorepo root so the standalone output nests the server under
+// products/polaris/site/ (with node_modules at the bundle root). The Dockerfile
+// runner copies and runs it from that path. Without this, Next infers the app
+// dir as the root and emits a flat server.js the Dockerfile can't find.
+const outputFileTracingRoot = fileURLToPath(new URL("../../../", import.meta.url));
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: "standalone",
+  experimental: {
+    outputFileTracingRoot,
+  },
   transpilePackages: [
     "@bionova/polaris-handlers",
     "@forwardimpact/libui",

@@ -17,3 +17,9 @@ infrastructure/*/data/
 # Railway CLI link state (project documented in infrastructure/railway/README.md)
 .railway/
 bun.lockb
+
+# Local environment overrides (TLS proxy CA, host-specific mounts)
+docker-compose.override.yml
+infrastructure/tei/ca-bundle.pem
+infrastructure/tei/model/
+products/polaris/site/supabase/.temp/

@@ -47,7 +47,7 @@ services:
       retries: 20
 
   pgbouncer:
-    image: edoburu/pgbouncer:1.22.1
+    image: edoburu/pgbouncer:1.22.1-p0
     ports:
       - "6432:6432"
     environment:
@@ -56,12 +56,17 @@ services:
       DB_USER: authenticator
       DB_PASSWORD: ${POSTGRES_PASSWORD}
       DB_NAME: postgres
+      # The edoburu image defaults LISTEN_PORT to 5432; the mapping, healthcheck,
+      # and postgrest's pgbouncer:6432 all expect 6432, so pin it here.
+      LISTEN_PORT: "6432"
       POOL_MODE: transaction
       MAX_CLIENT_CONN: "200"
       AUTH_TYPE: scram-sha-256
       ADMIN_USERS: postgres,authenticator
     healthcheck:
-      test: ["CMD-SHELL", "nc -z localhost 6432 || exit 1"]
+      # Use 127.0.0.1, not localhost: BusyBox nc resolves localhost to ::1
+      # first, but pgbouncer binds IPv4 (0.0.0.0) only.
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 6432 || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -79,8 +84,13 @@ services:
       PGRST_DB_ANON_ROLE: anon
       PGRST_JWT_SECRET: ${JWT_SECRET}
       PGRST_DB_USE_LEGACY_GUCS: "false"
+      # postgrest runs behind pgbouncer in transaction pooling mode: prepared
+      # statements collide (42P05) and LISTEN/NOTIFY can't span pooled txns.
+      PGRST_DB_PREPARED_STATEMENTS: "false"
+      PGRST_DB_CHANNEL_ENABLED: "false"
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://localhost:3000/ || exit 1"]
+      # The postgrest image ships only bash (no wget/curl); use a bash TCP probe.
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/3000"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -97,7 +107,9 @@ services:
       GOTRUE_API_PORT: "9999"
       API_EXTERNAL_URL: http://localhost:8000
       GOTRUE_DB_DRIVER: postgres
-      GOTRUE_DB_DATABASE_URL: postgres://supabase_auth_admin:${POSTGRES_PASSWORD}@pgbouncer:6432/postgres
+      # Connect directly to postgres, not the transaction pooler: gotrue sends a
+      # search_path startup parameter that pgbouncer rejects.
+      GOTRUE_DB_DATABASE_URL: postgres://supabase_auth_admin:${POSTGRES_PASSWORD}@postgres:5432/postgres
       GOTRUE_SITE_URL: http://localhost:3001
       GOTRUE_JWT_SECRET: ${JWT_SECRET}
       GOTRUE_JWT_EXP: "3600"
@@ -105,7 +117,7 @@ services:
       GOTRUE_DISABLE_SIGNUP: "false"
       GOTRUE_MAILER_AUTOCONFIRM: "true"
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://localhost:9999/health || exit 1"]
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:9999/health || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -119,8 +131,10 @@ services:
       - "4000:4000"
     environment:
       PORT: "4000"
-      DB_HOST: pgbouncer
-      DB_PORT: "6432"
+      # Realtime (Postgrex) relies on prepared statements; connect directly to
+      # postgres rather than the transaction-pooling pgbouncer.
+      DB_HOST: postgres
+      DB_PORT: "5432"
       DB_USER: supabase_admin
       DB_PASSWORD: ${POSTGRES_PASSWORD}
       DB_NAME: postgres
@@ -131,7 +145,9 @@ services:
       RLIMIT_NOFILE: "10000"
       APP_NAME: realtime
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://localhost:4000/api/health || exit 1"]
+      # realtime v2.30 has no /api/health route (returns 404); a TCP liveness
+      # probe on :4000 is the reliable signal. The image ships bash.
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/4000"]
       interval: 15s
       timeout: 5s
       retries: 10
@@ -179,7 +195,9 @@ services:
       SERVICE_KEY: ${SERVICE_ROLE_KEY}
       POSTGREST_URL: http://postgrest:3000
       PGRST_JWT_SECRET: ${JWT_SECRET}
-      DATABASE_URL: postgres://supabase_storage_admin:${POSTGRES_PASSWORD}@pgbouncer:6432/postgres
+      # Direct to postgres, not the pooler: storage-api sends a search_path
+      # startup parameter that pgbouncer rejects (FATAL 08P01).
+      DATABASE_URL: postgres://supabase_storage_admin:${POSTGRES_PASSWORD}@postgres:5432/postgres
       FILE_SIZE_LIMIT: "52428800"
       STORAGE_BACKEND: s3
       GLOBAL_S3_BUCKET: trial-documents
@@ -192,7 +210,7 @@ services:
       TENANT_ID: bionova
       REGION: us-east-1
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://localhost:5000/status || exit 1"]
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:5000/status || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -225,7 +243,11 @@ services:
 
   tei:
     image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.5
-    command: ["--model-id", "BAAI/bge-small-en-v1.5", "--max-batch-tokens", "16384", "--max-client-batch-size", "16"]
+    # cpu-1.5 ships linux/amd64 only; emulate on arm64 hosts (Apple Silicon).
+    platform: linux/amd64
+    # --auto-truncate: some seed condition texts exceed bge-small's 512-token
+    # limit; truncate rather than 413-reject (the lead tokens carry the signal).
+    command: ["--model-id", "BAAI/bge-small-en-v1.5", "--max-batch-tokens", "16384", "--max-client-batch-size", "16", "--auto-truncate"]
     ports:
       - "8080:80"
     environment:
@@ -235,11 +257,13 @@ services:
     volumes:
       - tei-data:/data
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://localhost:80/health || exit 1"]
+      # TEI image ships only bash; it binds :80 after the model loads, so a TCP
+      # probe is a valid readiness signal. Long start_period covers amd64 emulation.
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/80"]
       interval: 10s
       timeout: 10s
-      retries: 12
-      start_period: 120s
+      retries: 24
+      start_period: 240s
 
   polaris-functions:
     build:
@@ -256,7 +280,8 @@ services:
       - ./data/synthetic/seed_embeddings.jsonl:/data/synthetic/seed_embeddings.jsonl:ro
       - ./products/polaris/site/supabase/migrations:/data/migrations:ro
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://localhost:8000/health || exit 1"]
+      # deno image ships only bash; the server binds :8000 on start.
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8000"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -279,8 +304,13 @@ services:
       SUPABASE_SERVICE_ROLE_KEY: ${SERVICE_ROLE_KEY}
       TEI_URL: http://tei:80
       NODE_ENV: production
+      # The handler's about.yaml is traced into the standalone bundle here; the
+      # webpack-rewritten new URL() path is not readable at runtime, so point
+      # the handler at the real file. (Path follows outputFileTracingRoot.)
+      POLARIS_ABOUT_PATH: /app/products/polaris/handlers/data/about.yaml
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://localhost:3000/api/health || exit 1"]
+      # node:20-bookworm-slim runner ships only bash; Next binds :3000 on start.
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/3000"]
       interval: 10s
       timeout: 5s
       retries: 10

@@ -8,7 +8,7 @@ RUN npm install -g bun@1.2
 COPY package.json bun.lock ./
 COPY products/polaris/handlers ./products/polaris/handlers
 COPY products/polaris/site ./products/polaris/site
-RUN bun install --production=false
+RUN bun install
 RUN cd products/polaris/site && bun run build
 
 FROM node:20-bookworm-slim AS runner
