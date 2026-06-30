@@ -1,13 +1,47 @@
 name: deploy
 
-# Railway watch-path deploy. Filled in by plan-a-08: detects changed services
-# and runs `railway up --service=<name>` per changed service.
+# Railway watch-path deploy: detect which services changed in the push and run
+# `railway up --service=<name>` for each. The Railway CLI is pinned to an
+# immutable npm version (the `curl | sh` installer resolves a floating latest,
+# which we refuse for a workflow that holds the deploy token).
 on:
   push:
     branches: [main]
 
 jobs:
-  noop:
+  detect:
     runs-on: ubuntu-latest
+    outputs:
+      services: ${{ steps.changes.outputs.services }}
     steps:
-      - run: echo "deploy workflow wired in part 08"
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 2 }
+      - id: changes
+        run: |
+          changed=$(git diff --name-only HEAD~1 HEAD)
+          services=()
+          for d in infrastructure/postgres infrastructure/kong infrastructure/postgrest \
+                   infrastructure/gotrue infrastructure/storage infrastructure/tei \
+                   products/polaris/site services/polaris-functions; do
+            if echo "$changed" | grep -q "^$d/"; then services+=("$(basename "$d")"); fi
+          done
+          if echo "$changed" | grep -q "^products/polaris/handlers/" && [[ ! " ${services[*]} " =~ " site " ]]; then
+            services+=("site")
+          fi
+          echo "services=$(printf '%s\n' "${services[@]}" | jq -R -s 'split("\n") | map(select(length>0))' -c)" >> "$GITHUB_OUTPUT"
+
+  deploy:
+    needs: detect
+    if: needs.detect.outputs.services != '[]'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: ${{ fromJson(needs.detect.outputs.services) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - run: npm install -g @railway/cli@3.20.0
+      - run: railway up --service=${{ matrix.service }} --detach
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}

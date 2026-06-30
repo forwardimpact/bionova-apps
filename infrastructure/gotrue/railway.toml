@@ -1,0 +1,7 @@
+[build]
+builder = "NIXPACKS"
+watchPaths = ["infrastructure/gotrue/**"]
+
+[deploy]
+restartPolicyType = "ON_FAILURE"
+healthcheckPath = "/health"

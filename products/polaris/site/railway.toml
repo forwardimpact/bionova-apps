@@ -1,0 +1,8 @@
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "./Dockerfile"
+watchPaths = ["products/polaris/site/**"]
+
+[deploy]
+restartPolicyType = "ON_FAILURE"
+healthcheckPath = "/api/health"

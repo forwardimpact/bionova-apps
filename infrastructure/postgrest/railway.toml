@@ -1,0 +1,7 @@
+[build]
+builder = "NIXPACKS"
+watchPaths = ["infrastructure/postgrest/**"]
+
+[deploy]
+restartPolicyType = "ON_FAILURE"
+healthcheckPath = "/"

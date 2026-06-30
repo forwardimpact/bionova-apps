@@ -1,0 +1,7 @@
+[build]
+builder = "NIXPACKS"
+watchPaths = ["infrastructure/pgbouncer/**"]
+
+[deploy]
+restartPolicyType = "ON_FAILURE"
+healthcheckPath = "/"

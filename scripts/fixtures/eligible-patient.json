@@ -1,0 +1,14 @@
+{
+  "trial_id": "cardio-outcomes",
+  "payload": {
+    "trial_id": "cardio-outcomes",
+    "age": 60,
+    "ecog": 2,
+    "conditions": ["cardiovascular"],
+    "custom_answers": {
+      "Documented coronary artery disease or equivalent risk": true,
+      "Systolic BP above 140 mmHg on stable therapy": true,
+      "LDL-C above 70 mg/dL": true
+    }
+  }
+}

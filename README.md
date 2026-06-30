@@ -52,6 +52,12 @@ in the Forward Impact monorepo. In short: a self-hosted Supabase stack
 
 See [MONOREPO.md](MONOREPO.md).
 
+## Operations
+
+- [docs/deployment.md](docs/deployment.md) — local + Railway deployment, rollback, logs.
+- [docs/operations.md](docs/operations.md) — re-seeding, scaling TEI, key rotation.
+- [scripts/smoke.sh](scripts/smoke.sh) — verifies success criteria SC1–SC7 against a fresh stack.
+
 ## License
 
 Apache-2.0 — see [LICENSE](LICENSE).
