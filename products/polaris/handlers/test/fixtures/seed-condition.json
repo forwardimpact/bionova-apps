@@ -1,0 +1,10 @@
+{
+  "id": "diabetes-t2",
+  "name": "Type 2 Diabetes Mellitus",
+  "icd10": ["E11", "E11.9"],
+  "synonyms": ["high blood sugar", "adult-onset diabetes", "insulin resistance"],
+  "synthea_module": "diabetes",
+  "severity": "chronic",
+  "prose_topic": "type 2 diabetes for patients considering clinical trials",
+  "prose_tone": "empathetic, accessible"
+}

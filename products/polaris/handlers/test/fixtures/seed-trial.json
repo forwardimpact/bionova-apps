@@ -1,0 +1,17 @@
+{
+  "id": "diabetes-prevention",
+  "name": "Diabetes Prevention Outcomes Study",
+  "protocol_id": "DPO-2026",
+  "phase": "Phase 3",
+  "therapeutic_area": "Endocrinology",
+  "sponsor": "BioNova Therapeutics",
+  "status": "recruiting",
+  "target_enrollment": 400,
+  "current_enrollment": 120,
+  "start_date": "2026-01-15",
+  "estimated_end_date": "2028-06-30",
+  "arms": ["control", "intervention"],
+  "principal_investigator_id": "res-001",
+  "project_ref": "proj-dpo",
+  "project_id": "proj-dpo"
+}

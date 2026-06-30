@@ -1,0 +1,17 @@
+{
+  "name": "@bionova/polaris-handlers",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.js",
+    "./context": "./src/context.js",
+    "./templates": "./src/templates-dir.js"
+  },
+  "scripts": {
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@forwardimpact/libtemplate": "0.2.13"
+  }
+}
