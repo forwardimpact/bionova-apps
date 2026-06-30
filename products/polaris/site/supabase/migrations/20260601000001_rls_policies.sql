@@ -5,6 +5,14 @@
 -- six prose tables). This migration adds ONLY the policies terrain cannot know
 -- about, so there is no policy-name collision (see plan-a-02 § Step 5).
 
+-- Ensure the auth.jwt() helper exists. GoTrue defines it at runtime, but the
+-- policies below depend on it, so define the canonical Supabase version here so
+-- this migration is self-contained regardless of whether GoTrue has migrated yet.
+CREATE SCHEMA IF NOT EXISTS auth;
+CREATE OR REPLACE FUNCTION auth.jwt() RETURNS jsonb
+  LANGUAGE sql STABLE
+  AS $$ SELECT coalesce(current_setting('request.jwt.claims', true)::jsonb, '{}'::jsonb) $$;
+
 -- Staff writes on trials + criteria (read stays public via terrain's public_read).
 CREATE POLICY trials_staff_write ON trials FOR INSERT WITH CHECK (auth.jwt() ->> 'role' = 'staff');
 CREATE POLICY trials_staff_update ON trials FOR UPDATE USING (auth.jwt() ->> 'role' = 'staff');
