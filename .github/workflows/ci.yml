@@ -56,4 +56,18 @@ jobs:
           test -s data/synthetic/seed_embeddings.jsonl
           grep -Eq '[0-9a-f]{40}' data/synthetic/PROVENANCE.md
 
-  # edge-functions (part 04) and e2e (part 08) jobs are added by their parts.
+  edge-functions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v1
+        with:
+          deno-version: "1.46.3"
+      - working-directory: services/polaris-functions
+        run: deno check main.ts
+      - working-directory: services/polaris-functions
+        run: deno test --allow-net --allow-read --allow-env .
+      - working-directory: services/polaris-functions
+        run: deno lint .
+
+  # e2e (part 08) job is added by that part.

@@ -2,12 +2,12 @@
 
 Supabase Edge Functions (Deno) served through Kong at `/functions/v1/{name}`.
 
-| Function | Trigger | What it does |
-| --- | --- | --- |
-| `embed-seed` | `setup.sh`, once | reads the seed embeddings JSONL, calls TEI for each condition's vector, upserts into `condition_embeddings` |
-| `eligibility-check` | screener POST (web/CLI) | evaluates a patient's answers against a trial's `criteria` and returns a match score |
-| `notify-updates` | DB trigger on `trials.status` | logs a would-notify line for each interested signal (email deferred) |
-| `sync-listings` | `pg_cron` or manual | re-reads the staged trial/criteria SQL and upserts changed rows |
+| Function            | Trigger                       | What it does                                                                                                |
+| ------------------- | ----------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `embed-seed`        | `setup.sh`, once              | reads the seed embeddings JSONL, calls TEI for each condition's vector, upserts into `condition_embeddings` |
+| `eligibility-check` | screener POST (web/CLI)       | evaluates a patient's answers against a trial's `criteria` and returns a match score                        |
+| `notify-updates`    | DB trigger on `trials.status` | logs a would-notify line for each interested signal (email deferred)                                        |
+| `sync-listings`     | `pg_cron` or manual           | re-reads the staged trial/criteria SQL and upserts changed rows                                             |
 
 ## Local invocation
 
