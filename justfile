@@ -32,6 +32,10 @@ dev-site:
 lint:
     bun run lint
 
+# Enforce the Co-Aligned instruction layers, jobs, and invariants
+coaligned:
+    npx coaligned
+
 # Test everything (JS + Deno)
 test:
     bun run test

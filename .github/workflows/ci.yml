@@ -26,6 +26,15 @@ jobs:
       - run: bun install
       - run: bunx tsc --noEmit
 
+  coaligned:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install
+      # Enforce the Co-Aligned instruction layers, jobs, and invariants.
+      - run: npx coaligned
+
   compose-validate:
     runs-on: ubuntu-latest
     steps:
