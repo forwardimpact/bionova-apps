@@ -7,7 +7,13 @@
  */
 import { readFileSync } from "node:fs";
 
-const ABOUT_PATH = new URL("../data/about.yaml", import.meta.url).pathname;
+// Default to the file next to this module (works for the CLI and tests). In a
+// bundler that rewrites `new URL(..., import.meta.url)` into an asset path
+// (Next.js standalone), the rewritten path is not readable at runtime, so let
+// the host point at the real traced file via POLARIS_ABOUT_PATH.
+const ABOUT_PATH =
+  process.env.POLARIS_ABOUT_PATH ||
+  new URL("../data/about.yaml", import.meta.url).pathname;
 
 /**
  * Minimal YAML reader for `about.yaml`'s fixed shape: a top-level mapping with
