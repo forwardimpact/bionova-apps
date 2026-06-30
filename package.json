@@ -1,0 +1,25 @@
+{
+  "name": "bionova-apps",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "workspaces": ["products/*/cli", "products/*/site", "products/*/handlers"],
+  "engines": { "node": ">=20", "bun": ">=1.2" },
+  "scripts": {
+    "setup": "./setup.sh",
+    "seed": "bash scripts/build-seed.sh",
+    "lint:js": "eslint .",
+    "lint:deno": "cd services/polaris-functions && deno lint",
+    "lint": "bun run lint:js && bun run lint:deno",
+    "test:js": "bun test",
+    "test:deno": "cd services/polaris-functions && deno test --allow-net --allow-read --allow-env",
+    "test": "bun run test:js && bun run test:deno"
+  },
+  "devDependencies": {
+    "typescript": "5.4.5",
+    "@eslint/js": "9.9.0",
+    "eslint": "9.9.0",
+    "eslint-config-prettier": "9.1.0",
+    "prettier": "3.3.3"
+  }
+}

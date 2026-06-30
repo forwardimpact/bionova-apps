@@ -1,0 +1,5 @@
+; Copy to userlist.txt (gitignored) only if you switch the edoburu image to a
+; mounted auth_file. By default the image derives credentials from the
+; DB_USER/DB_PASSWORD env vars in docker-compose.yml, so no userlist is needed.
+"authenticator" "md5<hash-of-password-plus-username>"
+"postgres" "md5<hash-of-password-plus-username>"

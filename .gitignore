@@ -1,0 +1,19 @@
+node_modules/
+.env
+*.log
+dist/
+build/
+.next/
+.DS_Store
+
+# Synthetic seed is rendered locally from the vendored DSL (see part 03):
+data/synthetic/.build/
+data/synthetic/seed_embeddings.jsonl
+products/polaris/site/supabase/migrations/20250101*_seed_*.sql
+
+# Per-service runtime data volumes
+infrastructure/*/data/
+
+# Railway CLI link state (project documented in infrastructure/railway/README.md)
+.railway/
+bun.lockb

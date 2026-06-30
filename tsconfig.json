@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "allowJs": true,
+    "noEmit": true,
+    "baseUrl": ".",
+    "paths": {
+      "@bionova/polaris-handlers": ["products/polaris/handlers/src/index.js"],
+      "@bionova/polaris-handlers/*": ["products/polaris/handlers/src/*"]
+    }
+  },
+  "exclude": ["node_modules", "**/.next", "**/dist", "data/synthetic/.build"]
+}

@@ -1,0 +1,13 @@
+name: deploy
+
+# Railway watch-path deploy. Filled in by plan-a-08: detects changed services
+# and runs `railway up --service=<name>` per changed service.
+on:
+  push:
+    branches: [main]
+
+jobs:
+  noop:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "deploy workflow wired in part 08"
