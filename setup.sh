@@ -42,9 +42,21 @@ echo "Building seed from data/synthetic/story.dsl…"
 # Step B — apply migrations via supabase db push (parts 02 + 03)
 echo "Running supabase db push…"
 cd "$ROOT/products/polaris/site"
-npx -y supabase@1.219.2 db push \
+# --include-all applies every pending local migration regardless of its order
+# relative to what is already recorded. Needed when re-seeding (e.g. SC7's
+# destructive check deletes only the seed versions, leaving later ones behind);
+# without it supabase refuses the "out of order" seed migrations.
+npx -y supabase@1.219.2 db push --include-all \
   --db-url "postgres://postgres:${POSTGRES_PASSWORD}@localhost:5432/postgres"
 cd "$ROOT"
+
+# Reload PostgREST's schema cache. It loads the cache once at startup (before
+# these migrations created the tables) and runs behind a transaction pooler with
+# the NOTIFY reload channel disabled, so it will not pick up the new tables on
+# its own. SIGUSR1 forces an in-place schema reload.
+echo "Reloading PostgREST schema cache…"
+docker compose kill -s SIGUSR1 postgrest >/dev/null 2>&1 || docker compose restart postgrest >/dev/null 2>&1
+sleep 3
 
 # Step C — populate condition_embeddings via the embed-seed edge function (part 04)
 echo "Seeding embeddings via embed-seed edge function…"
