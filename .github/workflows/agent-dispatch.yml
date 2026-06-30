@@ -1,0 +1,98 @@
+name: "Agent: Dispatch"
+
+on:
+  issues:
+    types: [opened, labeled]
+  issue_comment:
+    types: [created]
+  pull_request_target:
+    types: [labeled, closed]
+  # No `pull_request_review_comment` trigger: a review fires N comment events
+  # plus one `pull_request_review.submitted` at once. They share the per-target
+  # group below; with cancel-in-progress: false the racing pending runs cancel
+  # each other. The `submitted` payload already carries every inline comment.
+  pull_request_review:
+    types: [submitted]
+  workflow_dispatch:
+    inputs:
+      prompt:
+        description: "Ad-hoc prompt for the facilitator"
+        required: true
+        type: string
+      discussion_id:
+        description: "Stable id for a threaded conversation (bridge path)"
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+# Coalesce simultaneous events on one target so the recursion guard sees a stable
+# thread. cancel-in-progress: false is load-bearing — runs last 30+ minutes and a
+# new label or comment mid-run must not cancel that work.
+concurrency:
+  group: agent-dispatch-${{ github.event.issue.number || github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  kata:
+    # Only react to labels carrying routing (`agent:*`) or approval (`*:approved`)
+    # semantics; classification labels add no request. PR `closed` only on merge.
+    if: >-
+      github.event_name == 'workflow_dispatch'
+      || (github.event_name == 'issues' && (github.event.action == 'opened' || (github.event.action == 'labeled' && (startsWith(github.event.label.name, 'agent:') || endsWith(github.event.label.name, ':approved')))))
+      || github.event_name == 'issue_comment'
+      || (github.event_name == 'pull_request_target' && ((github.event.action == 'labeled' && (startsWith(github.event.label.name, 'agent:') || endsWith(github.event.label.name, ':approved'))) || (github.event.action == 'closed' && github.event.pull_request.merged == true)))
+      || github.event_name == 'pull_request_review'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Kata killswitch
+        shell: bash
+        env:
+          KATA_KILLSWITCH: ${{ vars.KATA_KILLSWITCH }}
+        run: |
+          case "$(printf '%s' "${KATA_KILLSWITCH:-}" | tr '[:upper:]' '[:lower:]')" in
+            ""|0|false|no|off) ;;
+            *) echo "::error::KATA_KILLSWITCH engaged (value: ${KATA_KILLSWITCH})." >&2; exit 1 ;;
+          esac
+      - name: Generate token
+        id: ci-app
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ secrets.KATA_APP_ID }}
+          private-key: ${{ secrets.KATA_APP_PRIVATE_KEY }}
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ steps.ci-app.outputs.token }}
+      - name: Assess and Act
+        id: assess
+        uses: forwardimpact/harness@b7409ad9a1df4ff75eca8fe68041b5384f75bd7e # v1.0.3
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GH_TOKEN: ${{ steps.ci-app.outputs.token }}
+          CLAUDE_CODE_USE_BEDROCK: "0"
+        with:
+          # discuss resumes a thread; otherwise one-shot facilitate.
+          mode: ${{ inputs.discussion_id != '' && 'discuss' || 'facilitate' }}
+          task-event: ${{ github.event_path }}
+          lead-profile: "product-manager"
+          agent-profiles: "staff-engineer,security-engineer,technical-writer,release-engineer"
+          agent-model: "claude-opus-4-8[1m]"
+          lead-model: "claude-opus-4-8[1m]"
+          discussion-id: ${{ inputs.discussion_id }}
+      - name: Report run cost
+        if: always()
+        shell: bash
+        env:
+          TRACE_FILE: ${{ steps.assess.outputs.trace-file }}
+        run: |
+          fit-trace cost "$TRACE_FILE" --markdown >> "$GITHUB_STEP_SUMMARY" || true
+      # harness does not push wiki itself, so push memory with a fresh token.
+      - name: Push wiki changes
+        if: always()
+        uses: forwardimpact/wiki@f88ea81402d4d3411baf9ca0a38cafb11dfa7f60 # v1.0.1
+        with:
+          command: push
+          app-id: ${{ secrets.KATA_APP_ID }}
+          app-private-key: ${{ secrets.KATA_APP_PRIVATE_KEY }}
