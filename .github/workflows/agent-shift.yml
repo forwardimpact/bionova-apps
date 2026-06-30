@@ -1,0 +1,49 @@
+name: "Agent: Shift"
+
+on:
+  schedule:
+    - cron: "0 1 * * *"   # 03:00 night (Europe/Paris)
+    - cron: "0 10 * * *"  # 12:00 day
+    - cron: "0 18 * * *"  # 20:00 swing
+  workflow_dispatch:
+    inputs:
+      task-amend:
+        description: "Additional text appended to the task prompt for steering"
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  agent:
+    name: ${{ matrix.agent.name }}
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 1
+      fail-fast: false
+      matrix:
+        agent:
+          - { name: product-manager }
+          - { name: staff-engineer }
+          - { name: security-engineer }
+          - { name: technical-writer }
+          - { name: release-engineer }
+          - { name: improvement-coach }
+    steps:
+      # kata-agent runs the killswitch first and reports run cost last.
+      - uses: forwardimpact/kata-agent@8dfb94075556824692e557593a559db5e58b9c3a # v1.0.5
+        id: agent
+        with:
+          app-id: ${{ secrets.KATA_APP_ID }}
+          app-private-key: ${{ secrets.KATA_APP_PRIVATE_KEY }}
+          anthropic-api-key: ${{ secrets.ANTHROPIC_API_KEY }}
+          killswitch: ${{ vars.KATA_KILLSWITCH }}
+          agent-profile: ${{ matrix.agent.name }}
+          agent-model: "claude-opus-4-8[1m]"
+          wiki: "true"
+          case: ${{ matrix.agent.name }} # disambiguates the per-cell trace artifact
+          task-text: >-
+            Assess the current state of your domain and act on the
+            highest-priority finding.
+          task-amend: ${{ inputs.task-amend }}
