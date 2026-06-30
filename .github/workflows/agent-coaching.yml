@@ -1,0 +1,42 @@
+name: "Agent: Coaching"
+
+on:
+  workflow_dispatch:
+    inputs:
+      agent:
+        description: "The agent profile to coach"
+        required: true
+        type: string
+      task-amend:
+        description: "Additional text appended to the task prompt for steering"
+        required: false
+        type: string
+
+concurrency:
+  group: agent-coaching
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  kata:
+    runs-on: ubuntu-latest
+    steps:
+      # kata-agent runs the killswitch first and reports run cost last.
+      - uses: forwardimpact/kata-agent@8dfb94075556824692e557593a559db5e58b9c3a # v1.0.5
+        id: agent
+        with:
+          app-id: ${{ secrets.KATA_APP_ID }}
+          app-private-key: ${{ secrets.KATA_APP_PRIVATE_KEY }}
+          anthropic-api-key: ${{ secrets.ANTHROPIC_API_KEY }}
+          killswitch: ${{ vars.KATA_KILLSWITCH }}
+          mode: "facilitate"
+          lead-profile: "improvement-coach"
+          agent-profiles: "${{ inputs.agent }}"
+          agent-model: "claude-opus-4-8[1m]"
+          lead-model: "claude-opus-4-8[1m]"
+          wiki: "true"
+          task-text: >-
+            Facilitate a one-on-one Kata coaching session with "${{ inputs.agent }}".
+          task-amend: ${{ inputs.task-amend }}

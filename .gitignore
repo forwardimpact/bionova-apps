@@ -23,3 +23,12 @@ docker-compose.override.yml
 infrastructure/tei/ca-bundle.pem
 infrastructure/tei/model/
 products/polaris/site/supabase/.temp/
+
+# APM dependencies. Skill packs are pinned in apm.yml + apm.lock.yaml and
+# reconstituted by `apm install`; the materialized agent/skill trees below are
+# build output, not source — like node_modules.
+apm_modules/
+.agents/
+.claude/agents/
+.claude/skills/
+.github/agents/
