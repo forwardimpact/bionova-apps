@@ -30,6 +30,9 @@ export async function embedOne(text: string, teiUrl: string): Promise<number[]> 
 }
 
 // Upserts one embedding via PostgREST, keyed on condition_id.
+// condition_embeddings.id is a NOT NULL text PRIMARY KEY with no default, so the
+// insert side must supply it; the embedding row id is the condition id (one
+// embedding per condition). The unique index on condition_id drives the upsert.
 export async function upsertEmbedding(
   conditionId: string,
   embedding: number[],
@@ -43,7 +46,7 @@ export async function upsertEmbedding(
       "content-type": "application/json",
       Prefer: "resolution=merge-duplicates,return=minimal",
     },
-    body: JSON.stringify({ condition_id: conditionId, embedding }),
+    body: JSON.stringify({ id: conditionId, condition_id: conditionId, embedding }),
   });
   if (!r.ok) {
     throw new Error(
@@ -67,7 +70,12 @@ export async function handle(req: Request, env: Env): Promise<Response> {
     const text = await req.text();
     if (text.trim().length > 0) body = JSON.parse(text) as EmbedSeedRequest;
   }
-  const source = body.source ?? DEFAULT_SOURCE;
+  // The function runs with the service-role key and --allow-read; do NOT let a
+  // request-supplied path turn it into an arbitrary file-read primitive. A
+  // caller may only point at the mounted seed dir; anything else falls back to
+  // the default. (setup.sh passes the default path.)
+  const requested = body.source ?? DEFAULT_SOURCE;
+  const source = requested.startsWith("/data/synthetic/") ? requested : DEFAULT_SOURCE;
   const rows = parseJsonl(await Deno.readTextFile(source));
 
   let seeded = 0;

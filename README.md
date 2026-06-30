@@ -16,9 +16,17 @@ Forward Impact libraries (`libcli`, `libui`, `libformat`, `libtemplate`,
 git clone …
 cd bionova-apps
 cp .env.example .env          # fill in secrets
+bash scripts/build-seed.sh    # render the seed JSONL from story.dsl FIRST (it is bind-mounted)
 docker compose up -d --wait
-./setup.sh                    # renders the seed from story.dsl, applies it, seeds embeddings
+./setup.sh                    # applies migrations + seeds embeddings
 ```
+
+> The seed must be rendered **before** `docker compose up`: the
+> `polaris-functions` service bind-mounts `data/synthetic/seed_embeddings.jsonl`,
+> so that file has to exist on the host first. `just boot` runs the three steps
+> in order. Until the libterrain release carrying prerequisites A+B is on npm,
+> set `FIT_TERRAIN` to a local checkout (see
+> [data/synthetic/PROVENANCE.md](data/synthetic/PROVENANCE.md)).
 
 Visit <http://localhost:3001/> — or from the CLI:
 

@@ -12,8 +12,11 @@ CREATE POLICY criteria_staff_write ON criteria FOR INSERT WITH CHECK (auth.jwt()
 CREATE POLICY criteria_staff_update ON criteria FOR UPDATE USING (auth.jwt() ->> 'role' = 'staff');
 
 -- interest_signals: anonymous insert, staff read.
+-- RLS policies gate rows but NOT base-table privileges; anon must also hold the
+-- INSERT grant or the insert fails with "permission denied" before RLS runs.
 CREATE POLICY interest_signals_anon_insert ON interest_signals FOR INSERT WITH CHECK (true);
 CREATE POLICY interest_signals_staff_read ON interest_signals FOR SELECT USING (auth.jwt() ->> 'role' = 'staff');
+GRANT INSERT ON interest_signals TO anon, authenticated;
 
 -- Service role bypass for Edge Functions: unrestricted on every product table.
 GRANT ALL ON

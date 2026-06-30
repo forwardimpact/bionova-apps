@@ -10,11 +10,18 @@
     "resolveJsonModule": true,
     "allowJs": true,
     "noEmit": true,
-    "baseUrl": ".",
     "paths": {
-      "@bionova/polaris-handlers": ["products/polaris/handlers/src/index.js"],
-      "@bionova/polaris-handlers/*": ["products/polaris/handlers/src/*"]
+      "@bionova/polaris-handlers": ["./products/polaris/handlers/src/index.js"],
+      "@bionova/polaris-handlers/*": ["./products/polaris/handlers/src/*"]
     }
   },
-  "exclude": ["node_modules", "**/.next", "**/dist", "data/synthetic/.build"]
+  "comment": "The Next.js site (products/polaris/site) and the Deno edge functions own their own tsconfig/deno.json and are typechecked separately; excluded here so root `tsc --noEmit` only covers handlers + cli.",
+  "exclude": [
+    "node_modules",
+    "**/.next",
+    "**/dist",
+    "data/synthetic/.build",
+    "products/polaris/site",
+    "services/polaris-functions"
+  ]
 }

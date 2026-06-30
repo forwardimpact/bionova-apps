@@ -34,6 +34,36 @@ export type EligibilityRequest = {
 export type MatchScore = "eligible" | "possibly_eligible" | "not_eligible";
 export type EligibilityResponse = { match_score: MatchScore; reasons: string[] };
 
+// Callers differ in how they encode the request: the web POST sends typed JSON,
+// but the CLI forwards libcli string options verbatim (age "55", conditions
+// "a,b"). Coerce to the typed shape `score` expects so both surfaces behave the
+// same. Empty/blank scalars become undefined ("not provided"), not 0/NaN.
+export function normalizeRequest(raw: EligibilityRequest): EligibilityRequest {
+  const num = (v: unknown): number | undefined => {
+    if (typeof v === "number") return Number.isFinite(v) ? v : undefined;
+    if (typeof v === "string" && v.trim() !== "") {
+      const n = Number(v);
+      return Number.isFinite(n) ? n : undefined;
+    }
+    return undefined;
+  };
+  const list = (v: unknown): string[] | undefined => {
+    if (Array.isArray(v)) return v.map(String);
+    if (typeof v === "string" && v.trim() !== "") {
+      return v.split(",").map((s) => s.trim()).filter((s) => s.length > 0);
+    }
+    return undefined;
+  };
+  return {
+    trial_id: raw.trial_id,
+    age: num(raw.age),
+    ecog: num(raw.ecog),
+    conditions: list(raw.conditions),
+    prior_treatments: list(raw.prior_treatments),
+    custom_answers: raw.custom_answers ?? {},
+  };
+}
+
 // Pure scoring. Exclusion match wins outright. Otherwise every inclusion
 // criterion must be satisfied for `eligible`; any unknown (missing answer or
 // missing field) with no exclusion fail yields `possibly_eligible`; a definite
@@ -164,7 +194,7 @@ export async function handle(req: Request, env: Env): Promise<Response> {
     });
   }
 
-  const result = score(criteria, body);
+  const result = score(criteria, normalizeRequest(body));
   return new Response(JSON.stringify(result), {
     headers: { "content-type": "application/json" },
   });

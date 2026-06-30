@@ -3,7 +3,7 @@
 // with a mocked fetch for the PostgREST criteria query.
 
 import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
-import { type Criteria, fetchCriteria, handle, score } from "./mod.ts";
+import { type Criteria, fetchCriteria, handle, normalizeRequest, score } from "./mod.ts";
 import type { Env } from "../env.ts";
 
 const env: Env = {
@@ -37,6 +37,21 @@ const criteria: Criteria = {
     ],
   },
 };
+
+Deno.test("normalizeRequest coerces CLI string inputs to typed values", () => {
+  const out = normalizeRequest({
+    trial_id: "t",
+    age: "55" as unknown as number,
+    ecog: "1" as unknown as number,
+    conditions: "diabetes_t2, foo" as unknown as string[],
+  });
+  assertEquals(out.age, 55);
+  assertEquals(out.ecog, 1);
+  assertEquals(out.conditions, ["diabetes_t2", "foo"]);
+  // blank scalars become undefined ("not provided"), not 0/NaN
+  const blank = normalizeRequest({ trial_id: "t", age: "" as unknown as number });
+  assertEquals(blank.age, undefined);
+});
 
 Deno.test("score: fully-qualified patient is eligible", () => {
   const out = score(criteria, {

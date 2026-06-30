@@ -9,6 +9,9 @@ CREATE OR REPLACE FUNCTION public.notify_status_change()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 SECURITY DEFINER
+-- Pin search_path: a SECURITY DEFINER function runs as its superuser owner, so
+-- an unpinned path is a privilege-escalation vector.
+SET search_path = net, public, pg_temp
 AS $$
 DECLARE
   service_key text := current_setting('app.service_role_key', true);

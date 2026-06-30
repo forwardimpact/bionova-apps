@@ -2,7 +2,7 @@
 -- `psql -f` against a seeded DB). Exercised at end of part 03, when terrain
 -- output + hand-written migrations have all applied.
 BEGIN;
-SELECT plan(7);
+SELECT plan(9);
 
 -- RLS is enabled on the security-sensitive tables.
 SELECT ok(
@@ -29,11 +29,20 @@ SELECT is(
   1,
   'exactly one public_read policy on trials (no duplicate from this migration)');
 
--- anon can read trials.
+-- Behavioural checks under the anon role: read trials, insert an interest
+-- signal, but never read interest_signals back (staff-only SELECT).
 SET LOCAL ROLE anon;
 SELECT ok(
   (SELECT count(*) >= 0 FROM trials),
   'anon can SELECT from trials');
+SELECT lives_ok(
+  $$INSERT INTO interest_signals (trial_id, screener_answers, match_score)
+    VALUES ((SELECT id FROM trials LIMIT 1), '{}'::jsonb, 'eligible')$$,
+  'anon can INSERT into interest_signals');
+SELECT is(
+  (SELECT count(*)::int FROM interest_signals),
+  0,
+  'anon cannot SELECT interest_signals (staff-only read)');
 RESET ROLE;
 
 SELECT * FROM finish();

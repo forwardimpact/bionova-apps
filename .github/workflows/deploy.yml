@@ -19,14 +19,25 @@ jobs:
       - id: changes
         run: |
           changed=$(git diff --name-only HEAD~1 HEAD)
+          # Map each watched directory to its real Railway service name (the
+          # compose/Railway service key, not always the dir basename).
+          declare -A svc=(
+            [infrastructure/postgres]=postgres
+            [infrastructure/kong]=kong
+            [infrastructure/postgrest]=postgrest
+            [infrastructure/gotrue]=gotrue
+            [infrastructure/storage]=storage
+            [infrastructure/tei]=tei
+            [products/polaris/site]=polaris-site
+            [services/polaris-functions]=polaris-functions
+          )
           services=()
-          for d in infrastructure/postgres infrastructure/kong infrastructure/postgrest \
-                   infrastructure/gotrue infrastructure/storage infrastructure/tei \
-                   products/polaris/site services/polaris-functions; do
-            if echo "$changed" | grep -q "^$d/"; then services+=("$(basename "$d")"); fi
+          for d in "${!svc[@]}"; do
+            if echo "$changed" | grep -q "^$d/"; then services+=("${svc[$d]}"); fi
           done
-          if echo "$changed" | grep -q "^products/polaris/handlers/" && [[ ! " ${services[*]} " =~ " site " ]]; then
-            services+=("site")
+          # The site bundles the shared handlers; redeploy it when they change.
+          if echo "$changed" | grep -q "^products/polaris/handlers/" && [[ ! " ${services[*]} " =~ " polaris-site " ]]; then
+            services+=("polaris-site")
           fi
           echo "services=$(printf '%s\n' "${services[@]}" | jq -R -s 'split("\n") | map(select(length>0))' -c)" >> "$GITHUB_OUTPUT"
 
