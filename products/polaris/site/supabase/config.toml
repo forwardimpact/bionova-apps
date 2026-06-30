@@ -1,0 +1,10 @@
+project_id = "bionova-polaris"
+
+[db]
+port = 5432
+
+[auth]
+enabled = true
+
+[storage]
+enabled = true

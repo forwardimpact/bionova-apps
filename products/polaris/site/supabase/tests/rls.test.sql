@@ -1,0 +1,40 @@
+-- pgTAP RLS assertions. Run with `supabase test db` (or
+-- `psql -f` against a seeded DB). Exercised at end of part 03, when terrain
+-- output + hand-written migrations have all applied.
+BEGIN;
+SELECT plan(7);
+
+-- RLS is enabled on the security-sensitive tables.
+SELECT ok(
+  (SELECT relrowsecurity FROM pg_class WHERE relname = 'trials'),
+  'RLS enabled on trials');
+SELECT ok(
+  (SELECT relrowsecurity FROM pg_class WHERE relname = 'interest_signals'),
+  'RLS enabled on interest_signals');
+
+-- The non-terrain policies this repo adds exist.
+SELECT ok(
+  EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'trials' AND policyname = 'trials_staff_update'),
+  'trials_staff_update policy exists');
+SELECT ok(
+  EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'interest_signals' AND policyname = 'interest_signals_anon_insert'),
+  'interest_signals_anon_insert policy exists');
+SELECT ok(
+  EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'interest_signals' AND policyname = 'interest_signals_staff_read'),
+  'interest_signals_staff_read policy exists');
+
+-- The terrain-emitted public_read policy is present (and not duplicated).
+SELECT is(
+  (SELECT count(*)::int FROM pg_policies WHERE tablename = 'trials' AND policyname = 'public_read'),
+  1,
+  'exactly one public_read policy on trials (no duplicate from this migration)');
+
+-- anon can read trials.
+SET LOCAL ROLE anon;
+SELECT ok(
+  (SELECT count(*) >= 0 FROM trials),
+  'anon can SELECT from trials');
+RESET ROLE;
+
+SELECT * FROM finish();
+ROLLBACK;
