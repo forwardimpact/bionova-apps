@@ -122,7 +122,7 @@ services:
       timeout: 5s
       retries: 10
     depends_on:
-      pgbouncer:
+      postgres:
         condition: service_healthy
 
   realtime:
@@ -153,7 +153,7 @@ services:
       retries: 10
       start_period: 30s
     depends_on:
-      pgbouncer:
+      postgres:
         condition: service_healthy
 
   minio:
@@ -215,7 +215,7 @@ services:
       timeout: 5s
       retries: 10
     depends_on:
-      pgbouncer:
+      postgres:
         condition: service_healthy
       storage-init:
         condition: service_completed_successfully
