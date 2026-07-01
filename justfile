@@ -20,6 +20,11 @@ setup:
 seed:
     bash scripts/build-seed.sh
 
+# Download the TEI embedding model to a local cache, for networks where the
+# container cannot fetch it from huggingface.co. Prints the .env lines to enable.
+tei-model:
+    bash scripts/fetch-tei-model.sh
+
 # Run the CLI (pass args after `--`, e.g. `just cli search --condition=diabetes`)
 cli *ARGS:
     node products/polaris/cli/bin/bionova-polaris.js {{ARGS}}

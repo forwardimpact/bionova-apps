@@ -247,15 +247,22 @@ services:
     platform: linux/amd64
     # --auto-truncate: some seed condition texts exceed bge-small's 512-token
     # limit; truncate rather than 413-reject (the lead tokens carry the signal).
-    command: ["--model-id", "BAAI/bge-small-en-v1.5", "--max-batch-tokens", "16384", "--max-client-batch-size", "16", "--auto-truncate"]
+    # TEI_MODEL_ID / TEI_MODEL_SOURCE default to downloading bge-small from
+    # huggingface.co into the tei-data volume. To load a host-downloaded copy
+    # instead (e.g. when a TLS-inspecting proxy blocks the container's fetch),
+    # run `just tei-model` and set both in .env. See .env.example.
+    command: ["--model-id", "${TEI_MODEL_ID:-BAAI/bge-small-en-v1.5}", "--max-batch-tokens", "16384", "--max-client-batch-size", "16", "--auto-truncate"]
     ports:
       - "8080:80"
     environment:
-      MODEL_ID: BAAI/bge-small-en-v1.5
+      MODEL_ID: ${TEI_MODEL_ID:-BAAI/bge-small-en-v1.5}
       MAX_BATCH_TOKENS: "16384"
       MAX_CLIENT_BATCH_SIZE: "16"
     volumes:
-      - tei-data:/data
+      # Named volume tei-data by default (holds the HF download); a host path
+      # when TEI_MODEL_SOURCE points at a local model dir (then set
+      # TEI_MODEL_ID=/data so TEI loads it instead of downloading).
+      - ${TEI_MODEL_SOURCE:-tei-data}:/data
     healthcheck:
       # TEI image ships only bash; it binds :80 after the model loads, so a TCP
       # probe is a valid readiness signal. Long start_period covers amd64 emulation.

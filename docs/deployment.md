@@ -19,6 +19,18 @@ docker compose up -d --wait
 `data/synthetic/seed_embeddings.jsonl`; mounting a missing path makes Docker
 create a directory there.
 
+`build-seed.sh` needs `FIT_TERRAIN` pointed at a local `fit-terrain` checkout
+until the libterrain release carrying its prerequisites reaches npm; otherwise
+the render fails on an unknown `--output-root` option. See
+[data/synthetic/PROVENANCE.md](../data/synthetic/PROVENANCE.md).
+
+If `docker compose up` stalls with `tei` unhealthy and its logs show
+`certificate verify failed: self-signed certificate in chain`, the container
+cannot download its embedding model through a TLS-inspecting proxy. Fetch the
+model on the host and point `tei` at it — run `just tei-model`, set the two
+`TEI_*` lines it prints in `.env`, then re-run `docker compose up -d --wait`.
+See [operations.md](operations.md#loading-the-tei-model-from-a-local-copy).
+
 Web: <http://localhost:3001/> · Kong API: <http://localhost:8000> ·
 edge functions (direct): <http://localhost:8082>.
 

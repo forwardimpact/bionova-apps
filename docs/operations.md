@@ -24,6 +24,36 @@ For higher throughput, switch to a GPU image and raise `MAX_BATCH_TOKENS` /
 `MAX_CLIENT_BATCH_SIZE` in `docker-compose.yml`. Embeddings are written once by
 `embed-seed`; re-run it after scaling: `curl -X POST .../functions/v1/embed-seed`.
 
+## Loading the TEI model from a local copy
+
+On first start `tei` downloads `BAAI/bge-small-en-v1.5` from huggingface.co into
+the `tei-data` volume. On a network that intercepts TLS (a proxy whose CA the
+container does not trust), that download fails with `certificate verify failed:
+self-signed certificate in chain`, and because `polaris-functions` waits for
+`tei` to be healthy the whole stack stalls.
+
+Fetch the model on the host (which usually does trust the proxy CA) and point
+`tei` at it:
+
+```bash
+just tei-model          # downloads to ~/.cache/bionova-tei-model/bge-small-en-v1.5
+```
+
+Then set the two lines it prints in `.env` and recreate the service:
+
+```
+TEI_MODEL_ID=/data
+TEI_MODEL_SOURCE=/absolute/path/to/bge-small-en-v1.5
+```
+
+```bash
+docker compose up -d tei
+```
+
+`TEI_MODEL_SOURCE` bind-mounts the host directory at `/data` and `TEI_MODEL_ID`
+tells `tei` to load that path instead of downloading. Leave both unset for the
+default download behavior.
+
 ## Rotating the service-role key
 
 1. Regenerate the JWT and update `SERVICE_ROLE_KEY` (and the matching Kong
