@@ -9,7 +9,7 @@
     "@forwardimpact/librepl": "0.1.15",
     "@forwardimpact/libformat": "0.1.20",
     "@forwardimpact/libtemplate": "0.2.13",
-    "@forwardimpact/libutil": "0.1.98",
+    "@forwardimpact/libutil": "0.1.99",
     "@bionova/polaris-handlers": "workspace:*"
   }
 }
