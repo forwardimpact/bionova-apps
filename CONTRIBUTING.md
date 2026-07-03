@@ -31,7 +31,7 @@ Rules that hold for every contribution. Each is checkable.
    Relative time rots the moment it is committed.
 
 Repository-specific declarative checks live in `.coaligned/invariants/` and run
-under `npx @forwardimpact/libcoaligned invariants`.
+under `bun run coaligned invariants`.
 
 ## Quality commands
 
@@ -41,12 +41,13 @@ Run before every commit. The offline suites need no running stack:
 bun run lint          # eslint (JS) + deno lint (edge functions)
 bunx tsc --noEmit     # typecheck
 bun run test          # handlers + CLI + site + edge functions
-npx @forwardimpact/libcoaligned   # instruction layers, jobs, invariants
+bun run coaligned     # instruction layers, jobs, invariants
 ```
 
-The `coaligned` CLI ships as the published `@forwardimpact/libcoaligned` package
-(its bin is `coaligned`); there is no bare `coaligned` package on the npm
-registry, so always invoke it through the scoped package.
+The `coaligned` CLI ships as the published `@forwardimpact/libcoaligned`
+package (its bin is `coaligned`). It is pinned as a devDependency, so `bun run
+coaligned` resolves the local bin and the check runs reproducibly on a clean
+runner.
 
 End-to-end success criteria (SC1–SC7) need the full stack up:
 
@@ -86,7 +87,7 @@ SMOKE_DESTRUCTIVE=1 bash scripts/smoke.sh
 <do_confirm_checklist goal="Verify completeness before opening a pull request">
 
 - [ ] `bun run lint`, `bunx tsc --noEmit`, and `bun run test` pass.
-- [ ] `npx @forwardimpact/libcoaligned` passes with no findings.
+- [ ] `bun run coaligned` passes with no findings.
 - [ ] Rendered seed matches `data/synthetic/SEED.sha256`.
 - [ ] `SMOKE_DESTRUCTIVE=1 scripts/smoke.sh` passes against a fresh stack.
 - [ ] No hand-authored domain content, no real secret, dates are absolute.

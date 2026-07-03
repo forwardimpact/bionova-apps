@@ -75,7 +75,10 @@ services:
         condition: service_healthy
 
   postgrest:
-    image: postgrest/postgrest:v12.0.2
+    # postgrest/postgrest:v12.0.2 with a static busybox added for the
+    # healthcheck; the upstream image is distroless and can run no probe.
+    build:
+      context: infrastructure/postgrest
     ports:
       - "3000:3000"
     environment:
@@ -89,8 +92,9 @@ services:
       PGRST_DB_PREPARED_STATEMENTS: "false"
       PGRST_DB_CHANNEL_ENABLED: "false"
     healthcheck:
-      # The postgrest image ships only bash (no wget/curl); use a bash TCP probe.
-      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/3000"]
+      # The upstream image is distroless (no shell/wget/curl), so probe the API
+      # port with the busybox added in infrastructure/postgrest/Dockerfile.
+      test: ["CMD", "/bin/busybox", "nc", "-z", "-w", "2", "127.0.0.1", "3000"]
       interval: 10s
       timeout: 5s
       retries: 10

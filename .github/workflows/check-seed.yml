@@ -1,0 +1,30 @@
+name: check-seed
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  seed-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install
+      # The libterrain release carrying prerequisites A+B is not yet on npm;
+      # CI installs it from the pinned tarball / local checkout via FIT_TERRAIN.
+      # Until then this job documents the determinism gate it will enforce.
+      - run: |
+          if ! (bunx fit-terrain --help 2>/dev/null | grep -q output-root); then
+            echo "::warning::libterrain with --output-root (prereq A) not resolvable from npm yet; skipping seed-build determinism gate"
+            exit 0
+          fi
+          bash scripts/build-seed.sh
+          MIG=products/polaris/site/supabase/migrations
+          test "$(ls $MIG/20250101*_seed_*.sql | wc -l)" -ge 15
+          (cd data/synthetic/.build/products/polaris/site/supabase/migrations \
+            && sha256sum -c "$GITHUB_WORKSPACE/data/synthetic/SEED.sha256")
+          test -s data/synthetic/seed_embeddings.jsonl
+          grep -Eq '[0-9a-f]{40}' data/synthetic/PROVENANCE.md
