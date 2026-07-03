@@ -23,6 +23,14 @@ jobs:
           fi
           # Render the seed BEFORE compose up — polaris-functions bind-mounts the JSONL.
           bash scripts/build-seed.sh
+          # The tei container cannot fetch the model itself: it does not trust
+          # the runner's TLS-inspecting proxy, so its huggingface.co download
+          # fails. The host does trust it, so fetch the model here and point tei
+          # at the local copy (the documented workaround in .env.example).
+          TEI_MODEL_CACHE="$HOME/.cache/bionova-tei-model/bge-small-en-v1.5" \
+            bash scripts/fetch-tei-model.sh
+          printf 'TEI_MODEL_ID=/data\nTEI_MODEL_SOURCE=%s\n' \
+            "$HOME/.cache/bionova-tei-model/bge-small-en-v1.5" >> .env
           docker compose up -d --wait
           ./setup.sh
           SMOKE_DESTRUCTIVE=1 ./scripts/smoke.sh
