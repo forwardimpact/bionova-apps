@@ -1,0 +1,18 @@
+name: check-context
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  coaligned:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install
+      # Enforce the Co-Aligned instruction layers, jobs, and invariants. The
+      # coaligned bin ships with the pinned @forwardimpact/libcoaligned
+      # devDependency, so the check resolves reproducibly on a clean runner.
+      - run: bun run coaligned

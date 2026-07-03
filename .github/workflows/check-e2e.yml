@@ -1,0 +1,30 @@
+name: check-e2e
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install
+      - run: cp .env.example .env
+      # The libterrain release carrying prereqs A+B is not yet on npm. When it
+      # is, drop this guard; until then e2e needs FIT_TERRAIN pointing at a
+      # checkout that has `--output-root`, so skip cleanly if unavailable.
+      - run: |
+          if ! (bunx fit-terrain --help 2>/dev/null | grep -q output-root); then
+            echo "::warning::libterrain with --output-root not on npm yet; skipping e2e boot"
+            exit 0
+          fi
+          # Render the seed BEFORE compose up — polaris-functions bind-mounts the JSONL.
+          bash scripts/build-seed.sh
+          docker compose up -d --wait
+          ./setup.sh
+          SMOKE_DESTRUCTIVE=1 ./scripts/smoke.sh
+      - if: failure()
+        run: docker compose logs --tail=200

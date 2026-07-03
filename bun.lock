@@ -6,6 +6,7 @@
       "name": "bionova-apps",
       "devDependencies": {
         "@eslint/js": "9.39.4",
+        "@forwardimpact/libcoaligned": "^0.1.16",
         "eslint": "9.39.4",
         "eslint-config-prettier": "9.1.2",
         "prettier": "3.9.4",
@@ -213,6 +214,8 @@
     "@eslint/plugin-kit": ["@eslint/plugin-kit@0.4.1", "", { "dependencies": { "@eslint/core": "^0.17.0", "levn": "^0.4.1" } }, "sha512-43/qtrDUokr7LJqoF2c3+RInu/t4zfrpYdoSDfYyhg52rwLV6TnOvdG4fXm7IkSB3wErkcmJS9iEhjVtOSEjjA=="],
 
     "@forwardimpact/libcli": ["@forwardimpact/libcli@0.1.16", "", {}, "sha512-Nw1E0jTyzpoimohMFC8bG/RfaiuQlj5GzwBw7TRGNoDger7zxUvujLFXnRiRKYXCCHR3eyOMtVK9cbivMtECug=="],
+
+    "@forwardimpact/libcoaligned": ["@forwardimpact/libcoaligned@0.1.17", "", { "dependencies": { "@forwardimpact/libcli": "^0.1.9", "@forwardimpact/libpreflight": "^0.1.0", "@forwardimpact/libutil": "*", "acorn": "^8.17.0", "prettier": "^3.8.4", "yaml": "^2.9.0" }, "bin": { "coaligned": "bin/coaligned.js" } }, "sha512-Ynyo/6L1nLT2mh2V8tVJ2LBoxKf6/61iB5xbaHdZIE6YMnR+CIsU4EqzzB/Hy2t3XIhWn25lBRUPofGmQmYqhg=="],
 
     "@forwardimpact/libconfig": ["@forwardimpact/libconfig@0.1.84", "", { "dependencies": { "@forwardimpact/libsecret": "^0.1.15", "@forwardimpact/libstorage": "^0.1.53", "@forwardimpact/libutil": "^0.1.60" } }, "sha512-+QvSZICkBMKYHHfnlP27VoSC5CIHRiE2TbcvNwx/KYIJoKH5XWK1qUx1eE3+wPIiT4l7mxkMDuJ5YO3Z6PiAFQ=="],
 
