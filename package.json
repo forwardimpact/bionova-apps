@@ -14,9 +14,10 @@
     "coaligned": "coaligned",
     "check": "bun run lint && bunx tsc --noEmit && coaligned",
     "test:js": "bun test products/polaris/handlers products/polaris/cli",
+    "test:scripts": "bun test scripts",
     "test:site": "cd products/polaris/site && bun run test",
     "test:deno": "cd services/polaris-functions && deno test --allow-net --allow-read --allow-env",
-    "test": "bun run test:js && bun run test:site && bun run test:deno"
+    "test": "bun run test:js && bun run test:scripts && bun run test:site && bun run test:deno"
   },
   "devDependencies": {
     "typescript": "5.9.3",
