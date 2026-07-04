@@ -22,7 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       # kata-agent runs the killswitch first and reports run cost last.
-      - uses: forwardimpact/kata-agent@f442ac047fabc0b4bef4e60dddde8bcced8e3ab6 # v1.0.6
+      - uses: forwardimpact/kata-agent@4363b5ad249cebe6375671ee855988e201a03377 # v1.0.7
         id: agent
         with:
           app-id: ${{ secrets.KATA_APP_ID }}
