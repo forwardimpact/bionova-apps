@@ -1,4 +1,4 @@
-# Spec 10 — Migrate `next` 14 → 15 to close 5 high advisories on the patient surface
+# Spec 50 — Migrate `next` 14 → 15 to close 5 high advisories on the patient surface
 
 **Classification:** Product-aligned. The advisories sit in the runtime that
 serves the Patient / Advocate "Find a Relevant Trial" Big Hire; closing them
