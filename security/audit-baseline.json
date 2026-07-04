@@ -22,7 +22,7 @@
       "reason": "Next.js middleware/proxy bypass (Pages Router i18n). Production framework, patient-facing runtime; only a breaking 14->15 major closes it. Tracked in spec #29 (#16 track 2).",
       "accepted_on": "2026-07-04",
       "review_spec": "#29",
-      "review_by": null
+      "review_by": "2026-07-24"
     },
     "GHSA-8h8q-6873-q5fj": {
       "package": "next",
@@ -32,7 +32,7 @@
       "reason": "Next.js DoS via Server Components. Production framework, patient-facing runtime; only a breaking 14->15 major closes it. Tracked in spec #29 (#16 track 2).",
       "accepted_on": "2026-07-04",
       "review_spec": "#29",
-      "review_by": null
+      "review_by": "2026-07-24"
     },
     "GHSA-c4j6-fc7j-m34r": {
       "package": "next",
@@ -42,7 +42,7 @@
       "reason": "Next.js SSRF via WebSocket upgrades (CVSS 8.6). Production framework, patient-facing runtime, reachable on the self-hosted deployment; only a breaking 14->15 major closes it. Tracked in spec #29 (#16 track 2).",
       "accepted_on": "2026-07-04",
       "review_spec": "#29",
-      "review_by": null
+      "review_by": "2026-07-24"
     },
     "GHSA-fx2h-pf6j-xcff": {
       "package": "vite",
@@ -60,7 +60,7 @@
       "reason": "Next.js HTTP request deserialization DoS. Production framework, patient-facing runtime; only a breaking 14->15 major closes it. Tracked in spec #29 (#16 track 2).",
       "accepted_on": "2026-07-04",
       "review_spec": "#29",
-      "review_by": null
+      "review_by": "2026-07-24"
     },
     "GHSA-q4gf-8mx6-v5v3": {
       "package": "next",
@@ -70,7 +70,7 @@
       "reason": "Next.js DoS with Server Components. Production framework, patient-facing runtime; only a breaking 14->15 major closes it. Tracked in spec #29 (#16 track 2).",
       "accepted_on": "2026-07-04",
       "review_spec": "#29",
-      "review_by": null
+      "review_by": "2026-07-24"
     }
   }
 }
