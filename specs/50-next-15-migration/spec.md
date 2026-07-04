@@ -26,7 +26,12 @@ so it is not a baseline entry today; it becomes reachable the moment the bump
 lands and clears only at `15.5.18`. The #45 spike verified this against the
 committed lockfile: a `15.5.16` bump left this high open (2 tree-highs remained),
 a `15.5.18` bump reported zero `next`-path advisories. Target `15.5.18` (or a
-later 15.5.x) so the migration closes all six at once.
+later 15.5.x) so the migration closes all six `next` highs at once — the five in
+today's tree plus `GHSA-26hh`. (Note the two distinct counts: today's tree holds
+**6 tree-highs** — 5 `next` + the 1 `vite` transitive that belongs to Spec 30 —
+while the `next`-path total this spec must clear is **6** once the bump would
+surface `GHSA-26hh`. This spec closes the `next` highs only; the `vite` high is
+Spec 30's.)
 
 **Deployment context matters for reachability.** The site is self-hosted: it
 ships its own `products/polaris/site/Dockerfile` and `railway.toml` and runs the
@@ -34,6 +39,12 @@ Next.js standalone `server.js`. Self-hosting is the gating condition for several
 of these advisories, so none of the 5 should be treated as non-reachable. The
 single version bump closes all 5 at once — there is no cost to remediating every
 one regardless of a per-advisory reachability argument.
+
+**Coupled end state — both specs must land.** This spec closes the 5 `next`
+highs (and the preempted `GHSA-26hh`); Spec 30 closes the 1 critical and the 1
+`vite` high. The repo reaches 0 critical/high only when **both** Spec 50 and
+Spec 30 land. Merging one alone does not meet the `critical_high_advisories → 0`
+goal — it leaves the other half's advisories open.
 
 The 5 `next` highs:
 
