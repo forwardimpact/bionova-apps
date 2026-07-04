@@ -1,0 +1,19 @@
+name: check-audit
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  dependency-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install
+      # Verify the gate's own baseline-diff logic before trusting it.
+      - run: bun test scripts/audit-gate.test.js
+      # Fail only on NEW critical/high advisories beyond security/audit-baseline.json.
+      # Moderate/low are reported in the log but never block. See issue #22.
+      - run: node scripts/audit-gate.js
