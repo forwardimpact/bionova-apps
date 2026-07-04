@@ -49,12 +49,12 @@ The reviewers flagged both. Neither is an edge case.
 
 ## Components
 
-| Component                          | Where                               | Responsibility                                                                                                                                                                                              |
-| ---------------------------------- | ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `checkEligibility` (extended)      | `handlers/src/check-eligibility.js` | Orchestrate: invoke edge fn (unchanged), `db.get` the `criteria` row and the `conditions` needed to resolve slugs, call the pure builder, insert the **unchanged** anonymous signal, return the view model. |
-| `buildPreCheck` (new, pure)        | `handlers/src/eligibility-view.js`  | Pure `(criteria, scoreResult, conditionsById) → viewModel`. Holds the reason-grammar classifier and slug-resolution rule. No I/O — unit-testable like `score()`.                                            |
-| `check-eligibility.md` (rewritten) | `handlers/templates/`               | Render the view model as plain language. No raw enum token, no `Age:`/`ECOG max:` label-value lines.                                                                                                        |
-| `eligibility` CLI command          | `cli/src/definition.js`             | Already wired to `checkEligibility` + this template. No change.                                                                                                                                             |
+| Component                          | Where                               | Responsibility                                                                                                                                                                                                                                                                                                                                                     |
+| ---------------------------------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `checkEligibility` (extended)      | `handlers/src/check-eligibility.js` | Orchestrate: invoke edge fn (unchanged), `db.get` the `criteria` row and the `conditions` needed to resolve slugs, call the pure builder, insert the **unchanged** anonymous signal, return `{ ...viewModel, match_score, reasons }` — view fields for the CLI template; `match_score`/`reasons` retained for the web screener (X6) and the existing handler test. |
+| `buildPreCheck` (new, pure)        | `handlers/src/eligibility-view.js`  | Pure `(criteria, scoreResult, conditionsById) → viewModel`. Holds the reason-grammar classifier and slug-resolution rule. No I/O — unit-testable like `score()`.                                                                                                                                                                                                   |
+| `check-eligibility.md` (rewritten) | `handlers/templates/`               | Render the view model as plain language. No raw enum token, no `Age:`/`ECOG max:` label-value lines.                                                                                                                                                                                                                                                               |
+| `eligibility` CLI command          | `cli/src/definition.js`             | Already wired to `checkEligibility` + this template. No change.                                                                                                                                                                                                                                                                                                    |
 
 ## Data flow
 
@@ -73,7 +73,7 @@ sequenceDiagram
   H->>V: (criteria, {match_score,reasons}, conditionsById)
   V-->>H: viewModel {summary, supports, against, unclear, coordinatorQuestions, disclaimer, nextStep}
   H->>DB: post interest_signals {trial_id, screener_answers, match_score}
-  H-->>CLI: viewModel  (rendered by check-eligibility.md)
+  H-->>CLI: {...viewModel, match_score, reasons}  (template renders viewModel only)
 ```
 
 ## View model
@@ -86,6 +86,12 @@ sequenceDiagram
 | `supports[]` / `against[]` / `unclear[]` | structured-rule reasons, classified by the grammar; condition slugs replaced by resolved names                                                                     | S1, S3, C3             |
 | `coordinatorQuestions[]`                 | authoritatively the `criteria` inclusion + exclusion `custom[]` strings **verbatim**, plus any **unresolvable** condition slug's rule — not the `<custom>` reasons | S2, C2                 |
 | `disclaimer`, `nextStep`                 | fixed copy, rendered on all three outcomes                                                                                                                         | S4, C4                 |
+
+The **handler** returns `{ ...viewModel, match_score, reasons }`, not the bare
+`viewModel`: `match_score`/`reasons` stay on the returned object because the web
+screener reads `result.match_score` (`submit/route.ts`, X6) and the existing
+`check-eligibility.test.js` asserts both. The rewritten template renders only the
+view-model fields, so no enum token reaches output (C3).
 
 ## Key decisions
 
@@ -103,8 +109,10 @@ sequenceDiagram
   same contract.
 - **Clean break** — `check-eligibility.md` is rewritten to the view model, not
   wrapped around the old enum-plus-`reasons` render.
-- **Handler + CLI only** — no `site/` change (X6); the shared handler is the
-  single home so a later web spec inherits the layer.
+- **Handler + CLI only** — no `site/` change (X6). The web calls the shared
+  `checkEligibility` and reads `result.match_score`, so that field stays on the
+  return; the web ignores the added view fields and keeps its raw rendering. The
+  shared handler is the single home, so a later web spec inherits the layer.
 - **A second criteria read** — the handler `db.get`s the `criteria` row
   (`criteria?trial_id=eq.<id>&select=inclusion,exclusion`, the shape proven in
   `show-trial.js`) even though the edge fn already read it internally
