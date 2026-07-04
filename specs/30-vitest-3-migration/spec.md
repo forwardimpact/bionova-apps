@@ -32,7 +32,7 @@ The #45 spike verified this against the committed lockfile. `vitest@3.2.6`
 declares `vite: ^5.0.0 || ^6.0.0 || ^7.0.0-0`, so `bun install` keeps the already
 resolved `vite@5.4.21` — which is still in the `<=6.4.2` window of
 `GHSA-fx2h-pf6j-xcff`. Bumping to `vitest@3.2.6` alone left the tree with 2 highs
-(this `vite` high plus the `next` follow-up owned by Spec 10). The `vite` high
+(this `vite` high plus the `next` follow-up owned by Spec 50). The `vite` high
 clears only when the **resolved** `vite` reaches `≥ 6.4.3`. Two paths do that:
 
 1. **Move to `vitest@4.x`** — its `vite` floor is `^6.0.0 || ^7.0.0 || ^8.0.0`, so
@@ -49,7 +49,7 @@ Design owned the choice, weighing blast radius against the maintenance cost of a
 pinned override. **Resolved: Path 2** — keep `vitest@3.2.6` and carry a floating
 floor override `"overrides": { "vite": "^6.4.3" }` (caret, not a frozen pin, so
 future vite-6 patches and advisories flow automatically). Path 1 was rejected on
-blast radius (`vite` 5 → 8, three majors), co-land coupling with the Spec 10
+blast radius (`vite` 5 → 8, three majors), co-land coupling with the Spec 50
 `next` migration in one security window, and Node-floor creep (`vite` 8 needs
 Node 20.19+, past engines `>=20`). **Removal trigger:** the override comes out
 when the toolchain moves to `vitest@4.x`, as its own decoupled spec. The WHICH
@@ -63,7 +63,7 @@ score, the critical is only exploitable when the Vitest UI server is *listening*
 The test command (`vitest run`) does not start it, `@vitest/ui` is not a
 declared dependency of the site, and no listening UI server runs in the
 patient-facing deployment. Real production reach is near zero. It is sequenced
-*after* the `next` migration (Spec 10), which closes the patient-reachable highs.
+*after* the `next` migration (Spec 50), which closes the patient-reachable highs.
 This spec is parallelizable and can be cleared opportunistically.
 
 ## Scope
@@ -79,7 +79,7 @@ changes touch:
 
 **Out of scope:**
 
-- `next` and its 5 highs — Spec 10, independent branch.
+- `next` and its 5 highs — Spec 50, independent branch.
 - Authoring the CI audit gate and its allowlist — Spec 20. This spec carries a
   downstream obligation *to* Spec 20 (below), but does not itself create the
   allowlist.
