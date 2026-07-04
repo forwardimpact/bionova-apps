@@ -93,3 +93,48 @@ test("fails open (exit 0 + warning) when the advisory output is not valid JSON",
   expect(r.code).toBe(0);
   expect(r.stdout).toContain("::warning::");
 });
+
+// A baseline whose one accepted critical carries a review_by + tracking ref.
+const datedBaseline = join(dir, "dated-baseline.json");
+writeFileSync(
+  datedBaseline,
+  JSON.stringify({
+    threshold: ["critical", "high"],
+    advisories: {
+      "GHSA-known-crit-0001": {
+        package: "vitest",
+        severity: "critical",
+        reason: "accepted",
+        accepted_on: "2026-07-04",
+        review_by: "2026-07-31",
+        tracking: "#31",
+      },
+    },
+  }),
+);
+
+function runGateAt(auditFile, baselineFile, now) {
+  try {
+    const stdout = execFileSync("node", [GATE, baselineFile], {
+      env: { ...process.env, AUDIT_JSON_FILE: auditFile, AUDIT_NOW: now },
+      encoding: "utf8",
+    });
+    return { code: 0, stdout };
+  } catch (err) {
+    return { code: err.status ?? 1, stdout: err.stdout?.toString() ?? "" };
+  }
+}
+
+test("past-due acceptance nags (non-fatal) but the gate still passes", () => {
+  const r = runGateAt(fixture("still-live.json", { vitest: [knownCrit] }), datedBaseline, "2026-08-01");
+  expect(r.code).toBe(0);
+  expect(r.stdout).toContain("past review_by");
+  expect(r.stdout).toContain("#31");
+  expect(r.stdout).toContain("PASS");
+});
+
+test("acceptance before its review_by does not nag", () => {
+  const r = runGateAt(fixture("still-live2.json", { vitest: [knownCrit] }), datedBaseline, "2026-07-01");
+  expect(r.code).toBe(0);
+  expect(r.stdout).not.toContain("past review_by");
+});

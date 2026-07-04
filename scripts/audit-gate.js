@@ -25,8 +25,12 @@
 //     gate stays green; remove the now-stale baseline entry in the same PR
 //     (this script prints a non-fatal STALE warning to prompt it).
 //   - ACCEPTED: a new critical/high we will not fix yet is added to the baseline
-//     with a `reason` and `accepted_on` date, under security-engineer review.
-//     Acceptance is always explicit, dated, and reviewed — never silent.
+//     with a `reason`, an `accepted_on` date, a `review_by` date, and a
+//     `tracking` ref, under security-engineer review. Acceptance is always
+//     explicit, dated, tracked, and reviewed — never silent.
+//   - PAST-DUE: a still-live baselined advisory whose `review_by` has passed
+//     gets a non-fatal ::warning:: every run, so a deferred acceptance cannot
+//     sit invisible (the failure mode behind issue #16). Never blocks on a date.
 //
 // Testability: set AUDIT_JSON_FILE=<path> to feed a captured `bun audit --json`
 // document instead of invoking bun (used by scripts/audit-gate.test.js). An
@@ -136,6 +140,30 @@ if (stale.length) {
   console.log("");
 }
 
+// Past-due acceptances: a baselined advisory still live in the audit whose
+// review_by date has passed. NON-FATAL — a required check must not flip red on
+// a calendar date alone — but it nags loudly (::warning::) so an accepted
+// critical/high cannot sit deferred and invisible. That silent, pressure-free
+// accrual is the exact failure mode that produced issue #16; the gate must not
+// recreate it one layer up. Override "now" via AUDIT_NOW for deterministic tests.
+const now = process.env.AUDIT_NOW ? new Date(process.env.AUDIT_NOW) : new Date();
+const pastDue = [...baselineIds]
+  .filter((id) => gatedIds.has(id)) // still present in the live audit
+  .map((id) => ({ id, entry: baseline.advisories[id] ?? {} }))
+  .filter(({ entry }) => entry.review_by && new Date(entry.review_by) < now)
+  .sort((a, b) => a.id.localeCompare(b.id));
+
+if (pastDue.length) {
+  for (const { id, entry } of pastDue) {
+    const track = entry.tracking ? `, tracked in ${entry.tracking}` : "";
+    console.log(
+      `::warning::baseline acceptance past review_by — ${id} (${entry.package}) ` +
+        `was due ${entry.review_by}${track}. Re-justify the acceptance or land its remediation.`,
+    );
+  }
+  console.log("");
+}
+
 if (introduced.length) {
   console.log(`✗ FAIL: ${introduced.length} new critical/high advisory(ies) not in the baseline:`);
   for (const a of introduced) {
@@ -145,8 +173,8 @@ if (introduced.length) {
   }
   console.log("");
   console.log("Resolve it (bump the dependency) or, if it must be accepted for now,");
-  console.log(`add its GHSA id to ${baselinePath} with a reason + accepted_on date`);
-  console.log("under security-engineer review, then re-run.");
+  console.log(`add its GHSA id to ${baselinePath} with a reason, accepted_on,`);
+  console.log("review_by, and tracking ref under security-engineer review, then re-run.");
   process.exit(1);
 }
 
