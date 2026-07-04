@@ -66,6 +66,12 @@ patient-facing deployment. Real production reach is near zero. It is sequenced
 *after* the `next` migration (Spec 50), which closes the patient-reachable highs.
 This spec is parallelizable and can be cleared opportunistically.
 
+**Coupled end state — both specs must land.** This spec closes the 1 critical
+and 1 `vite` high; Spec 50 closes the 5 `next` highs. The repo reaches 0
+critical/high only when **both** Spec 30 and Spec 50 land. Merging one alone
+does not meet the `critical_high_advisories → 0` goal — it leaves the other
+half's advisories open.
+
 ## Scope
 
 **In scope** — everything in `products/polaris/site` that Vitest 3's breaking
