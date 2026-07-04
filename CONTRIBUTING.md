@@ -71,9 +71,8 @@ SMOKE_DESTRUCTIVE=1 bash scripts/smoke.sh
 - Real secrets live in `.env` (gitignored). `.env.example` carries placeholders.
 - The Supabase JWT keys committed for the local stack are the well-known public
   demo keys, not secrets. Never add a real key.
-- Scan for leaked secrets before you push: run `gitleaks detect` and resolve
-  every finding. Document any verified false positive in the pull request. Run it
-  yourself — there is no automated pre-push or CI gate today.
+- `gitleaks` runs before push. Resolve every finding; document any verified
+  false positive in the pull request.
 
 ## Checklists
 
