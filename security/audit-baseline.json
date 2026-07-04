@@ -1,5 +1,5 @@
 {
-  "_note": "Baselined dependency advisories for the CI dependency-audit gate (issue #22). Keyed by GHSA ID. The gate fails only on critical/high advisories NOT listed here. To ACCEPT a new finding: add it with a reason + accepted_on date under security-engineer review. To mark RESOLVED: remove its entry once the dependency is bumped.",
+  "_note": "Baselined dependency advisories for the CI dependency-audit gate (issue #22). Keyed by GHSA ID. The gate fails only on critical/high advisories NOT listed here. To ACCEPT a new finding: add it with a reason + accepted_on date under security-engineer review. To mark RESOLVED: remove its entry once the dependency is bumped. Optional review_spec (the tracking spec that will resolve it) and review_by (ISO date) mark a time-boxed acceptance: past review_by the gate warns on every run and FAILS the nightly scheduled re-audit, so a slipped fix goes loud instead of silent. A review_spec with review_by:null is flagged pending until the tracking spec has a target date.",
   "threshold": [
     "critical",
     "high"
@@ -19,24 +19,30 @@
       "severity": "high",
       "title": "Next.js has a Middleware / Proxy bypass in Pages Router applications using i18n",
       "url": "https://github.com/advisories/GHSA-36qx-fr4f-26g5",
-      "reason": "Next.js middleware/proxy bypass (Pages Router i18n). Production framework; tracked for patch in follow-up spec (ref #22).",
-      "accepted_on": "2026-07-04"
+      "reason": "Next.js middleware/proxy bypass (Pages Router i18n). Production framework, patient-facing runtime; only a breaking 14->15 major closes it. Tracked in spec #29 (#16 track 2).",
+      "accepted_on": "2026-07-04",
+      "review_spec": "#29",
+      "review_by": "2026-07-24"
     },
     "GHSA-8h8q-6873-q5fj": {
       "package": "next",
       "severity": "high",
       "title": "Next.js Vulnerable to Denial of Service with Server Components",
       "url": "https://github.com/advisories/GHSA-8h8q-6873-q5fj",
-      "reason": "Next.js DoS via Server Components. Production framework; tracked for patch in follow-up spec (ref #22).",
-      "accepted_on": "2026-07-04"
+      "reason": "Next.js DoS via Server Components. Production framework, patient-facing runtime; only a breaking 14->15 major closes it. Tracked in spec #29 (#16 track 2).",
+      "accepted_on": "2026-07-04",
+      "review_spec": "#29",
+      "review_by": "2026-07-24"
     },
     "GHSA-c4j6-fc7j-m34r": {
       "package": "next",
       "severity": "high",
       "title": "Next.js vulnerable to server-side request forgery in applications using WebSocket upgrades",
       "url": "https://github.com/advisories/GHSA-c4j6-fc7j-m34r",
-      "reason": "Next.js SSRF via WebSocket upgrades. Production framework; tracked for patch in follow-up spec (ref #22).",
-      "accepted_on": "2026-07-04"
+      "reason": "Next.js SSRF via WebSocket upgrades (CVSS 8.6). Production framework, patient-facing runtime, reachable on the self-hosted deployment; only a breaking 14->15 major closes it. Tracked in spec #29 (#16 track 2).",
+      "accepted_on": "2026-07-04",
+      "review_spec": "#29",
+      "review_by": "2026-07-24"
     },
     "GHSA-fx2h-pf6j-xcff": {
       "package": "vite",
@@ -51,16 +57,20 @@
       "severity": "high",
       "title": "Next.js HTTP request deserialization can lead to DoS when using insecure React Server Components",
       "url": "https://github.com/advisories/GHSA-h25m-26qc-wcjf",
-      "reason": "Next.js HTTP request deserialization DoS. Production framework; tracked for patch in follow-up spec (ref #22).",
-      "accepted_on": "2026-07-04"
+      "reason": "Next.js HTTP request deserialization DoS. Production framework, patient-facing runtime; only a breaking 14->15 major closes it. Tracked in spec #29 (#16 track 2).",
+      "accepted_on": "2026-07-04",
+      "review_spec": "#29",
+      "review_by": "2026-07-24"
     },
     "GHSA-q4gf-8mx6-v5v3": {
       "package": "next",
       "severity": "high",
       "title": "Next.js has a Denial of Service with Server Components",
       "url": "https://github.com/advisories/GHSA-q4gf-8mx6-v5v3",
-      "reason": "Next.js DoS with Server Components. Production framework; tracked for patch in follow-up spec (ref #22).",
-      "accepted_on": "2026-07-04"
+      "reason": "Next.js DoS with Server Components. Production framework, patient-facing runtime; only a breaking 14->15 major closes it. Tracked in spec #29 (#16 track 2).",
+      "accepted_on": "2026-07-04",
+      "review_spec": "#29",
+      "review_by": "2026-07-24"
     }
   }
 }
