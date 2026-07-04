@@ -30,8 +30,9 @@ Rules that hold for every contribution. Each is checkable.
 6. **Dates are absolute.** Write `2026-06-30`, not "today" or "last week".
    Relative time rots the moment it is committed.
 
-Repository-specific declarative checks live in `.coaligned/invariants/` and run
-under `bun run coaligned invariants`.
+Repository-specific declarative checks belong in `.coaligned/invariants/` as
+`*.rules.mjs` modules, run under `bun run coaligned invariants`. No rule modules
+exist yet; the directory is scaffolded and its README names the first candidate.
 
 ## Quality commands
 
