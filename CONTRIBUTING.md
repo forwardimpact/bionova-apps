@@ -74,6 +74,51 @@ SMOKE_DESTRUCTIVE=1 bash scripts/smoke.sh
 - `gitleaks` runs before push. Resolve every finding; document any verified
   false positive in the pull request.
 
+### Dependency audit gates
+
+CI checks every pull request for dependency advisories. One policy governs every
+contributor. The check runs in CI on every pull request, so it applies the same
+way no matter how you work locally. Only the command you run to reproduce it
+changes with your runtime.
+
+A new critical or high advisory that is not in the committed baseline fails the
+build. Moderate and low advisories are printed in the job log and never block.
+
+The npm and Bun dependencies are checked by `.github/workflows/check-audit.yml`,
+which runs `scripts/audit-gate.js`. That script diffs `bun audit` against
+`security/audit-baseline.json` and fails only on a critical or high advisory
+that is not baselined. If the advisory service is unreachable the check warns
+and passes, so a registry outage never blocks every pull request. Reproduce it
+locally:
+
+```sh
+bun scripts/audit-gate.js
+```
+
+The Deno dependencies in `services/polaris-functions` are checked in the
+`check-edge` workflow, because `bun audit` cannot see them. The check reads the
+two top-level pinned versions, `deno.land/std@0.224.0` and
+`@supabase/supabase-js@2.110.0`, and looks each up against a known-advisory
+source by ecosystem and version. It fails on an un-accepted critical or high,
+using the same baseline model as the npm check.
+
+The Deno check covers the top-level pins only. It does not scan the transitive
+tree. The pinned dependencies are imported over URLs, so the Deno lockfile
+carries no auditable package tree, and a graph scanner reports clean on the very
+dependency the check exists to watch. A green result here is never assurance
+about the transitive tree. Full graph coverage needs the edge functions moved
+from esm.sh URLs to `npm:` specifiers, which is tracked as a separate spec.
+
+To accept a critical or high advisory you will not fix yet, add it to the
+baseline for that check, keyed by advisory id, with a `reason` and an
+`accepted_on` date, under security-engineer review. Acceptance is always
+explicit, dated, and reviewed. The baseline only ever narrows; it never widens
+on its own.
+
+When a dependency bump resolves an advisory, remove its baseline entry in the
+same pull request. The check prints a warning about stale entries to prompt
+this.
+
 ## Checklists
 
 <read_do_checklist goal="Load the constraints before changing the domain or seed">
