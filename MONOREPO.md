@@ -21,16 +21,16 @@ does not vendor or publish any library of its own.
 | --- | --- |
 | `data/synthetic/` | The domain source of truth: `story.dsl` + `prose-cache.json`, vendored verbatim from the Forward Impact monorepo. The seed SQL and embeddings are **rendered locally** from these by `fit-terrain build`, never authored or committed. See [data/synthetic/README.md](data/synthetic/README.md). |
 | `infrastructure/` | Self-hosted Supabase (PG On Rails) stack: one directory per Docker Compose service, plus Railway deploy config. |
-| `scripts/` | Repository operations: `build-seed.sh`, `smoke.sh`, `build-fixture.sh`. |
+| `scripts/` | Repository operations: `build-seed.sh`, `smoke.sh`, `build-fixture.sh`, `fetch-tei-model.sh`, `bootstrap.sh`. |
 | `docs/` | Deployment and day-2 operations docs. |
-| `wiki/` | Agent memory home (deferred). |
+| `wiki/` | Agent memory home. |
 
 ## Root files
 
 - `docker-compose.yml` — the full local stack.
 - `setup.sh` — idempotent bootstrap: waits for services, renders + applies the
   seed, populates embeddings.
-- `justfile` — common recipes (`up`, `down`, `setup`, `seed`, `cli`, `dev:site`).
+- `justfile` — common recipes (`up`, `down`, `setup`, `seed`, `cli`, `dev-site`).
 
 ## Source of truth
 
