@@ -42,7 +42,9 @@ function rawFixture(name, text) {
 
 function runGate(auditFile) {
   try {
-    const stdout = execFileSync("node", [GATE, baseline], {
+    // process.execPath is the runtime running this test (bun under `bun test`,
+    // node under node) — keeps the gate on the same toolchain as the workflow.
+    const stdout = execFileSync(process.execPath, [GATE, baseline], {
       env: { ...process.env, AUDIT_JSON_FILE: auditFile },
       encoding: "utf8",
     });

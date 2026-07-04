@@ -22,4 +22,6 @@ jobs:
       - run: bun test scripts/audit-gate.test.js
       # Fail only on NEW critical/high advisories beyond security/audit-baseline.json.
       # Moderate/low are reported in the log but never block. See issue #22.
-      - run: node scripts/audit-gate.js
+      # Run under bun (the toolchain set up above) rather than the runner's
+      # preinstalled node, so the gate has no implicit runtime dependency.
+      - run: bun scripts/audit-gate.js
