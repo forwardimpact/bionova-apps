@@ -65,6 +65,13 @@ jobs:
         with:
           fetch-depth: 0
           token: ${{ steps.ci-app.outputs.token }}
+      # harness runs fit-harness off PATH and installs nothing; bootstrap
+      # installs the CLIs the harness, cost, and wiki-push steps invoke directly.
+      - uses: forwardimpact/bootstrap@c852d29b38edbb2e6c037bf3952aac339e9fe8b8 # v1.0.12
+        with:
+          token: ${{ steps.ci-app.outputs.token }}
+          app-id: ${{ secrets.KATA_APP_ID }}
+          clis: fit-harness fit-trace fit-wiki
       - name: Assess and Act
         id: assess
         uses: forwardimpact/harness@b7409ad9a1df4ff75eca8fe68041b5384f75bd7e # v1.0.3
