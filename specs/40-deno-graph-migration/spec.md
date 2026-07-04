@@ -56,7 +56,7 @@ a footnote.
 
 | Component | What it does |
 |---|---|
-| Source migration | Move the edge functions from `esm.sh` URL specifiers to `npm:` specifiers so Deno resolves an auditable npm tree into `deno.lock` |
+| Source migration | Move the edge functions from `esm.sh` URL specifiers to `npm:` specifiers so Deno resolves an auditable npm tree into `deno.lock`. `supabase-js` must end up an *imported, resolved* dependency whose transitive tree lands in `deno.lock` — re-specifying it as `npm:` while it stays declared-but-unimported leaves its tree out of the lock and reproduces the false green one hop later. If it is genuinely dead code, remove it rather than re-specify it |
 | Lockfile-graph audit | Lift the Deno gate from top-level-pin coverage (Spec 20) to a scan of the resolved `deno.lock` npm tree — the transitive dependencies, not just the declared pins |
 | Runtime-parity verification | Confirm the migrated functions behave identically at runtime (esm.sh pre-bundled ESM vs Deno's `npm:` compat layer) — the four functions and their tests stay green |
 | Coverage-boundary retirement | Remove Spec 20's "top-level pins only" caveat from the check output and CONTRIBUTING once graph coverage is real |
@@ -83,11 +83,15 @@ a footnote.
 
 | # | Criterion | Verified by |
 |---|---|---|
-| 1 | The edge functions import their external dependencies via `npm:` specifiers and `deno.lock` carries the resolved npm tree | `import_map.json` / `deno.json` and `deno.lock` |
+| 1 | The edge functions import their external dependencies via `npm:` specifiers and `deno.lock` carries the resolved npm tree — including `supabase-js` and its transitive tree, which must be an imported, resolved dependency present in the lock (not declared-but-unimported), or removed if it is dead code | `import_map.json` / `deno.json` and `deno.lock` — the lock carries the `supabase-js` tree, not `std` alone |
 | 2 | The Deno audit check scans the resolved transitive tree and fails on an un-accepted critical or high anywhere in it | a throwaway PR pinning a transitively-vulnerable dependency turns the check red |
 | 3 | The migrated functions pass their existing tests and smoke unchanged | `check-edge` CI and `scripts/smoke.sh` |
 | 4 | Spec 20's "top-level pins only" coverage caveat is removed from the check output and CONTRIBUTING | check log and CONTRIBUTING.md |
 | 5 | The `ci_security_gates_missing` note no longer carries the "Deno side pins-only" caveat once this is on `main` — the count stays `0`, the disclosed boundary retires | `wiki/metrics/kata-security-audit/2026.csv` |
+
+> **SC #5 precondition:** assumes Spec 20 is on `main`. SC #5 edits the
+> `ci_security_gates_missing` note that Spec 20 SC #6 creates, so this spec
+> cannot land ahead of Spec 20.
 
 ## Notes for design
 
