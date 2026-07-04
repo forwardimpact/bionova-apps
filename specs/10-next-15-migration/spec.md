@@ -1,4 +1,4 @@
-# Spec 10 — Migrate `next` 14 → 15 to close 6 high advisories on the patient surface
+# Spec 10 — Migrate `next` 14 → 15 to close 5 high advisories on the patient surface
 
 **Classification:** Product-aligned. The advisories sit in the runtime that
 serves the Patient / Advocate "Find a Relevant Trial" Big Hire; closing them
@@ -6,59 +6,65 @@ protects that job directly.
 
 **Persona / job:** Patient / Advocate — *Find a Relevant Trial* (JTBD.md). The
 public site is the surface this persona touches; every high advisory below is
-reachable, or latently reachable, from it.
+reachable from a self-hosted deployment of it.
 
 ## Problem
 
 `products/polaris/site` depends on `next@14.2.35`. `bun audit` (2026-07-04)
 reports the npm/bun tree carries **20 advisories (1 critical, 6 high, 11
-moderate, 2 low)**. Six of the highs are carried by `next` and are patched only
-in `next ≥ 15.5.16` — a breaking major (14 → 15). No same-major release closes
-them.
+moderate, 2 low)**. Of the 6 tree-highs, **5 are carried by `next`**; the sixth
+(`vite` `server.fs.deny` bypass, `GHSA-fx2h-pf6j-xcff`) is a `vitest` transitive
+and belongs to Spec 30, not here. The 5 `next` highs are patched only in
+`next ≥ 15.5.16` — a breaking major (14 → 15). No same-major release closes them.
 
-The six highs, by reachability against the site's **current** configuration
-(App Router, no `middleware.ts`, no `next/image`):
+**Deployment context matters for reachability.** The site is self-hosted: it
+ships its own `products/polaris/site/Dockerfile` and `railway.toml` and runs the
+Next.js standalone `server.js`. Self-hosting is the gating condition for several
+of these advisories, so none of the 5 should be treated as non-reachable. The
+single version bump closes all 5 at once — there is no cost to remediating every
+one regardless of a per-advisory reachability argument.
 
-| Advisory | CVSS band | What it is | Reachable today? |
-|---|---|---|---|
-| `GHSA-c4j6-fc7j-m34r` | high (8.6) | SSRF in apps using WebSocket upgrades | Latent — no WS upgrade path today, but framework-level |
-| `GHSA-8h8q-6873-q5fj` | high | DoS with Server Components | **Yes** — App Router renders Server Components |
-| `GHSA-h25m-26qc-wcjf` | high | DoS via HTTP request deserialization in RSC | **Yes** — RSC request path |
-| `GHSA-q4gf-8mx6-v5v3` | high | DoS with Server Components | **Yes** — App Router renders Server Components |
-| `GHSA-36qx-fr4f-26g5` | high | Middleware / proxy bypass, Pages Router i18n | Latent — no middleware, App Router only |
-| (i18n/proxy class) | high | Middleware / proxy redirect handling | Latent — no middleware |
+The 5 `next` highs:
 
-The migration also clears the `next`-carried moderates/lows (CSP-nonce XSS,
-several cache-poisoning variants, image-optimizer DoS, request smuggling in
-rewrites).
+| Advisory | Class | Note on this deployment |
+|---|---|---|
+| `GHSA-c4j6-fc7j-m34r` (8.6) | SSRF in apps using WebSocket upgrades | Gated by self-hosting, which is present; framework-level, do not rely on non-reachability |
+| `GHSA-8h8q-6873-q5fj` | DoS with Server Components | App Router renders Server Components — reachable |
+| `GHSA-h25m-26qc-wcjf` | DoS via HTTP request deserialization in RSC | RSC request path — reachable |
+| `GHSA-q4gf-8mx6-v5v3` | DoS with Server Components | App Router renders Server Components — reachable |
+| `GHSA-36qx-fr4f-26g5` | Middleware / proxy bypass, Pages Router i18n | No `middleware.ts` or i18n today; closed by the upgrade, not relied on as a mitigation |
+
+The migration also clears the `next`-carried moderates and lows in the same
+`<15.5.16` window (CSP-nonce XSS `GHSA-gx5p-jg67-6x7h`, cache-poisoning variants
+`GHSA-3g8h-86w9-wvmq` / `GHSA-vfv6-92ff-j949` / `GHSA-wfc6-r584-vfw7`,
+image-optimizer DoS, request smuggling `GHSA-ggv3-7p47-pfv8`).
 
 **Why this is spec-gated, not a Dependabot bump.** A green auto-merge cannot
-ship a major to a patient-facing deployment without regression verification.
-Per work-definition.md § Classification tests, a breaking major that requires
-verifying the surface it touches is a **structural finding**. The blast radius
-below must get staff-engineer architectural review at design time.
+ship a major to a patient-facing deployment without regression verification. A
+breaking major that requires verifying the surface it touches is a **structural
+finding**. The blast radius below must get staff-engineer architectural review
+at design time.
 
 ## Scope
 
-**In scope** — everything in `products/polaris/site` that Next.js 15's breaking
-changes touch:
+**In scope** — the surface in `products/polaris/site` that must keep working
+across the major, given the breaking changes in Next.js 15:
 
-| Area | Evidence in the tree |
-|---|---|
-| `next.config.mjs` | Uses `experimental.outputFileTracingRoot`, which graduates to a stable top-level key in 15; `output: "standalone"`, `transpilePackages`, and the custom `webpack` alias must survive the bump |
-| Route handlers (8) | `src/app/api/**/route.ts` — GET handlers are no longer cached by default in 15; per-route caching intent must be made explicit |
-| Dynamic pages (~13) | `src/app/**/page.tsx` reading `params` / `searchParams` — these become async in 15 |
-| Request APIs | Any `cookies()` / `headers()` usage becomes async-only in 15 |
-| `fetch` caching | `src/lib/build-ctx.ts` and page/handler `fetch` calls — default `fetch` caching flips from cached to uncached in 15 |
-| Test suite | The 5 Testing Library suites under `src/__tests__` must pass unchanged against the migrated surface |
-| Deploy | The standalone build + Dockerfile runner path must still emit `server.js` at `products/polaris/site/` |
+| Area | What must hold | Evidence in the tree |
+|---|---|---|
+| Build config | Standalone build still emits `server.js` at `products/polaris/site/`; `output: standalone`, `transpilePackages`, and the custom `webpack` alias survive | `next.config.mjs` — including `experimental.outputFileTracingRoot`, which graduates to a stable top-level key in 15 |
+| Route handlers (8) | Each returns the same responses; per-route caching intent stays explicit | `src/app/**/route.ts`; handlers already declare `export const dynamic = "force-dynamic"` |
+| Pages (9, of which 4 dynamic) | Pages reading `params` / `searchParams` render equivalently | `src/app/**/page.tsx`; the 4 `[id]` routes |
+| Request-API usage | Any `cookies()` / `headers()` reads keep working | `src/lib/build-ctx.ts` |
+| `fetch` caching | Data fetches keep their current freshness behavior | `src/lib/build-ctx.ts` and page/handler fetches |
+| Test suite | The 5 Testing Library suites pass unchanged | `src/__tests__` |
 
 **Out of scope:**
 
-- `handlers/` and `cli/` — carry no `next` dependency (confirmed: `next`
-  appears only in `products/polaris/site/package.json`).
-- The `vitest` critical and its transitive `vite`/`esbuild`/`postcss` debt —
-  Spec 30, independent migration.
+- `handlers/` and `cli/` — carry no `next` dependency (`next` appears only in
+  `products/polaris/site/package.json`).
+- The `vitest` critical and its transitive `vite` / `esbuild` / `postcss` debt,
+  including the 6th tree-high `GHSA-fx2h-pf6j-xcff` — Spec 30.
 - CI detection and the audit gate — Spec 20.
 - `react` / `react-dom` — remain 18.3.x unless the design finds a hard peer
   requirement for 15.
@@ -67,21 +73,23 @@ changes touch:
 
 | # | Criterion | Verified by |
 |---|---|---|
-| 1 | Site depends on `next ≥ 15.5.16` | `products/polaris/site/package.json` |
-| 2 | `bun audit` reports zero `next`-carried high advisories | `bun audit` |
-| 3 | Full site test suite passes | `cd products/polaris/site && bun run test` |
-| 4 | Production build succeeds and emits the standalone `server.js` at the expected path | `bun run build` |
-| 5 | Lint is clean | `bun run lint` |
-| 6 | Every route handler and dynamic page renders equivalently to pre-migration behavior | `just smoke` |
-| 7 | No caching-default regression silently changes a patient-visible response | design-time behavior review + smoke |
+| 1 | The resolved (locked) `next` version is `≥ 15.5.16`, not just the manifest string | `bun pm ls next` against the committed `bun.lock` |
+| 2 | `bun audit` reports no advisory whose dependency path is `next` | `bun audit` |
+| 3 | The full site test suite passes | `cd products/polaris/site && bun run test` |
+| 4 | The production standalone build succeeds and emits `server.js` at `products/polaris/site/` | `cd products/polaris/site && bun run build` |
+| 5 | Repo lint is clean | `just lint` |
+| 6 | The stack boots and the patient-facing trial, search, and conditions routes return 200 | `just smoke` |
+| 7 | Route handlers and pages that declare `force-dynamic` keep serving uncached, and no page silently switches caching mode | design-time caching-posture review, recorded in the design |
 
 ## Notes for design
 
-The three reachable-today highs are all Server-Component DoS / RSC request
-handling — the migration's correctness bar is that the RSC render path and the
-8 route handlers behave identically after the caching-default flip. The two
-latent highs (middleware/i18n, WebSocket SSRF) close for free but are not the
-urgent driver. Design should decide the caching posture explicitly rather than
-inheriting 15's new defaults blind.
+The three reachable-today highs are Server-Component DoS / RSC request handling;
+the correctness bar is that the RSC render path and the 8 route handlers behave
+identically after the migration. Because the handlers already declare
+`force-dynamic`, Next 15's caching-default flip (uncached-by-default) is largely
+masked — design should confirm this holds per route rather than inherit the new
+defaults blind. `smoke.sh` proves the stack boots and a small set of routes
+return 200; it does not prove per-route response equivalence, so equivalence is
+a design-and-review obligation, not something a single command asserts.
 
 — Security Engineer 🔒
