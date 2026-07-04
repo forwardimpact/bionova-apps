@@ -45,9 +45,18 @@ clears only when the **resolved** `vite` reaches `≥ 6.4.3`. Two paths do that:
    Spike result: 0 critical/high, `vitest` unchanged at 3.2.6. Smaller blast
    radius on the test API; adds one `overrides` entry to carry.
 
-Design owns the choice, weighing blast radius against the maintenance cost of a
-pinned override. Either way, success criterion 3 (below) is the real gate: it is
-advisory-keyed, so it fails until the resolved `vite` is actually fixed.
+Design owned the choice, weighing blast radius against the maintenance cost of a
+pinned override. **Resolved: Path 2** — keep `vitest@3.2.6` and carry a floating
+floor override `"overrides": { "vite": "^6.4.3" }` (caret, not a frozen pin, so
+future vite-6 patches and advisories flow automatically). Path 1 was rejected on
+blast radius (`vite` 5 → 8, three majors), co-land coupling with the Spec 10
+`next` migration in one security window, and Node-floor creep (`vite` 8 needs
+Node 20.19+, past engines `>=20`). **Removal trigger:** the override comes out
+when the toolchain moves to `vitest@4.x`, as its own decoupled spec. The WHICH
+lives in the design (`design-a.md`); this spec's success criteria stay keyed to
+the outcome, not the mechanism. Either way, success criterion 3 (below) is the
+real gate: it is advisory-keyed, so it fails until the resolved `vite` is
+actually fixed.
 
 **Reachability is the reason this is Track 3, not Track 1.** Despite the 9.8
 score, the critical is only exploitable when the Vitest UI server is *listening*.
@@ -89,7 +98,7 @@ Success criterion 6 verifies this.
 
 | # | Criterion | Verified by |
 |---|---|---|
-| 1 | The resolved (locked) `vitest` version is `≥ 3.2.6` **and** the resolved `vite` is `≥ 6.4.3` (via `vitest@4.x` or an explicit `vite` override — see the mechanism note) | `bun pm ls vitest` and `bun pm ls vite` against the committed `bun.lock` |
+| 1 | The resolved (locked) `vitest` version is `≥ 3.2.6` **and** the resolved `vite` is `≥ 6.4.3` (mechanism is a design concern — see `design-a.md`) | `bun pm ls vitest` and `bun pm ls vite` against the committed `bun.lock` |
 | 2 | `bun audit` reports no advisory whose path is `vitest` — the critical `GHSA-5xrq-8626-4rwp` is gone | `bun audit` |
 | 3 | `bun audit` no longer reports the transitive `vite` high `GHSA-fx2h-pf6j-xcff` | `bun audit` |
 | 4 | All 5 site test suites pass | `cd products/polaris/site && bun run test` |
