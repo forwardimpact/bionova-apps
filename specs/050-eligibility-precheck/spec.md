@@ -1,4 +1,4 @@
-# Spec 010: Plain-language eligibility pre-check
+# Spec 050: Plain-language eligibility pre-check
 
 **Classification:** Product — serves the Patient / Advocate persona's public
 discovery job; changes patient-facing behavior, not internal tooling.
