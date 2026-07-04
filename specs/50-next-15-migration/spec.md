@@ -14,8 +14,19 @@ reachable from a self-hosted deployment of it.
 reports the npm/bun tree carries **20 advisories (1 critical, 6 high, 11
 moderate, 2 low)**. Of the 6 tree-highs, **5 are carried by `next`**; the sixth
 (`vite` `server.fs.deny` bypass, `GHSA-fx2h-pf6j-xcff`) is a `vitest` transitive
-and belongs to Spec 30, not here. The 5 `next` highs are patched only in
-`next ≥ 15.5.16` — a breaking major (14 → 15). No same-major release closes them.
+and belongs to Spec 30, not here. The 5 `next` highs are patched in
+`next ≥ 15.5.16` — a breaking major (14 → 15). No same-major (14.x) release
+closes them.
+
+**Migration floor is `next ≥ 15.5.18`, not `15.5.16`.** Since this spec was
+drafted a sixth `next` high has been disclosed — `GHSA-26hh-7cqf-hhc6` (App
+Router segment-prefetch middleware / proxy bypass, an incomplete-fix follow-up),
+affecting `next >=15.2.0 <15.5.18`. It does not touch the current `14.2.35` tree,
+so it is not a baseline entry today; it becomes reachable the moment the bump
+lands and clears only at `15.5.18`. The #45 spike verified this against the
+committed lockfile: a `15.5.16` bump left this high open (2 tree-highs remained),
+a `15.5.18` bump reported zero `next`-path advisories. Target `15.5.18` (or a
+later 15.5.x) so the migration closes all six at once.
 
 **Deployment context matters for reachability.** The site is self-hosted: it
 ships its own `products/polaris/site/Dockerfile` and `railway.toml` and runs the
@@ -73,7 +84,7 @@ across the major, given the breaking changes in Next.js 15:
 
 | # | Criterion | Verified by |
 |---|---|---|
-| 1 | The resolved (locked) `next` version is `≥ 15.5.16`, not just the manifest string | `bun pm ls next` against the committed `bun.lock` |
+| 1 | The resolved (locked) `next` version is `≥ 15.5.18`, not just the manifest string | `bun pm ls next` against the committed `bun.lock` |
 | 2 | `bun audit` reports no advisory whose dependency path is `next` | `bun audit` |
 | 3 | The full site test suite passes | `cd products/polaris/site && bun run test` |
 | 4 | The production standalone build succeeds and emits `server.js` at `products/polaris/site/` | `cd products/polaris/site && bun run build` |
