@@ -1,0 +1,27 @@
+name: check-audit
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  # Daily re-audit: an audit verdict can flip with zero code change when a new
+  # advisory is published against unchanged dependencies. A standalone workflow
+  # lets this cron re-run the gate without dragging lint/typecheck along. Offset
+  # minute to avoid the top-of-hour scheduler stampede.
+  schedule:
+    - cron: "17 7 * * *"
+
+jobs:
+  dependency-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install
+      # Verify the gate's own baseline-diff logic before trusting it.
+      - run: bun test scripts/audit-gate.test.js
+      # Fail only on NEW critical/high advisories beyond security/audit-baseline.json.
+      # Moderate/low are reported in the log but never block. See issue #22.
+      # Run under bun (the toolchain set up above) rather than the runner's
+      # preinstalled node, so the gate has no implicit runtime dependency.
+      - run: bun scripts/audit-gate.js
