@@ -80,6 +80,12 @@ across the major, given the breaking changes in Next.js 15:
 | 5 | Repo lint is clean | `just lint` |
 | 6 | The stack boots and the patient-facing trial, search, and conditions routes return 200 | `just smoke` |
 | 7 | Route handlers and pages that declare `force-dynamic` keep serving uncached, and no page silently switches caching mode | design-time caching-posture review, recorded in the design |
+| 8 | The five `next` GHSAs are removed from `security/audit-baseline.json`; the #26 gate baseline shrinks accordingly | the five GHSA ids absent from `security/audit-baseline.json`; the #26 gate reports a smaller baseline and no stale-warning for those entries |
+
+Criterion 8 closes the gap between audit-clean (crit 2) and the #27 / #22
+Definition of Done: the fix must not only make `bun audit` clean of `next` but
+also shrink the #26 gate's baseline, so the gate self-corrects instead of
+carrying five now-resolved entries as a stale warning.
 
 ## Notes for design
 
