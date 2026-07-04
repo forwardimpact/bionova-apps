@@ -7,11 +7,12 @@
 > today (see Problem). This spec is the durable home for that deferred scope:
 > the source migration that makes the Deno dependency graph auditable, and the
 > lift of the Deno gate from pin-only to full resolved-graph coverage.
-> Spec 20 records `ci_security_gates_missing` at `1`: after #26's npm gate the
-> count is 1, and Spec 20's stopgap watches the top-level pins but leaves the
-> Deno gate-gap open, so it does not decrement further (Spec 20 SC6). When this
-> spec lands and the graph is genuinely auditable, that remaining gap closes:
-> `1 → 0`.
+> Spec 20 records `ci_security_gates_missing` at `0` — a gate now runs on both
+> dependency surfaces — but with a disclosed note that the Deno side is
+> pins-only, the transitive tree tracked here (Spec 20 SC6). This spec does
+> **not** move the count; its value is retiring that disclosed boundary by
+> delivering genuine transitive coverage, so a green Deno gate can be read as
+> graph assurance without a caveat.
 
 **Classification:** Internal (CI/quality infrastructure). It hardens the
 patient-facing Supabase edge functions by making their full dependency graph
@@ -86,7 +87,7 @@ a footnote.
 | 2 | The Deno audit check scans the resolved transitive tree and fails on an un-accepted critical or high anywhere in it | a throwaway PR pinning a transitively-vulnerable dependency turns the check red |
 | 3 | The migrated functions pass their existing tests and smoke unchanged | `check-edge` CI and `scripts/smoke.sh` |
 | 4 | Spec 20's "top-level pins only" coverage caveat is removed from the check output and CONTRIBUTING | check log and CONTRIBUTING.md |
-| 5 | `ci_security_gates_missing` is recorded at `0` once this is on `main` | `wiki/metrics/kata-security-audit/2026.csv` |
+| 5 | The `ci_security_gates_missing` note no longer carries the "Deno side pins-only" caveat once this is on `main` — the count stays `0`, the disclosed boundary retires | `wiki/metrics/kata-security-audit/2026.csv` |
 
 ## Notes for design
 
