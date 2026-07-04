@@ -11,8 +11,10 @@
       "severity": "critical",
       "title": "When Vitest UI server is listening, arbitrary file can be read and executed",
       "url": "https://github.com/advisories/GHSA-5xrq-8626-4rwp",
-      "reason": "Vitest UI server arbitrary file read/exec. Dev/test tooling only, never shipped to patients or run in prod. Accepted pending vitest 3.2.6+ bump.",
-      "accepted_on": "2026-07-04"
+      "reason": "Vitest UI server arbitrary file read/exec. Dev/test tooling only, never shipped to patients or run in prod. Accepted pending the vitest 2->3 bump (spec 30, resolved vitest 3.2.6).",
+      "accepted_on": "2026-07-04",
+      "review_spec": "#31",
+      "review_by": "2026-07-24"
     },
     "GHSA-36qx-fr4f-26g5": {
       "package": "next",
@@ -49,8 +51,10 @@
       "severity": "high",
       "title": "vite: `server.fs.deny` bypass on Windows alternate paths",
       "url": "https://github.com/advisories/GHSA-fx2h-pf6j-xcff",
-      "reason": "Vite server.fs.deny bypass (Windows dev server). Dev/build tooling only, not shipped. Accepted pending vite bump.",
-      "accepted_on": "2026-07-04"
+      "reason": "Vite server.fs.deny bypass (Windows dev server). Dev/build tooling only, not shipped. Accepted pending the resolved vite reaching >=6.4.3 (spec 30 Path 2: overrides.vite ^6.4.3, vitest kept at 3.2.6).",
+      "accepted_on": "2026-07-04",
+      "review_spec": "#31",
+      "review_by": "2026-07-24"
     },
     "GHSA-h25m-26qc-wcjf": {
       "package": "next",
