@@ -29,8 +29,8 @@ Without a gate, the count will drift back up the same silent way it did before.
 
 | Component | What it does |
 |---|---|
-| CI audit job | Runs `bun audit` on every pull request and on push to `main`, and fails the build when a critical or high advisory is present outside the allowlist |
-| Allowlist | A checked-in file that records the currently-known advisories (the 7 crit/high plus the moderates/lows the team accepts for now), each with an advisory id and an expiry or tracking reference, so the gate does not red-wall `main` on day one |
+| CI audit job | Audits declared dependencies on every pull request and on push to `main`, and fails the build (turns the PR check red) when a critical or high advisory is present outside the allowlist |
+| Allowlist | A checked-in file that records the currently-known advisories (the current crit/high plus the moderates/lows the team accepts for now), each with an advisory id and a tracking reference, so the gate does not fail every existing PR on day one |
 | Severity threshold | The gate blocks on `critical` and `high`; `moderate` and `low` are reported but do not fail the build |
 | Policy documentation | The `## Security` section of CONTRIBUTING.md gains the audit-gate policy: what fails a build, how to add an allowlist entry, and that an entry needs a linked remediation issue |
 
@@ -49,8 +49,9 @@ Without a gate, the count will drift back up the same silent way it did before.
   crit/high advisories are still present until Specs 10 and 30 land. The gate
   and the allowlist are one atomic change.
 - **The allowlist shrinks, never silently grows.** Every entry carries a
-  tracking reference; adding an entry is a reviewable diff, never an automatic
-  suppression.
+  tracking reference; adding an entry is a reviewable diff in a PR, never an
+  automatic suppression. Growth is bounded by human review, not by the gate
+  itself.
 - Must not weaken any existing gate (`lint`, `typecheck`, `test`, `gitleaks`,
   `coaligned`, smoke).
 
@@ -58,12 +59,13 @@ Without a gate, the count will drift back up the same silent way it did before.
 
 | # | Criterion | Verified by |
 |---|---|---|
-| 1 | A CI job runs `bun audit` on every PR and on push to `main` | `.github/workflows/*` on a test PR |
-| 2 | The job fails when an un-allowlisted critical or high advisory is present | a PR introducing a known-high dep goes red |
-| 3 | The job passes on today's tree, because the current 7 crit/high are allowlisted | the gate is green on `main` at merge |
-| 4 | Each allowlist entry names its advisory id and a tracking reference | the allowlist file |
-| 5 | Removing an advisory's allowlist entry after its migration lands turns the gate red until the dep is bumped | manual check after Spec 10 / 30 merge |
-| 6 | CONTRIBUTING.md `## Security` documents the gate and the allowlist-entry rule | CONTRIBUTING.md |
+| 1 | A dependency-audit check runs on every PR and on push to `main` | a named `audit` check appears and runs on a test PR's checks tab |
+| 2 | The check fails when an un-allowlisted critical or high advisory is present | a throwaway PR introducing a known-high dep turns the check red |
+| 3 | The check is green on the tree as it stands, because the current crit/high are allowlisted | the introducing PR's own CI run is green |
+| 4 | The PR that introduces the gate is itself green — the gate and a populated allowlist land together | the introducing PR merges without red-walling `main` |
+| 5 | Each allowlist entry names its advisory id and a tracking reference | the allowlist file |
+| 6 | Removing an allowlist entry while its dependency is still vulnerable turns the check red | a throwaway removal on a test PR turns the check red |
+| 7 | CONTRIBUTING.md `## Security` documents the gate and the allowlist-entry rule | CONTRIBUTING.md |
 
 ## Notes for design
 
