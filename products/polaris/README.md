@@ -6,10 +6,10 @@ The patient-facing clinical trial discovery product. One product, three units:
 | --- | --- | --- |
 | `handlers/` | Surface-agnostic business logic. Accepts a frozen `InvocationContext`, returns plain data. | be the single source of behavior both surfaces share |
 | `cli/` | `bionova-polaris` — a libcli CLI for staff and power users | search, inspect, and manage trials from a terminal |
-| `site/` | Next.js + Tailwind + shadcn/ui web app | let patients and physicians discover trials in a browser |
+| `site/` | Next.js + Tailwind web app | let patients and physicians discover trials in a browser |
 
 Both surfaces dispatch into the same `handlers/`. The CLI renders with
-`libformat`; the web renders with React/shadcn. No handler hand-authors
+`libformat`; the web renders with React. No handler hand-authors
 patient-facing copy — every explainer, FAQ, consent summary, site description,
 patient story, and therapy description is generated from `story.dsl` and read
 from a seed table.
