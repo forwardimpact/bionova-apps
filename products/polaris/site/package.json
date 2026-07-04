@@ -10,8 +10,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@forwardimpact/libui": "1.4.0",
-    "@forwardimpact/libformat": "0.1.20",
+    "@forwardimpact/libui": "1.4.1",
+    "@forwardimpact/libformat": "0.1.21",
     "@bionova/polaris-handlers": "workspace:*",
     "next": "14.2.35",
     "react": "18.3.1",
