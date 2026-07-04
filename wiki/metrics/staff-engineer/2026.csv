@@ -1,0 +1,4 @@
+date,metric,value,unit,run,note,event_type,host_run
+2026-07-04,specs_awaiting_design,0,count,,,agent-storyboard,28697568296
+2026-07-04,designs_merged,0,count,,,agent-storyboard,28697568296
+2026-07-04,specs_awaiting_design,0,count,,spec→design watcher @ origin/main,agent-dispatch,28697911338
