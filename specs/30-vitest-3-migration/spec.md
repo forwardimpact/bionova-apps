@@ -15,8 +15,9 @@ team relies on to keep the patient-facing site correct.
 executed. Patched only in `vitest ≥ 3.2.6` — a breaking major (2 → 3). No
 same-major release closes it.
 
-The `vitest` 2.x tree also pins vulnerable transitive dependencies that only
-clear when `vitest` moves to 3.x:
+The `vitest` 2.x tree also pins vulnerable transitive dependencies. Moving off
+`vitest` 2.x is necessary for these, but for `vite` it is **not sufficient** —
+see the mechanism note after the table:
 
 | Transitive dep | Advisory | Severity |
 |---|---|---|
@@ -25,6 +26,28 @@ clear when `vitest` moves to 3.x:
 | `vite` | `GHSA-v6wh-96g9-6wx3` — launch-editor NTLMv2 hash disclosure | moderate |
 | `esbuild` | `GHSA-67mh-4wv8-2f99` — dev server accepts cross-origin requests | moderate |
 | `postcss` | `GHSA-qx2v-qp2m-jg93` — XSS via unescaped `</style>` (older transitive copy) | moderate |
+
+**Mechanism note — a bare `vitest` 2 → 3 bump does NOT clear the `vite` high.**
+The #45 spike verified this against the committed lockfile. `vitest@3.2.6`
+declares `vite: ^5.0.0 || ^6.0.0 || ^7.0.0-0`, so `bun install` keeps the already
+resolved `vite@5.4.21` — which is still in the `<=6.4.2` window of
+`GHSA-fx2h-pf6j-xcff`. Bumping to `vitest@3.2.6` alone left the tree with 2 highs
+(this `vite` high plus the `next` follow-up owned by Spec 10). The `vite` high
+clears only when the **resolved** `vite` reaches `≥ 6.4.3`. Two paths do that:
+
+1. **Move to `vitest@4.x`** — its `vite` floor is `^6.0.0 || ^7.0.0 || ^8.0.0`, so
+   the upgrade pulls a fixed `vite` with no override. Spike result:
+   `vitest@4.1.9` resolved `vite@8.1.3` → 0 critical/high. This is a larger major
+   jump (2 → 4, and `vite` 5 → 8) with a wider regression surface than the 2 → 3
+   this spec was scoped around.
+2. **Keep `vitest@3.2.6` and add an explicit `vite` override `≥ 6.4.3`** — the
+   test runner stays on 3.x while the transitive `vite` is forced past the fix.
+   Spike result: 0 critical/high, `vitest` unchanged at 3.2.6. Smaller blast
+   radius on the test API; adds one `overrides` entry to carry.
+
+Design owns the choice, weighing blast radius against the maintenance cost of a
+pinned override. Either way, success criterion 3 (below) is the real gate: it is
+advisory-keyed, so it fails until the resolved `vite` is actually fixed.
 
 **Reachability is the reason this is Track 3, not Track 1.** Despite the 9.8
 score, the critical is only exploitable when the Vitest UI server is *listening*.
@@ -66,7 +89,7 @@ Success criterion 6 verifies this.
 
 | # | Criterion | Verified by |
 |---|---|---|
-| 1 | The resolved (locked) `vitest` version is `≥ 3.2.6` | `bun pm ls vitest` against the committed `bun.lock` |
+| 1 | The resolved (locked) `vitest` version is `≥ 3.2.6` **and** the resolved `vite` is `≥ 6.4.3` (via `vitest@4.x` or an explicit `vite` override — see the mechanism note) | `bun pm ls vitest` and `bun pm ls vite` against the committed `bun.lock` |
 | 2 | `bun audit` reports no advisory whose path is `vitest` — the critical `GHSA-5xrq-8626-4rwp` is gone | `bun audit` |
 | 3 | `bun audit` no longer reports the transitive `vite` high `GHSA-fx2h-pf6j-xcff` | `bun audit` |
 | 4 | All 5 site test suites pass | `cd products/polaris/site && bun run test` |
