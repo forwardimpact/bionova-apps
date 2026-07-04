@@ -23,8 +23,8 @@ Three personas, named in [products/polaris/README.md](products/polaris/README.md
   protocol and watch enrollment interest.
 - **Referring Physician** — search and share trials on behalf of patients.
 
-The progress each one seeks lives in [JTBD.md](JTBD.md). Discover every job —
-here and in directory READMEs — with `rg '<job '`.
+The progress each one seeks lives in [JTBD.md](JTBD.md). Discover every job with
+`rg '<job '`.
 
 ## Where things live
 
