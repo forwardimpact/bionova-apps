@@ -1,0 +1,5 @@
+date,metric,value,unit,run,note,event_type,host_run
+2026-07-04,open_prs_awaiting_gate,0,count,,storyboard baseline: no open PRs,agent-storyboard,28697568296
+2026-07-04,main_ci_failing_checks,0,count,,all 7 main checks green,agent-storyboard,28697568296
+2026-07-04,unreleased_packages,0,count,,"all packages private v0.0.0, no publish workflow",agent-storyboard,28697568296
+2026-07-04,main_ci_failing_checks,0,count,,main-health monitor @ 1ae2a744,agent-storyboard,28697568296
