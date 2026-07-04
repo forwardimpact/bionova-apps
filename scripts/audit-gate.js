@@ -10,6 +10,16 @@
 // `bun audit` exits non-zero whenever any advisory exists, so this script gates
 // on its own baseline diff and ignores bun's exit code.
 //
+// FAIL-OPEN on infrastructure errors. `bun audit` queries the registry advisory
+// database over the network. If that lookup errors (DB unreachable, rate limit),
+// this gate emits a ::warning:: and exits 0 — a registry outage must never turn a
+// required check into an all-PRs-blocked event. It fails closed (exit 1) ONLY on
+// a real unbaselined critical/high finding.
+//
+// DETERMINISTIC. Advisory identity is the GHSA id; the diff is set-based and all
+// printed lists are sorted (severity, then id), so the verdict never flips on
+// bun's output ordering.
+//
 // Baseline update rules (see security/audit-baseline.json):
 //   - RESOLVED: a dependency bump drops the advisory from the live audit. The
 //     gate stays green; remove the now-stale baseline entry in the same PR
@@ -19,26 +29,41 @@
 //     Acceptance is always explicit, dated, and reviewed — never silent.
 //
 // Testability: set AUDIT_JSON_FILE=<path> to feed a captured `bun audit --json`
-// document instead of invoking bun (used by scripts/audit-gate.test.mjs).
+// document instead of invoking bun (used by scripts/audit-gate.test.js). An
+// empty or unparseable fixture exercises the fail-open path.
 
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 
 const GATED = new Set(["critical", "high"]);
+const SEVERITY_RANK = { critical: 0, high: 1, moderate: 2, low: 3, other: 4 };
 const baselinePath = process.argv[2] || "security/audit-baseline.json";
 
+// Returns { ok: true, data } with a parsed audit document, or { ok: false,
+// reason } when the advisory service could not be reached / gave no usable
+// output. Callers fail open on { ok: false }.
 function loadAuditJson() {
   const fixture = process.env.AUDIT_JSON_FILE;
-  if (fixture) return JSON.parse(readFileSync(fixture, "utf8"));
   let out;
-  try {
-    // bun audit exits non-zero when advisories exist; capture stdout regardless.
-    out = execFileSync("bun", ["audit", "--json"], { encoding: "utf8" });
-  } catch (err) {
-    out = err.stdout?.toString() ?? "";
+  if (fixture) {
+    out = readFileSync(fixture, "utf8");
+  } else {
+    try {
+      out = execFileSync("bun", ["audit", "--json"], { encoding: "utf8" });
+    } catch (err) {
+      // bun audit exits non-zero BOTH when advisories exist (normal — stdout is
+      // still valid JSON) and on a registry/network error (no usable stdout).
+      // Distinguish the two below by whether the captured output parses.
+      out = err.stdout?.toString() ?? "";
+    }
   }
-  if (!out.trim()) return {};
-  return JSON.parse(out);
+  const trimmed = (out ?? "").trim();
+  if (!trimmed) return { ok: false, reason: "advisory audit produced no output (service unreachable?)" };
+  try {
+    return { ok: true, data: JSON.parse(trimmed) };
+  } catch {
+    return { ok: false, reason: "advisory audit output was not valid JSON (service error?)" };
+  }
 }
 
 // bun audit --json is keyed by package name -> array of advisory objects.
@@ -57,25 +82,39 @@ function flatten(auditJson) {
   return advisories;
 }
 
-const auditJson = loadAuditJson();
+// Stable ordering for reproducible logs: severity first, then GHSA id.
+function bySeverityThenId(a, b) {
+  const s = (SEVERITY_RANK[a.severity] ?? 9) - (SEVERITY_RANK[b.severity] ?? 9);
+  return s !== 0 ? s : a.ghsa.localeCompare(b.ghsa);
+}
+
+const line = "─".repeat(64);
+console.log(line);
+console.log("dependency-audit gate — issue #22 (threshold: critical + high)");
+console.log(line);
+
+const audit = loadAuditJson();
+if (!audit.ok) {
+  // Fail open: a registry outage must not block merges. Surface it loudly.
+  console.log(`::warning::dependency-audit gate could not run — ${audit.reason} Not blocking (fail-open on infrastructure error).`);
+  process.exit(0);
+}
+
 const baseline = JSON.parse(readFileSync(baselinePath, "utf8"));
 const baselineIds = new Set(Object.keys(baseline.advisories ?? {}));
 
-const advisories = flatten(auditJson);
+const advisories = flatten(audit.data);
 const bySeverity = { critical: [], high: [], moderate: [], low: [], other: [] };
 for (const a of advisories.values()) {
   (bySeverity[a.severity] ?? bySeverity.other).push(a);
 }
 
 const gatedNow = [...advisories.values()].filter((a) => GATED.has(a.severity));
-const introduced = gatedNow.filter((a) => !baselineIds.has(a.ghsa));
 const gatedIds = new Set(gatedNow.map((a) => a.ghsa));
-const stale = [...baselineIds].filter((id) => !gatedIds.has(id));
+const introduced = gatedNow.filter((a) => !baselineIds.has(a.ghsa)).sort(bySeverityThenId);
+const stale = [...baselineIds].filter((id) => !gatedIds.has(id)).sort();
+const reportOnly = [...bySeverity.moderate, ...bySeverity.low].sort(bySeverityThenId);
 
-const line = "─".repeat(64);
-console.log(line);
-console.log("dependency-audit gate — issue #22 (threshold: critical + high)");
-console.log(line);
 console.log(
   `live advisories: ${advisories.size} total ` +
     `(critical ${bySeverity.critical.length}, high ${bySeverity.high.length}, ` +
@@ -85,7 +124,6 @@ console.log(`baselined critical/high: ${baselineIds.size}`);
 console.log("");
 
 // Moderate/low: report-only, never blocks (faithful to #22's crit/high scope).
-const reportOnly = [...bySeverity.moderate, ...bySeverity.low];
 if (reportOnly.length) {
   console.log(`report-only (moderate/low, not gated): ${reportOnly.length}`);
   for (const a of reportOnly) console.log(`  · ${a.severity.padEnd(8)} ${a.package} — ${a.ghsa}`);

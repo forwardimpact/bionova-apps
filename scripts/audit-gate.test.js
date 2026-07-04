@@ -33,6 +33,13 @@ function fixture(name, doc) {
   return path;
 }
 
+// Raw (possibly non-JSON) fixture, for exercising the fail-open path.
+function rawFixture(name, text) {
+  const path = join(dir, name);
+  writeFileSync(path, text);
+  return path;
+}
+
 function runGate(auditFile) {
   try {
     const stdout = execFileSync("node", [GATE, baseline], {
@@ -71,4 +78,16 @@ test("resolved advisory (fewer than baseline) passes with a stale warning", () =
   const r = runGate(fixture("resolved.json", {}));
   expect(r.code).toBe(0);
   expect(r.stdout).toContain("stale baseline");
+});
+
+test("fails open (exit 0 + warning) when the advisory service gives no output", () => {
+  const r = runGate(rawFixture("empty.txt", "   "));
+  expect(r.code).toBe(0);
+  expect(r.stdout).toContain("::warning::");
+});
+
+test("fails open (exit 0 + warning) when the advisory output is not valid JSON", () => {
+  const r = runGate(rawFixture("garbage.txt", "503 Service Unavailable"));
+  expect(r.code).toBe(0);
+  expect(r.stdout).toContain("::warning::");
 });

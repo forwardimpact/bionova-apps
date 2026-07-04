@@ -4,6 +4,12 @@ on:
   push:
     branches: [main]
   pull_request:
+  # Daily re-audit: an audit verdict can flip with zero code change when a new
+  # advisory is published against unchanged dependencies. A standalone workflow
+  # lets this cron re-run the gate without dragging lint/typecheck along. Offset
+  # minute to avoid the top-of-hour scheduler stampede.
+  schedule:
+    - cron: "17 7 * * *"
 
 jobs:
   dependency-audit:
