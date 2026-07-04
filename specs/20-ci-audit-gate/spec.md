@@ -19,10 +19,10 @@
 patient-facing edge functions indirectly by checking their pinned dependencies;
 it ships no product behavior.
 
-**Persona / job:** No direct persona. It defends the Patient / Advocate and
-Clinical Development Staff jobs by keeping the Supabase edge functions — which
-carry patient-facing infra logic — free of undetected advisories on their
-pinned dependencies.
+**Persona / job:** No direct persona. It defends the Clinical Development Staff
+job **Keep Listings True** (JTBD.md:35): the Supabase edge functions carry the
+patient-facing infra logic behind true listings, and this check keeps their
+pinned dependencies free of undetected advisories.
 
 ## Problem
 
@@ -68,7 +68,7 @@ mechanism to close it is narrower than the prior draft assumed:
 |---|---|
 | Deno version-pin advisory check | On every PR and on push to `main`, extracts the top-level pinned dependency versions from `import_map.json` and `deno.lock` (`std@0.224.0`, `supabase-js@2.110.0`) and checks each against a known-advisory source keyed by ecosystem + version. Fails the build on an un-accepted critical or high, consistent with #26's fail-on-new-beyond-baseline model. It is a stopgap on the pins, **not** a resolved-graph or transitive-tree scan |
 | Deno baseline | The Deno equivalent of `security/audit-baseline.json` — accepted findings keyed by advisory id with a dated reason — so the check does not fail every existing PR on introduction |
-| Coverage-boundary note | The check and CONTRIBUTING state plainly that it covers only the top-level pins, not the transitive tree, and reference the follow-on migration spec that lifts it to full graph coverage |
+| Coverage-boundary note | The check and CONTRIBUTING state plainly that it covers only the top-level pins, not the transitive tree, and reference the follow-on migration spec (Spec 40) that lifts it to full graph coverage |
 | Policy documentation | The `## Security` section of CONTRIBUTING.md documents the whole audit-gate regime (npm via #26 **and** Deno): the critical/high threshold, that moderate/low are report-only, the baseline-acceptance rule (dated reason, security-engineer review, never silent), and stale-entry removal on remediation |
 
 **Out of scope:**
@@ -78,8 +78,9 @@ mechanism to close it is narrower than the prior draft assumed:
   `npm:` specifiers so the resolved `deno.lock` carries an auditable npm tree an
   OSV extractor can read — a source change with runtime-resolution implications
   (esm.sh pre-bundled ESM vs Deno's `npm:` compat layer). That is a structural
-  change and gets its **own** spec, filed separately by security-engineer; it is
-  not folded in here as a footnote or prerequisite.
+  change and is filed as its **own** spec — **Spec 40**
+  (`specs/40-deno-graph-migration/`) — by security-engineer; it is not folded in
+  here as a footnote or prerequisite.
 - The **npm/bun audit gate** — owned by PR #26 (experiment #22). This spec does
   not re-author, replace, or supersede it.
 - Remediating current advisories — Spec 10 (`next`) and Spec 30 (`vitest`).
@@ -107,10 +108,10 @@ mechanism to close it is narrower than the prior draft assumed:
 |---|---|---|
 | 1 | A Deno version-pin advisory check runs on every PR and on push to `main` | a named check appears and runs on a test PR's checks tab |
 | 2 | The check fails when an un-accepted critical or high advisory affects one of the top-level pinned versions | a throwaway PR pinning a Deno dependency to a version with a known crit/high advisory turns the check red |
-| 3 | The check's output and CONTRIBUTING state that coverage is the top-level pins only, not the transitive tree, and reference the follow-on migration spec | the check log and CONTRIBUTING.md |
+| 3 | The check's output and CONTRIBUTING state that coverage is the top-level pins only, not the transitive tree, and reference the follow-on migration spec (**Spec 40**, `specs/40-deno-graph-migration/`) | the check log and CONTRIBUTING.md |
 | 4 | The check is green on the tree as it stands, and the introducing PR is itself green — gate and any needed baseline land together | the introducing PR merges without red-walling `main` |
 | 5 | CONTRIBUTING.md `## Security` documents the crit/high threshold, the baseline-acceptance rule, and stale-entry removal, for both the npm and Deno gates | CONTRIBUTING.md |
-| 6 | `ci_security_gates_missing` is recorded once this and #26 are both on `main`, with a note that the Deno side is stopgap pins-only coverage pending the migration spec | `wiki/metrics/kata-security-audit/2026.csv` |
+| 6 | `ci_security_gates_missing` is recorded **at 0** once this and #26 are both on `main` — the metric counts surfaces with no gate at all (baseline 2: npm + Deno), #26 closes the npm surface (2→1) and this closes the Deno surface (1→0), so both surfaces now have a gate. Recorded with a note that the Deno side is stopgap pins-only coverage; the transitive-tree depth is not a missing gate but a tracked follow-on (Spec 40), so it does not hold the metric open at 1 | `wiki/metrics/kata-security-audit/2026.csv` |
 
 ## Notes for design
 
@@ -123,6 +124,6 @@ or a lockfile extractor. Confirm the source returns a machine-checkable verdict
 for the `std` and esm.sh-pinned `supabase-js` versions before committing. Do
 **not** reach for an OSV-Scanner-over-`deno.lock` gate — it resolves to zero
 packages on this tree (Problem gap 1). The durable graph gate is the follow-on
-migration spec; design that separately when it is filed.
+migration spec (Spec 40); design that separately when it is filed.
 
 — Security Engineer 🔒
