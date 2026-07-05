@@ -1,0 +1,38 @@
+# gitleaks configuration for BioNova Polaris.
+#
+# CONTRIBUTING.md § Security tells every contributor to run `gitleaks` locally
+# and resolve every finding before pushing. Without this file gitleaks runs its
+# stock ruleset with no allowlist and returns 35 findings on a clean tree — all
+# of them noise. That trains people to ignore the tool, which is how a real leak
+# slips through. This allowlist silences only the verified-false-positive
+# classes so a genuine secret stands out.
+#
+# It silences exactly two things, both already declared non-secret by
+# CONTRIBUTING.md § Security:
+#   1. The two well-known PUBLIC Supabase self-hosted demo JWTs (iss=supabase-demo).
+#   2. The vendored, machine-generated synthetic prose cache.
+#
+# Everything else stays armed. A different JWT, a real key in .env.example, or a
+# secret anywhere outside the vendored data file still fails the scan.
+
+title = "BioNova Polaris"
+
+[extend]
+# Start from the full upstream ruleset; only add allowlist entries below.
+useDefault = true
+
+[[allowlists]]
+description = "Well-known public Supabase self-hosted demo keys (iss=supabase-demo). CONTRIBUTING.md § Security declares these public, not secrets. Matched by their exact published values so any OTHER JWT — including a real one pasted into the same file — still fires."
+regexTarget = "match"
+regexes = [
+  # anon role demo JWT
+  '''eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9\.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlLWRlbW8iLCJpYXQiOjE2NDE3NjkyMDAsImV4cCI6MTc5OTUzNTYwMH0\.F_rDxRTPE8OU83L_CNgEGXfmirMXmMMugT29Cvc8ygQ''',
+  # service_role demo JWT
+  '''eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9\.eyJyb2xlIjoic2VydmljZV9yb2xlIiwiaXNzIjoic3VwYWJhc2UtZGVtbyIsImlhdCI6MTY0MTc2OTIwMCwiZXhwIjoxNzk5NTM1NjAwfQ\.5z-pJI1qwZg1LE5yavGLqum65WOnnaaI5eZ3V00pLww''',
+]
+
+[[allowlists]]
+description = "Vendored synthetic prose cache. data/synthetic/prose-cache.json is machine-generated and vendored verbatim from the Forward Impact monorepo (see CLAUDE.md, data/synthetic/PROVENANCE.md); it is not hand-authored source. Its object keys (pr_body_evt-NNNN, content hashes) trip the generic-api-key heuristic. Scoped to this one file so authored code is never exempted."
+paths = [
+  '''data/synthetic/prose-cache\.json''',
+]

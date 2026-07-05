@@ -1,0 +1,18 @@
+# Accepted gitleaks findings, pinned by fingerprint. Only the working tree is
+# authored; these four are immutable history and cannot be fixed without a
+# disruptive rewrite of the public repo. Everything in the CURRENT tree still
+# scans (see .gitleaks.toml) — nothing here exempts new work.
+#
+# Bootstrap commit 05a4696b shipped the .env.example / kong.yml Supabase JWTs
+# signed with a non-published secret (payload is the standard iss=supabase-demo
+# local-stack token: role anon / service_role, exp 2027). The very next commit
+# (741e891a) replaced them with the canonical PUBLIC demo keys, which are what
+# the current tree carries. The signing secret is not in the repo and is not
+# recoverable from an HMAC signature, and no stack configured from this repo's
+# public demo JWT_SECRET would accept these tokens. Real exposure: negligible.
+# Accepted as a historical artifact rather than rewriting public history.
+# Reviewed 2026-07-05 — Security Engineer.
+05a4696b6f6b355abb53401cbb26b44daf60970d:infrastructure/kong/kong.yml:jwt:12
+05a4696b6f6b355abb53401cbb26b44daf60970d:infrastructure/kong/kong.yml:jwt:15
+05a4696b6f6b355abb53401cbb26b44daf60970d:.env.example:jwt:14
+05a4696b6f6b355abb53401cbb26b44daf60970d:.env.example:jwt:17
