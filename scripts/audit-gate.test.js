@@ -44,8 +44,15 @@ function runGateWith(baselineFile, auditFile, extraEnv = {}) {
   try {
     // process.execPath is the runtime running this test (bun under `bun test`,
     // node under node) — keeps the gate on the same toolchain as the workflow.
+    // Strip the ambient GITHUB_EVENT_NAME so the suite is hermetic: the gate
+    // auto-enables enforce mode when GITHUB_EVENT_NAME=schedule, which would
+    // otherwise leak into these child processes during the nightly check-audit
+    // run and flip the PR-run cases into enforce mode. A test opts into enforce
+    // explicitly via AUDIT_GATE_ENFORCE_REVIEW_BY or by setting the name itself.
+    const env = { ...process.env, AUDIT_JSON_FILE: auditFile, ...extraEnv };
+    if (!("GITHUB_EVENT_NAME" in extraEnv)) delete env.GITHUB_EVENT_NAME;
     const stdout = execFileSync(process.execPath, [GATE, baselineFile], {
-      env: { ...process.env, AUDIT_JSON_FILE: auditFile, ...extraEnv },
+      env,
       encoding: "utf8",
     });
     return { code: 0, stdout };
