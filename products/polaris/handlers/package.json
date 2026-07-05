@@ -12,6 +12,6 @@
     "test": "bun test"
   },
   "dependencies": {
-    "@forwardimpact/libtemplate": "0.2.13"
+    "@forwardimpact/libtemplate": "0.2.14"
   }
 }
