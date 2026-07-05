@@ -42,10 +42,17 @@ function rawFixture(name, text) {
 
 function runGateWith(baselineFile, auditFile, extraEnv = {}) {
   try {
+    // Strip the trigger-control vars from the inherited env so a test's own
+    // extraEnv is the SOLE source of the gate's review_by mode. Without this,
+    // the ambient GITHUB_EVENT_NAME leaks in: the nightly re-audit
+    // (check-audit.yml on schedule) runs this suite with
+    // GITHUB_EVENT_NAME=schedule, flipping the gate to fail-on-overdue and
+    // turning the "PR run" tests falsely red — which skips the real gate step.
+    const { GITHUB_EVENT_NAME, AUDIT_GATE_ENFORCE_REVIEW_BY, ...cleanEnv } = process.env;
     // process.execPath is the runtime running this test (bun under `bun test`,
     // node under node) — keeps the gate on the same toolchain as the workflow.
     const stdout = execFileSync(process.execPath, [GATE, baselineFile], {
-      env: { ...process.env, AUDIT_JSON_FILE: auditFile, ...extraEnv },
+      env: { ...cleanEnv, AUDIT_JSON_FILE: auditFile, ...extraEnv },
       encoding: "utf8",
     });
     return { code: 0, stdout };
