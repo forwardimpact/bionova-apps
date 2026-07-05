@@ -47,6 +47,10 @@ States: `registered → approved → cancelled`. `pin` is the approved head SHA 
 
 ```
 10	design	approved
+20	spec	approved
+30	spec	approved
+40	spec	approved
+50	spec	approved
 exp:23	registered	-	#23
 ```
 
