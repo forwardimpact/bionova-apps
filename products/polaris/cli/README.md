@@ -36,7 +36,7 @@ Configure the backend via env (defaults target the local stack):
 ## REPL
 
 `bionova-polaris repl` opens an interactive prompt. Commands use a leading slash
-(librepl convention); bare input falls through to `/help`:
+(librepl convention). An unrecognized command prints the help text:
 
 ```text
 bionova> /search --condition=diabetes
