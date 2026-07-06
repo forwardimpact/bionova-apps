@@ -10,8 +10,8 @@ a surface over a generated world.
 
 This repository is the reference example of an **external team** consuming
 Forward Impact shared libraries (`libcli`, `libui`, `libformat`, `libtemplate`,
-`librepl`) and the synthetic-data build (`fit-terrain` + `story.dsl`). It
-consumes those libraries from npm and publishes no library of its own.
+`librepl`, `libutil`) and the synthetic-data build (`fit-terrain` + `story.dsl`).
+It consumes those libraries from npm and publishes no library of its own.
 
 ## Who it serves
 
