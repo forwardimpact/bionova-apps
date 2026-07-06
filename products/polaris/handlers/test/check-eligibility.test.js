@@ -77,6 +77,20 @@ test("checkEligibility returns the score, the view model, and inserts a signal",
   expect(res.signal_id).toBeUndefined();
 });
 
+test("checkEligibility falls back to not_eligible when the edge fn omits match_score", async () => {
+  const { fetchImpl } = makeFetch([
+    // Edge fn returns reasons but no match_score (e.g. a truncated response).
+    route("/functions/v1/eligibility-check", { reasons: [] }),
+    route("criteria?trial_id=", []),
+    route("interest_signals", null, { status: 201 }),
+  ]);
+  const data = createDataContext(env, { fetchImpl });
+  const res = await checkEligibility({ data, args: { id: "t1" }, options: {} });
+  expect(res.match_score).toBe("not_eligible");
+  // The builder renders the not-eligible summary for the coerced score, not a throw.
+  expect(res.summary).toContain("likely do not fit");
+});
+
 test("checkEligibility still returns a score if the signal insert fails", async () => {
   const { fetchImpl } = makeFetch([
     route("/functions/v1/eligibility-check", {

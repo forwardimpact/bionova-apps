@@ -65,6 +65,30 @@ test("B1: age within → supports sentence; age not provided → unclear prompt"
   expect(missing.unclear[0]).toContain("Add your age");
 });
 
+// B1b — the scorer interpolates req.age verbatim, so a valid non-integer or
+// negative age reaches the reason string. The age capture must parse it (render
+// the value the patient gave) rather than trip the fail-loud, which guards
+// scorer-grammar drift, not valid-but-unusual ages.
+test("B1b: non-integer and negative ages parse and render, not throw", () => {
+  const decimal = buildPreCheck(
+    ONCORA,
+    { match_score: "possibly_eligible", reasons: ["Age 55.5 within [18, 75]"] },
+    LUNG,
+  );
+  expect(decimal.supports).toEqual([
+    "Your age (55.5) is within this trial's range of 18 to 75.",
+  ]);
+
+  const negative = buildPreCheck(
+    ONCORA,
+    { match_score: "not_eligible", reasons: ["Age -3 outside [18, 75]"] },
+    LUNG,
+  );
+  expect(negative.against).toEqual([
+    "This trial enrolls ages 18 to 75; the age you gave (-3) is outside that range.",
+  ]);
+});
+
 // B2 — every ECOG line is a full plain-language sentence with no `ECOG max:`
 // form and no ECOG numeral (the design's open question, pinned) (C1).
 test("B2: ECOG lines are numeral-free plain-language sentences", () => {
@@ -221,6 +245,21 @@ test("B8: an unrecognized reason throws", () => {
       LUNG,
     ),
   ).toThrow("Unrecognized eligibility reason:");
+});
+
+// B8b — both criteria halves null (a trial with no structured criteria rows):
+// buildPreCheck tolerates the null shape, does not throw, and yields empty
+// coordinatorQuestions (no custom[] to carry, no unresolvable condition).
+test("B8b: null criteria halves → no throw, empty coordinatorQuestions", () => {
+  const vm = buildPreCheck(
+    { inclusion: null, exclusion: null },
+    { match_score: "possibly_eligible", reasons: [] },
+    LUNG,
+  );
+  expect(vm.coordinatorQuestions).toEqual([]);
+  expect(vm.supports).toEqual([]);
+  expect(vm.against).toEqual([]);
+  expect(vm.unclear).toEqual([]);
 });
 
 // B9 — every summary is plain language with no raw enum token; disclaimer and

@@ -30,8 +30,12 @@ const UNRESOLVED_CONDITION_LINE =
   "This trial states a condition in clinical terms. Confirm this one with the coordinator.";
 
 // Patient values live only in the reason string, not in `criteria`; anchor the
-// parse and let a no-match fall through to the fail-loud throw below.
-const AGE_RE = /^Age (\d+) (within|outside) \[(\d+), (\d+)\]$/;
+// parse and let a no-match fall through to the fail-loud throw below. The age
+// capture allows a sign and decimal: the scorer interpolates req.age verbatim,
+// so a valid non-integer or negative age must parse (not trip the fail-loud,
+// which guards against scorer-grammar drift). The range is trial-defined and
+// integer by convention.
+const AGE_RE = /^Age (-?\d+(?:\.\d+)?) (within|outside) \[(\d+), (\d+)\]$/;
 
 /**
  * @param {{ inclusion: object|null, exclusion: object|null }} criteria
