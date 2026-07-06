@@ -8,6 +8,11 @@ on:
   push:
     branches: [main]
 
+# Deploys run `railway up` with the RAILWAY_TOKEN secret; the GITHUB_TOKEN is
+# only used to check out the repo. Least privilege is read-only.
+permissions:
+  contents: read
+
 jobs:
   detect:
     runs-on: ubuntu-latest
