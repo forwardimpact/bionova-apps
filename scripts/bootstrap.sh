@@ -15,6 +15,9 @@ bun install
 # dependency is dropped non-deterministically. When the casualty is kata-skills
 # the coaching harness has nothing to run and fast-fails with no trace. See
 # issue #70. Serializing costs a few seconds and removes the race entirely.
+#
+# This flag is temporary. Remove it when the APM bump lands (issue #72). The
+# bump restores the --parallel-downloads default.
 if [ -f apm.yml ] || [ -f apm.lock.yaml ]; then
   apm install --parallel-downloads 0
 fi
