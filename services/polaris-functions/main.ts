@@ -7,6 +7,7 @@ import * as eligibilityCheck from "./eligibility-check/mod.ts";
 import * as notifyUpdates from "./notify-updates/mod.ts";
 import * as syncListings from "./sync-listings/mod.ts";
 import { type Env, readEnv } from "./env.ts";
+import { BodyTooLargeError } from "./http.ts";
 
 type Handler = (req: Request, env: Env) => Promise<Response>;
 
@@ -32,6 +33,14 @@ Deno.serve({ port: 8000 }, async (req) => {
   try {
     return await handler(req, env);
   } catch (err) {
+    // An oversized body is the caller's fault, not an internal failure; say so
+    // with a 413 rather than a generic 500.
+    if (err instanceof BodyTooLargeError) {
+      return new Response(JSON.stringify({ error: "request body too large" }), {
+        status: 413,
+        headers: { "content-type": "application/json" },
+      });
+    }
     // Log the detail server-side; return a generic message. Echoing String(err)
     // to the client leaks internal paths, truncated PostgREST/TEI responses, and
     // JSON.parse fragments of whatever file was read — an information-disclosure
