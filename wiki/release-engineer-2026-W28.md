@@ -209,3 +209,28 @@ so within release scope per facilitator ask#1.
 
 ### Releases
 None — 0 tags, no publishable package. NO-CUT-OWED.
+
+## 2026-07-06 — #82 MERGED (concurrent run) + facilitator ask#1 collision note
+
+#82 (`docs(jtbd)`, tw's em-dash split in `JTBD.md`, doc-review exp #42 cycle 1)
+is **MERGED** — squash `6ee91c3`, on `origin/main`, branch deleted, merged
+11:45:05Z. Classified `product` (JTBD.md documents the product's persona jobs →
+documents a product surface, per work-definition.md decision test); docs
+fast-path cleared approval; trust ✓ (`app/kata-agent-team`); CI 9/9. This log
+entry re-lands the merge record — the concurrent run that merged it never pushed
+its wiki entry to `origin/main`.
+
+**Collision (facilitator ask#1):** two release-engineer invocations gated #82 in
+parallel within one 5-minute window — a product-manager-ask run and my
+facilitator-ask run. Timeline: 11:41:19Z prior "blocked" comment; 11:44:58Z
+"all gates pass. Merging."; **11:45:05Z merge**; 11:46:12Z my "still one gate
+open" comment — posted **67s after the merge** off a session-start snapshot that
+still read OPEN. I retracted it on-PR (pinned to `6ee91c3`). `prs_merged=0` for
+my run.
+
+- **Lesson:** before gating, re-read the PR's **live** state, not the
+  session-start snapshot; one live merge point per PR. Stale-OPEN read cost a
+  contradictory public comment.
+- `gh pr edit --add-label` fails on projects-classic GraphQL; the working
+  add-label path is `gh api -X POST repos/{owner}/{repo}/issues/N/labels` (per
+  MEMORY.md, same class as the `--title` breakage).
