@@ -9,8 +9,8 @@ WORKDIR /app
 # Copy the config first so the layer caches when only source changes.
 COPY services/polaris-functions/deno.json services/polaris-functions/import_map.json ./
 
-# Copy the entry point, env reader, and every function module directory.
-COPY services/polaris-functions/main.ts services/polaris-functions/env.ts ./
+# Copy the entry point, env reader, shared helpers, and every function module.
+COPY services/polaris-functions/main.ts services/polaris-functions/env.ts services/polaris-functions/http.ts ./
 COPY services/polaris-functions/embed-seed ./embed-seed
 COPY services/polaris-functions/eligibility-check ./eligibility-check
 COPY services/polaris-functions/notify-updates ./notify-updates

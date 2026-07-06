@@ -5,6 +5,7 @@
 // status changes log a count with no addressable recipient.
 
 import type { Env } from "../env.ts";
+import { readCappedJson } from "../http.ts";
 
 export type NotifyRequest = {
   trial_id: string;
@@ -46,7 +47,7 @@ export async function fetchSignals(trialId: string, env: Env): Promise<InterestS
 }
 
 export async function handle(req: Request, env: Env): Promise<Response> {
-  const body = (await req.json()) as NotifyRequest;
+  const body = await readCappedJson<NotifyRequest>(req);
   if (!body.trial_id) {
     return new Response(JSON.stringify({ error: "trial_id is required" }), {
       status: 400,

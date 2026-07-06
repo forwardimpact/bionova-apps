@@ -5,6 +5,7 @@
 
 import { resolve } from "https://deno.land/std@0.224.0/path/posix/resolve.ts";
 import type { Env } from "../env.ts";
+import { readCappedText } from "../http.ts";
 
 const DEFAULT_SOURCE = "/data/synthetic/seed_embeddings.jsonl";
 const ALLOWED_ROOT = "/data/synthetic/";
@@ -80,10 +81,8 @@ export function parseJsonl(raw: string): SeedRow[] {
 
 export async function handle(req: Request, env: Env): Promise<Response> {
   let body: EmbedSeedRequest = {};
-  if (req.body) {
-    const text = await req.text();
-    if (text.trim().length > 0) body = JSON.parse(text) as EmbedSeedRequest;
-  }
+  const text = await readCappedText(req);
+  if (text.trim().length > 0) body = JSON.parse(text) as EmbedSeedRequest;
   // The function runs with the service-role key and --allow-read; do NOT let a
   // request-supplied path turn it into an arbitrary file-read primitive. A
   // caller may only point at the mounted seed dir; anything else falls back to

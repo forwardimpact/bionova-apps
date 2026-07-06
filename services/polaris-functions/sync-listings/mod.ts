@@ -10,6 +10,7 @@
 // We parse it directly rather than shelling out to a SQL engine.
 
 import type { Env } from "../env.ts";
+import { readCappedText } from "../http.ts";
 
 const MIGRATIONS_DIR = "/data/migrations";
 const TRIALS_GLOB = /_seed_004_trials\.sql$/;
@@ -270,10 +271,8 @@ async function readMatching(re: RegExp, dir: string): Promise<string> {
 
 export async function handle(req: Request, env: Env): Promise<Response> {
   let body: SyncRequest = {};
-  if (req.body) {
-    const text = await req.text();
-    if (text.trim().length > 0) body = JSON.parse(text) as SyncRequest;
-  }
+  const text = await readCappedText(req);
+  if (text.trim().length > 0) body = JSON.parse(text) as SyncRequest;
   const dryRun = body.dry_run === true;
 
   const trialsSql = await readMatching(TRIALS_GLOB, MIGRATIONS_DIR);

@@ -4,6 +4,7 @@
 // custom_answers is keyed by that exact string.
 
 import type { Env } from "../env.ts";
+import { readCappedJson } from "../http.ts";
 
 // Real criteria schema (one row per trial; verified against rendered seed).
 export type Inclusion = {
@@ -178,7 +179,7 @@ export async function fetchCriteria(trialId: string, env: Env): Promise<Criteria
 }
 
 export async function handle(req: Request, env: Env): Promise<Response> {
-  const body = (await req.json()) as EligibilityRequest;
+  const body = await readCappedJson<EligibilityRequest>(req);
   if (!body.trial_id) {
     return new Response(JSON.stringify({ error: "trial_id is required" }), {
       status: 400,
