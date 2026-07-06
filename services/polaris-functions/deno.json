@@ -1,7 +1,7 @@
 {
   "importMap": "./import_map.json",
   "tasks": {
-    "start": "deno run --allow-net --allow-env --allow-read main.ts"
+    "start": "deno run --allow-net --allow-env=SUPABASE_URL,SUPABASE_SERVICE_ROLE_KEY,TEI_URL,PGREST_URL --allow-read main.ts"
   },
   "lint": {
     "rules": {

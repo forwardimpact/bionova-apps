@@ -22,5 +22,9 @@ RUN deno cache main.ts
 EXPOSE 8000
 
 # --allow-read covers the mounted seed JSONL and migrations directory;
-# --allow-net covers TEI + PostgREST + Kong; --allow-env covers env.ts.
-ENTRYPOINT ["deno", "run", "--allow-net", "--allow-env", "--allow-read", "main.ts"]
+# --allow-net covers TEI + PostgREST + Kong; --allow-env is scoped to the four
+# vars env.ts reads so a compromised handler cannot read other process env
+# (e.g. via /proc leaks). Scoping --allow-read to /data is deployment-coupled
+# (the Deno cache dir must stay readable) and is tracked in the functions-authz
+# spec; the embed-seed path check bounds request-supplied reads in the meantime.
+ENTRYPOINT ["deno", "run", "--allow-net", "--allow-env=SUPABASE_URL,SUPABASE_SERVICE_ROLE_KEY,TEI_URL,PGREST_URL", "--allow-read", "main.ts"]

@@ -32,8 +32,12 @@ Deno.serve({ port: 8000 }, async (req) => {
   try {
     return await handler(req, env);
   } catch (err) {
+    // Log the detail server-side; return a generic message. Echoing String(err)
+    // to the client leaks internal paths, truncated PostgREST/TEI responses, and
+    // JSON.parse fragments of whatever file was read — an information-disclosure
+    // amplifier for anything upstream.
     console.error(`${name} failed:`, err);
-    return new Response(JSON.stringify({ error: String(err) }), {
+    return new Response(JSON.stringify({ error: "internal error" }), {
       status: 500,
       headers: { "content-type": "application/json" },
     });

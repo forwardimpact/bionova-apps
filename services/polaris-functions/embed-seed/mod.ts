@@ -3,9 +3,23 @@
 // into condition_embeddings via PostgREST. Idempotent: the upsert targets the
 // condition_embeddings_condition_id_uidx unique index (part 02).
 
+import { resolve } from "https://deno.land/std@0.224.0/path/posix/resolve.ts";
 import type { Env } from "../env.ts";
 
 const DEFAULT_SOURCE = "/data/synthetic/seed_embeddings.jsonl";
+const ALLOWED_ROOT = "/data/synthetic/";
+
+// Resolves a request-supplied source path and requires it stay within
+// ALLOWED_ROOT. A prefix test alone is not enough: "/data/synthetic/../../etc/
+// passwd" passes `startsWith("/data/synthetic/")` yet escapes the dir once the
+// ".." is applied. `resolve` collapses the traversal first, so the containment
+// check sees the real target. The process runs with --allow-read, so this is
+// the only bound on what a caller can read — anything outside the root (or any
+// traversal attempt) falls back to the default seed path.
+export function resolveSource(requested: string): string {
+  const abs = resolve(requested);
+  return abs.startsWith(ALLOWED_ROOT) ? abs : DEFAULT_SOURCE;
+}
 
 type SeedRow = { id: string; table: string; text: string };
 type EmbedSeedRequest = { source?: string };
@@ -74,8 +88,7 @@ export async function handle(req: Request, env: Env): Promise<Response> {
   // request-supplied path turn it into an arbitrary file-read primitive. A
   // caller may only point at the mounted seed dir; anything else falls back to
   // the default. (setup.sh passes the default path.)
-  const requested = body.source ?? DEFAULT_SOURCE;
-  const source = requested.startsWith("/data/synthetic/") ? requested : DEFAULT_SOURCE;
+  const source = resolveSource(body.source ?? DEFAULT_SOURCE);
   const rows = parseJsonl(await Deno.readTextFile(source));
 
   let seeded = 0;

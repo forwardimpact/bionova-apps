@@ -2,7 +2,7 @@
 // PostgREST is needed. Runner-independent: uses Deno.test only.
 
 import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
-import { embedOne, handle, parseJsonl, upsertEmbedding } from "./mod.ts";
+import { embedOne, handle, parseJsonl, resolveSource, upsertEmbedding } from "./mod.ts";
 import type { Env } from "../env.ts";
 
 const env: Env = {
@@ -23,6 +23,34 @@ function fakeFetch(handler: (url: string, init?: RequestInit) => Response) {
     globalThis.fetch = original;
   };
 }
+
+Deno.test("resolveSource keeps a path inside the allowed root", () => {
+  assertEquals(
+    resolveSource("/data/synthetic/seed_embeddings.jsonl"),
+    "/data/synthetic/seed_embeddings.jsonl",
+  );
+  assertEquals(
+    resolveSource("/data/synthetic/other.jsonl"),
+    "/data/synthetic/other.jsonl",
+  );
+});
+
+Deno.test("resolveSource collapses traversal that escapes the root to the default", () => {
+  // `startsWith("/data/synthetic/")` alone would let these through.
+  assertEquals(
+    resolveSource("/data/synthetic/../../../etc/passwd"),
+    "/data/synthetic/seed_embeddings.jsonl",
+  );
+  assertEquals(
+    resolveSource("/data/synthetic/../../proc/self/environ"),
+    "/data/synthetic/seed_embeddings.jsonl",
+  );
+});
+
+Deno.test("resolveSource rejects paths outside the allowed root", () => {
+  assertEquals(resolveSource("/etc/passwd"), "/data/synthetic/seed_embeddings.jsonl");
+  assertEquals(resolveSource("/data/migrations/x.sql"), "/data/synthetic/seed_embeddings.jsonl");
+});
 
 Deno.test("parseJsonl skips blank lines", () => {
   const raw =
