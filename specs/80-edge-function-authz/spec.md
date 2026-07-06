@@ -40,11 +40,19 @@ privilege levels.
    invocation passes the service-role key, yet Kong lets the anon key through.
 
 This is broken access control (OWASP A01). The concrete arbitrary-file-read and
-info-leak defects on the same reachable surface are addressed in the **still-open
-PR #77** (not yet merged to `main`); this spec covers the structural
-authorization gap that fix does not close. This spec assumes #77 lands — if it
-does not, those defects remain open on this surface and fold back into scope
-here.
+info-leak defects on the same reachable surface were fixed in **PR #77, merged
+to `main` on 2026-07-06 (`0325971`)** — the `embed-seed` path traversal, the
+`String(err)` info-leak, and `--allow-env` scoping. This spec covers the
+structural authorization gap that fix does not close. The one piece #77 deferred
+rather than fixed — scoping the still-bare `--allow-read` on the functions
+entrypoint — stays in scope here (see Scope).
+
+**Threat surface beyond Kong.** The functions container listens on `:8000` and
+is reachable directly on the compose/docker network with no gate at all — Kong
+is one path to it, not the only one. A fix that only splits the Kong route
+therefore does **not** defend the direct `:8000` path; only an in-handler role
+check does. Any mechanism choice must state which of these two surfaces it
+covers (see Notes for design).
 
 ## Scope
 
@@ -54,14 +62,15 @@ here.
 |---|---|
 | Authorization boundary for privileged functions | `embed-seed`, `sync-listings`, and `notify-updates` must reject callers presenting only the anon credential; only a service-role (or equivalently privileged internal) caller may invoke them |
 | Preserved public path | `eligibility-check` must remain callable with the anon key — the screener UI/CLI depends on it |
-| Scoped `--allow-read` for the functions container | The entrypoint's remaining bare `--allow-read` must be scoped to the paths the functions actually read, so a future input-handling defect cannot read the whole container filesystem. Deferred from PR #77 (open) because it is deployment-coupled (the Deno cache dir must stay readable) and could not be verified without a container run |
+| Scoped `--allow-read` for the functions container | The entrypoint's remaining bare `--allow-read` (Dockerfile:30) must be scoped to the paths the functions actually read, so a future input-handling defect cannot read the whole container filesystem. Deferred by PR #77 (merged `0325971`) rather than fixed, because it is deployment-coupled (the Deno cache dir must stay readable) and could not be verified without a container run — this is the sole remaining item from that surface |
 | Regression coverage | An automated check demonstrates an anon-only caller is refused by each privileged function and accepted for `eligibility-check` |
 
 **Out of scope:**
 
 - The `embed-seed` path-traversal fix, the `String(err)` info-leak fix, and
-  `--allow-env` scoping — proposed in PR #77 (open, merge pending). Out of scope
-  here **only if #77 merges**; see the Problem note above.
+  `--allow-env` scoping — fixed in PR #77 (merged `0325971`, 2026-07-06).
+  Unconditionally out of scope. The `--allow-read` scoping #77 deferred is the
+  exception and is **in** scope above.
 - Rotating the committed demo anon/service keys — a separate operational concern;
   this spec must hold regardless of which keys are configured.
 - Email delivery for `notify-updates` (deferred per its own design).
@@ -88,7 +97,7 @@ here.
 | 2 | A service-role-credentialed request to those three functions still succeeds | a request with `apikey: $SERVICE_ROLE_KEY` to each returns 2xx (asserted in the SC5 regression test), and `setup.sh` / the `pg_cron` sync path still work end-to-end |
 | 3 | An anon-credentialed request to `eligibility-check` still succeeds | the screener flow (`smoke.sh`) stays green |
 | 4 | The functions container grants read only to the paths it uses; a request that resolves outside them cannot be read even if an input check is bypassed | the entrypoint's `--allow-read` is scoped and the container still starts and serves `/health` |
-| 5 | A regression test encodes the anon-refused / service-role-accepted matrix for all four functions | the test file and a green run |
+| 5 | A regression test encodes the anon-refused / service-role-accepted matrix for all four functions, **regardless of invocation path** — if the chosen mechanism must also defend the direct `:8000` surface, the test exercises that path too, so a green Kong-only check (SC1) cannot mask an open container port | the test file and a green run |
 | 6 | No existing gate or the public screener path is weakened | `just lint`, `just test`, `just smoke`, and the REST/Realtime auth behavior are unchanged |
 
 ## Notes for design
@@ -100,11 +109,15 @@ distinct mechanisms, each with trade-offs the design should weigh:
   `acl` allowing only `service_role`, leaving `eligibility-check` on the
   anon-allowed route. Keeps enforcement at the gateway; needs per-function path
   routing in `kong.yml`.
-- **In-handler role check.** Verify the JWT role claim inside each privileged
-  handler (or a shared wrapper in `main.ts`) and 401 on non-service-role. Works
-  even if the function is reached off-gateway; puts trust decisions in app code
-  and requires the functions to validate the JWT signature, which they do not do
-  today.
+- **In-handler role check.** Verify the caller's role inside each privileged
+  handler (or a shared wrapper in `main.ts`) and 401 on non-service-role. This is
+  the only option that also defends the direct `:8000` surface. **Open question
+  the design must resolve:** how does the caller's role reach the handler? Either
+  Kong injects a trustworthy authenticated-consumer header (which the handler can
+  trust only if the direct `:8000` path is closed, else it is spoofable), or the
+  handler must re-validate the JWT signature itself — which the functions do not
+  do today. The cost and the security of this option turn entirely on that
+  answer.
 - **Network isolation.** Move the setup/cron-only functions off the public
   gateway entirely (internal-only invocation). Strongest boundary for
   `embed-seed`/`sync-listings`, but changes how `setup.sh` and `pg_cron` reach
