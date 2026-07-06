@@ -46,7 +46,7 @@ States: `registered → approved → cancelled`. `pin` is the approved head SHA 
      rows carry four cells; the spec→design watcher ignores them. -->
 
 ```
-10	design	approved
+10	plan	approved
 20	spec	approved
 30	spec	approved
 40	spec	approved

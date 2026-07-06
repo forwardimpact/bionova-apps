@@ -259,7 +259,7 @@ in the minimal-shape loop with a view-model shape. Add focused renders:
   (needs a rendered seed + stack; run under `just boot`/`just smoke` where the
   stack is available — otherwise B1–B2 + the template test carry C1).
 - **C5 guard:** run
-  `rg -F -e 'Histologically confirmed NSCLC' -e 'Measurable disease per RECIST' -e 'Adequate organ function' -e 'Prior anti-PD-1/PD-L1' -e 'Active CNS metastases' products/`
+  `rg -F -e 'Histologically confirmed NSCLC' -e 'Measurable disease per RECIST' -e 'Adequate organ function' -e 'Prior anti-PD-1/PD-L1' -e 'Active CNS metastases' -e 'History of cardiac events within 6 months' products/`
   (the verbatim `oncora-phase3` `custom[]` prose) and confirm **zero** hits —
   the builder and template hold only fixed copy and data-parameterized
   patterns; every criterion string reaches output only from the DB-read
