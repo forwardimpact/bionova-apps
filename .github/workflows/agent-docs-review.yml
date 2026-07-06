@@ -100,9 +100,12 @@ jobs:
 
       # --- Criterion 1: window date-guard -------------------------------------
       # Pure date logic — no state. Decides in-window vs out, exits early
-      # outside 07-07..07-10. Topic is NOT chosen here (that is TW's job); we
-      # only record the facilitator-pinned expectation as context. `force`
-      # bypasses the window for the cold-cache smoke test.
+      # outside 07-07..07-10, and emits the facilitator-decided per-day topic as
+      # a steering HINT. The map is self-documenting (the "per-day topic map for
+      # free" from the ask#4 decision); TW retains final selection authority per
+      # the division of labor (if the hinted topic is already fresh, TW's
+      # skill picks the true oldest). `force` bypasses the window for the
+      # cold-cache smoke test.
       - name: Window guard
         id: window
         shell: bash
@@ -111,19 +114,17 @@ jobs:
         run: |
           TODAY="$(date -u +%F)"
           echo "today=$TODAY" >> "$GITHUB_OUTPUT"
+          # Facilitator-decided topic order (shared decision 2026-07-06).
           case "$TODAY" in
-            2026-07-07|2026-07-08|2026-07-09|2026-07-10) IN_WINDOW=true ;;
-            *) IN_WINDOW=false ;;
+            2026-07-07) IN_WINDOW=true; TOPIC=functions-readme ;;
+            2026-07-08) IN_WINDOW=true; TOPIC=deployment ;;
+            2026-07-09) IN_WINDOW=true; TOPIC=operations ;;
+            2026-07-10) IN_WINDOW=true; TOPIC=infrastructure-readme ;;  # optional day
+            *)          IN_WINDOW=false; TOPIC= ;;
           esac
           if [ "$FORCE" = "true" ]; then IN_WINDOW=true; echo "::notice::force=true — window guard bypassed"; fi
           echo "in_window=$IN_WINDOW" >> "$GITHUB_OUTPUT"
-          # Facilitator pin: 07-10 is reserved for infrastructure-readme. Days
-          # 07-07..09 default to the skill's own oldest-first selection.
-          if [ "$TODAY" = "2026-07-10" ]; then
-            echo "topic_hint=infrastructure-readme" >> "$GITHUB_OUTPUT"
-          else
-            echo "topic_hint=" >> "$GITHUB_OUTPUT"
-          fi
+          echo "topic_hint=$TOPIC" >> "$GITHUB_OUTPUT"
           if [ "$IN_WINDOW" != "true" ]; then
             echo "::notice::$TODAY is outside the exp-42 window (07-07..07-10) — no dispatch."
           fi
