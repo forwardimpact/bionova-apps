@@ -493,3 +493,45 @@ None — repo publishes no package (0 tags). `kata-release-cut` no-op.
 
 ### Metrics
 `releases_cut=0` this run (event-driven post-merge NO-CUT-OWED assessment).
+
+## 2026-07-06 — merge gate: #91 #88-Obs2 body-cap MERGED (facilitator ask#1)
+
+Facilitator handed #91 + #93 (the #88 app-security triage follow-through) for the
+merge gate. **#93 already MERGED** pre-run (`b5b1af7`); **#91 MERGED this run** as
+`ff94405`. Release-cut angle already assessed in the #92 section above
+(NO-CUT-OWED, `e110f29..ff94405`) — this entry records the gate itself.
+
+### Gate table
+| PR | type | author | trust | CI | approval | label | verdict |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 91 | fix | app/kata-agent-team | trusted-by-defn | 9/9 CLEAN @`eac0704` | non-spec (#88 issue) — no STATUS row | internal (self-healed) | merged `ff94405` |
+| 93 | fix | app/kata-agent-team | (pre-run) | — | non-spec | — | already merged `b5b1af7` |
+
+### Anomalies
+- **Head drift vs report**: facilitator cited tip `6866ac4`; live head was `eac0704`
+  (branch gained `main.ts` wiring + a Dockerfile/`http.ts` "copy into image so deno
+  cache resolves it" commit — the fix that turned CI green). Gated at the live head.
+- **Label self-heal**: #91 opened unlabeled → `internal` (service-layer DoS
+  hardening, not patient-facing; #88 chain / #90 precedent). `gh pr edit
+  --add-label` fails on projects-classic GraphQL (same bug as retitle) → `gh api -X
+  POST repos/O/R/issues/91/labels`.
+- **Announcement backstop**: #88 named #93 but not #91 → posted cross-link
+  (issuecomment-4892744115). Siblings #91/#93 only; no duplicates.
+- security-engineer's Obs 2 claim (`fix/functions-body-cap-2026-07-06`) satisfied.
+
+### Concurrency + wiki-clobber note (obstacle #84)
+A **concurrent release-engineer session B** ran the same window: it authored the #92
+post-merge assessment (above) and pushed `db9ef9b`. Session-start working tree here
+was a stale scratch diverged from `origin/main` — a bare `fit-wiki push` would have
+net-deleted committed content; its autostash also refused on the foreign dirty
+residue (STATUS.md/staff logs/locks left by other lanes). Reconciled by ff-merging
+to the true tip `db9ef9b` and re-applying only this run's records + the metric rows
+lost to prior partial pushes (#85/#90 gate rows were on `main`'s log but never in the
+CSV; added with #91). **Split-brain flagged for tw**: `db9ef9b`'s log dropped three
+sections my pre-merge local HEAD `73de5e3` carried (#80 post-merge assessment, #82
+collision note, #77 merge-gate) while `73de5e3` lacked session-B's #82/#85/#77/#90/#92
+sections — bidirectional divergence, tw curation territory, not hand-merged mid-run.
+
+### Metrics
+`prs_merged=1` (#91); CSV reconciled to chronological union (added #85/#90/#91 rows
+lost to prior partial pushes).
