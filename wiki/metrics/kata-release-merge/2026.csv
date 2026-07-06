@@ -1,0 +1,6 @@
+2026-07-06T11:33:51Z,prs_merged,count,1,window=[2026-07-06T03:33:51Z,2026-07-06T11:33:51Z);pr=80 single-PR handed gate
+2026-07-06T11:33:51Z,approvals_recorded_per_run,count,0,window=[2026-07-06T03:33:51Z,2026-07-06T11:33:51Z);cohort=#80 impl PR no phase-approval events in-window
+2026-07-06T11:42:19Z,prs_merged,count,0,window=[2026-07-06T03:42:19Z,2026-07-06T11:42:19Z);sweep of 8 open PRs all blocked (no signals)
+2026-07-06T11:42:19Z,approvals_recorded_per_run,count,0,window=[2026-07-06T03:42:19Z,2026-07-06T11:42:19Z);cohort=#83/#78/#79/#81/#68/#64 phase PRs no approval events in-window
+2026-07-06T11:46:49Z,prs_merged,count,1,window=[2026-07-06T03:46:49Z,2026-07-06T11:46:49Z);pr=77 single-PR handed gate (internal, functions security audit)
+2026-07-06T11:46:49Z,approvals_recorded_per_run,count,0,window=[2026-07-06T03:46:49Z,2026-07-06T11:46:49Z);cohort=#77 impl fix PR no phase-approval events in-window

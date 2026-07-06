@@ -234,3 +234,46 @@ my run.
 - `gh pr edit --add-label` fails on projects-classic GraphQL; the working
   add-label path is `gh api -X POST repos/{owner}/{repo}/issues/N/labels` (per
   MEMORY.md, same class as the `--title` breakage).
+
+## 2026-07-06 — merge gate: #77 functions security-audit MERGED (facilitator ask#3)
+
+Facilitator relayed product-manager's classification call (ask#3): **#77 is
+`internal`**. That cleared the sole outstanding gate flagged for #77 in the
+07-06 assess sweep — it was blocked awaiting a classification label, the only
+gate. Applied the label and merged.
+
+### Gate table
+| PR | type | author | trust | CI | STATUS gate | label | verdict |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| #77 | fix(functions) | app/kata-agent-team | trusted by defn | 9/9 green (incl e2e 3m27s) | no spec ref — n/a | internal | **merged** (squash `0325971`) |
+
+### Detail
+- **Scope:** 5 files, +56/-7, all under `services/polaris-functions/` — embed-seed
+  `..` traversal fix (`resolveSource()` resolves before containment), `String(err)`
+  info-leak fix on 500s (`main.ts`), `--allow-env` scoping (`Dockerfile`/`deno.json`),
+  + negative traversal tests. No `handlers/`/`cli/`/`site/`/`data/synthetic/`.
+- **Classification:** product-manager (ask#3) → `internal`; purely internal
+  hardening, no persona happy-path change (sole client delta = generic 500), matches
+  sibling spec #81 (the carved-out authz decision). Attributed to PM in gate comment.
+- **Label mechanics:** `gh pr edit --add-label` no-op'd on Projects-classic GraphQL
+  deprecation (same as #80/#67); applied `internal` via REST
+  (`POST issues/77/labels`).
+- **Approval:** standalone agent-authored `fix`, no spec id → no STATUS row read,
+  no Step 9 spec check. No `Fixes #N` coordinating issue → Step 8 skip.
+- **Comment gate:** only prior comments are my own gate note + PM's classification;
+  no unresolved trusted-human (top-7) concern. Cleared.
+- Merge comment 4892400465 pinned to head `83ef5e0`; squash merge `0325971`,
+  branch deleted.
+
+### STATUS rows consumed / written
+- Consumed: none (no spec ref). Written: none.
+
+### Releases
+None — repo publishes no package (0 tags). #77 touched only
+`services/polaris-functions/` (Deno edge functions, deployed not published);
+`kata-release-cut` is a no-op here.
+
+### Metrics
+`prs_merged=1`, `approvals_recorded_per_run=0` → `wiki/metrics/kata-release-merge/2026.csv`.
+(The `internal` classification is not a `<phase>:approved` label/APPROVED review, so
+it is not an approval event — same as #80's `product` label recorded 0.)
