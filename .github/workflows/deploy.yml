@@ -13,9 +13,25 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       services: ${{ steps.changes.outputs.services }}
+      deploy_enabled: ${{ steps.token.outputs.enabled }}
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with: { fetch-depth: 2 }
+      # Gate: this repo is a local sandbox with no live Railway project linked
+      # (infrastructure/railway/README.md). Deploy only when a real token is
+      # configured, so a red `deploy` once again means a genuine deploy failure
+      # rather than the standing empty-token gap. The `secrets` context cannot be
+      # read in a job-level `if:`, so surface it through this output instead.
+      - id: token
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          if [ -n "$RAILWAY_TOKEN" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "no RAILWAY_TOKEN configured — skipping deploy (local sandbox, no live Railway project linked)"
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          fi
       - id: changes
         run: |
           changed=$(git diff --name-only HEAD~1 HEAD)
@@ -43,7 +59,7 @@ jobs:
 
   deploy:
     needs: detect
-    if: needs.detect.outputs.services != '[]'
+    if: needs.detect.outputs.services != '[]' && needs.detect.outputs.deploy_enabled == 'true'
     runs-on: ubuntu-latest
     strategy:
       matrix:
