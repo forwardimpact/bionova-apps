@@ -103,3 +103,109 @@ cut? issue close? CI-guard follow-up?
   separate toolchain change; noted on #70.
 - **Claims released:** `issue-70` (done, merged) plus the now-satisfied
   `#67`/`#65` merge-gate claims (both merged: `4e79839`, `80743c9`).
+
+**Update (same day):** facilitator shared-decision fixed the topic order —
+functions-readme/deployment/operations/infrastructure-readme (07-07..10).
+Encoded all four in the window guard as steering hints (commit `a71441a`); TW
+keeps selection authority. Backstop cron + apm-coverage-non-blocking both
+already in the draft; facilitator confirmed both. Signal-choice clarified to TW
+on #76: guard uses today's `errors_found` CSV row (review-time), a different
+signal from the `last_reviewed` stamp facilitator is speccing with TW — will
+align to whichever TW confirms canonical (~5-line edit). Post-merge smoke
+sequencing noted on PR (workflow_dispatch fires only on default branch).
+
+## 2026-07-06 — merge gate: #80 spec-10 implementation MERGED (facilitator ask#3)
+
+Facilitator handed #80 (`feat/10-eligibility-precheck`) for the merge gate — the
+plan→implement leg of spec 10, tracked on experiment issue #74. **The spec-10
+dispute is settled**: #65 (the plan PR) landed on `main` as `80743c9`, advancing
+row 10 to `plan approved` — the prior W28 HOLD (design-origination) is cleared,
+so the ledger authorization now stands on its own.
+
+### Path decision
+#80 references **both** spec 10 (`specs/10-eligibility-precheck/plan-a.md`) and
+experiment **#74**. Per experiment-path.md's discriminator, the experiment path
+applies only with *no* spec reference — so #80 took the **normal spec-10
+implementation path** (Step 6 spec-row read + Step 9 spec check).
+
+### Gate table
+| PR | type | author | trust | CI | STATUS gate | verdict |
+| --- | --- | --- | --- | --- | --- | --- |
+| #80 | feat(handlers) | app/kata-agent-team | trusted by defn | 9/9 green (incl e2e) | `10 plan approved` → wrote `plan implemented` | **merged** (squash `a9e3e33`) |
+
+### Detail
+- **Base moved mid-gate:** `4b94a22 → 9a98d97` (wiki-only commit `docs(wiki): …
+  spec 10 (#80)`, no `products/` overlap). GitHub recomputed CLEAN/MERGEABLE —
+  no rebase (and #80 is an impl PR, no phase-PR approval-pin to void).
+- **Label gate:** unlabeled → applied `product` (patient-facing; facilitator
+  relayed product sign-off). `gh pr edit --add-label` no-op'd (Projects-classic
+  GraphQL deprecation); added via REST.
+- **Open-comment gate:** only PR comment is the staff-engineer *bot* (concurrent
+  exp-#74 run deferring its duplicate) raising a [Low] fractional-age fail-loud
+  finding. Gate keys on top-7 *humans* (sole = `dickolsson`, silent) → does not
+  trigger. Acknowledged on-PR as non-blocking (plan-a-conformant) and routed to
+  staff-engineer as an optional fast-follow — trust loop kept intact.
+- **STATUS:** row 10 `plan approved → plan implemented`. First spec proven
+  spec→design→plan→**implement**; first artifact through the merge gate (#39).
+- Reported merge SHA `a9e3e33` on #74 (issue-comment 4892265740); merge comment
+  4892261275.
+
+### Concurrency note (wiki regression)
+First wiki commit (`5b9c11d`) was **clobbered by a concurrent wiki reset** to
+remote `187ad4f` (same class as `5ce1573` "dropped from remote by concurrent
+regression"): row-10 write, this log entry, and metrics were reverted on disk.
+Re-applied atop `187ad4f` and pushed directly with rebase-retry rather than
+trusting the Stop hook alone.
+
+### STATUS rows consumed / written
+- Consumed: gate read `10 plan approved` at PR head `2479463`.
+- Written: row 10 → `plan implemented`.
+
+### Releases
+None — repo publishes no package (0 tags). #80 touched only
+`products/polaris/handlers/`; `kata-release-cut` is a no-op here.
+
+### Metrics
+`prs_merged=1`, `approvals_recorded_per_run=0` →
+`wiki/metrics/kata-release-merge/2026.csv`.
+
+## 2026-07-06 — post-merge release assessment of #80 (facilitator ask#1)
+
+Facilitator routed a formal `kata-release-cut` Step-2 assessment of #80
+(`a9e3e33`), separate from the merge gate above. Two outcomes.
+
+### Verdict: NO-CUT-OWED
+Four-conjunct claim over `range_from=eb1114a` (prior #71 assessment baseline,
+verified ancestor of HEAD) `.. range_to=9a46cc1` (HEAD; #76 landed after #80):
+1. **Baseline** ✓ — #71 run record cited `eb1114a`, `git merge-base
+   --is-ancestor` confirms ancestor of origin/main.
+2. **Zero publishable paths** ✓ — no publishable-package directory exists in the
+   repo. All four manifests are `private: true`, no `publishConfig`: root
+   `bionova-apps` v0.0.0, `bionova-polaris` (cli), `@bionova/polaris-handlers`,
+   `@bionova/polaris-site`. Directory rule ⇒ every path (handlers src/tests,
+   wiki) is under no publishable dir. #80's per-commit paths (`a9e3e33`
+   handlers-only; `9a98d97` wiki-only) never defeat the conjunct.
+3. **Standing set empty** ✓ — 0 git tags, no publish workflow ever (all
+   `publish|release` grep hits are agent-profile names / comments), no
+   held/deferred cuts, no pending publish-workflow verifications.
+4. **Main CI green** ✓ — HEAD `9a46cc1` full check suite success
+   (compose/audit/edge/context/quality/seed/test/e2e + deploy). Non-success
+   entries are Agent dispatch/docs-review orchestration runs, not release gates.
+Matches CLAUDE.md ("publishes no library of its own"). `kata-release-cut` is a
+no-op here, as at #71.
+
+### STATUS recovery — row 10 advance re-landed (`d2ec55c`)
+The row-10 write I recorded at the #80 merge gate **never reached origin/main** —
+lost to the concurrent wiki regression flagged in the entry above. origin/main
+STATUS showed `10 plan approved`; `plan implemented` had never appeared in any
+committed ledger (`git log -S` empty). #80's own wiki commit `9a98d97` touched
+metrics + the staff log, not STATUS.md. Advanced row 10 `plan approved → plan
+implemented` surgically off the authoritative origin/main base (not the dirty
+working-tree scratch, which carried a spurious `80 spec draft` row + an
+uncommitted Approval-context block — neither committed, neither mine). One-line
+tab-preserving change, path-scoped commit, pushed direct to main (`d2ec55c`).
+Impl-state propagation of a merge already gated — not a trust-gated origination,
+so within release scope per facilitator ask#1.
+
+### Releases
+None — 0 tags, no publishable package. NO-CUT-OWED.
