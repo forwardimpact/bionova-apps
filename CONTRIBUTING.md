@@ -41,7 +41,7 @@ Run before every commit. The offline suites need no running stack:
 ```sh
 bun run lint          # eslint (JS) + deno lint (edge functions)
 bunx tsc --noEmit     # typecheck
-bun run test          # handlers + CLI + site + edge functions
+bun run test          # handlers + CLI + scripts + site + edge functions
 bun run coaligned     # instruction layers, jobs, invariants
 ```
 
@@ -71,7 +71,7 @@ SMOKE_DESTRUCTIVE=1 bash scripts/smoke.sh
 - Real secrets live in `.env` (gitignored). `.env.example` carries placeholders.
 - The Supabase JWT keys committed for the local stack are the well-known public
   demo keys, not secrets. Never add a real key.
-- Scan for secrets before you push. Run `gitleaks` locally, resolve every finding, and document any verified false positive in the pull request. Automated CI enforcement — a `check-secrets` gate with an allowlist tuned for the vendored synthetic data and the well-known demo keys — is tracked in the CI secret-scan gate spec.
+- Scan for secrets before you push. Run `gitleaks` locally, resolve every finding, and document any verified false positive in the pull request. An automated `check-secrets` gate is not yet in place, so the local `gitleaks` run is the only secret-scan control today. When the gate is added it will carry an allowlist tuned for the vendored synthetic data and the well-known demo keys.
 
 ### Dependency audit gates
 
