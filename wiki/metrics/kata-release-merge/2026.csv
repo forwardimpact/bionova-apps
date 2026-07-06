@@ -10,3 +10,5 @@
 2026-07-06T12:07:11Z,approvals_recorded_per_run,count,0,window=[2026-07-06T04:07:11Z,2026-07-06T12:07:11Z);cohort=#90 issue-sourced internal fix no phase-approval events in-window
 2026-07-06T12:25:27Z,prs_merged,count,1,window=[2026-07-06T12:07:11Z,2026-07-06T12:25:27Z);pr=91 single-PR handed gate (#88 Obs 2 body-cap, internal)
 2026-07-06T12:25:27Z,approvals_recorded_per_run,count,0,window=[2026-07-06T12:07:11Z,2026-07-06T12:25:27Z);cohort=#91 issue-sourced internal fix no phase-approval events in-window
+2026-07-06T14:36:20Z,prs_merged,count,2,window=[2026-07-06T06:36:20Z,2026-07-06T14:36:20Z);pr=94,97 docs fast-path (CONTRIBUTING.md/CLAUDE.md) internal
+2026-07-06T14:36:20Z,approvals_recorded_per_run,count,0,window=[2026-07-06T06:36:20Z,2026-07-06T14:36:20Z);cohort=#64/#68/#81/#87/#78/#79/#83/#86 phase PRs no approval events in-window

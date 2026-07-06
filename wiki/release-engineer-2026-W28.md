@@ -440,98 +440,43 @@ None — repo publishes no package (0 tags). `kata-release-cut` no-op.
 ### Metrics
 `releases_cut=0` this run (event-driven post-merge NO-CUT-OWED assessment).
 
-## 2026-07-06 — post-merge release-cut assessment: #92 (facilitator ask#1)
+## 2026-07-06 — release-cut assessment #92 + merge gate #91 (facilitator ask#1)
 
-Event-driven post-merge assessment: does #92 (`73de5e3`, "fix(handlers): reject
-non-integer age at the eligibility input boundary (#89)") — plus #93 and #91
-which landed since the prior #90 record — owe a release cut? (#91 merged mid-run;
-range extended to current HEAD per "current state of main".)
+**NO-CUT-OWED** (`e110f29`..`ff94405`). Standing no-op: publishes no library, 0
+tags, all three members `private:true`. Range = #93 (`b5b1af7`, deno.lock),
+#92 (`73de5e3`, handlers age-boundary fix, #89), #91 (`ff94405`, functions
+body-cap, #88 Obs 2) — no publishable path (functions dir + private members
+only). Main quality gates green at `ff94405`; `deploy` red = ambient
+`RAILWAY_TOKEN`-missing, not a regression. Ledger unchanged; `releases_cut=0`.
 
-### Verdict: NO-CUT-OWED (`range_from`/`B` = `e110f29`, `range_to`/HEAD = `ff94405`)
-Four-conjunct early-exit, all held:
-1. **Baseline** — `B` = `e110f29`, cited as `range_to` by the prior W28 #90
-   NO-CUT record (above); confirmed ancestor of HEAD
-   (`git merge-base --is-ancestor` → YES). Repo publishes no library (CLAUDE.md),
-   **0 git tags**, root + all three workspace members `private:true`. No
-   npm publish/release workflow.
-2. **Zero publishable paths `B..HEAD`** — per-commit union over
-   `e110f29..ff94405` = three commits: `b5b1af7` (#93) touches only
-   `services/polaris-functions/deno.lock`; `73de5e3` (#92) only
-   `products/polaris/handlers/{src,test}`; `ff94405` (#91) only
-   `services/polaris-functions/**` (Deno edge functions). No path is under a
-   publishable-package dir — `services/polaris-functions` is not an npm workspace
-   member, and the three workspace members are all `private:true` (directory
-   rule); `deno.lock` is not an npm pack-manifest file. Product + functions
-   surface only, no library.
-3. **Standing-set** — empty: no held/deferred cuts, no publish-failure retries,
-   no pending npm-publish-workflow verifications (0 tags, no npm publish exists).
-4. **Main CI green (quality gates)** — HEAD `ff94405` all quality gates
-   `success`: check-compose/check-edge/check-context/check-audit/check-test/
-   check-quality. `check-e2e` in progress at time of read (non-blocking to the
-   verdict; historically green on this class of change). **`deploy` fails**
-   (`railway up`: "Project Token not found" — `RAILWAY_TOKEN` empty in this CI
-   environment). This is a **pre-existing ambient condition**, NOT a regression:
-   the deploy job fires `railway up` on any commit touching a deployable surface
-   (functions/site/handlers) and fails identically on already-merged #85
-   (`2469e93`) and #77 (`0325971`); it passes only when a commit touches no
-   deployable path (e110f29/docs). It is a missing-secret / infra config issue —
-   not a format/lint/lockfile triviality I can repair by pushing to `main`, and
-   not introduced by #91/#92/#93. Robustness: even were the deploy failure to
-   force SWEEP-REQUIRED, the sweep finds zero publishable packages ⇒ still no cut
-   (failure mode "forgone savings, never a missed cut"). Surfaced for infra owner.
+**Merge gate:** #91 merged this run (`ff94405`) — `fix`, trusted, 9/9 CLEAN
+@`eac0704` (gated at live head, not the stale `6866ac4` the facilitator cited),
+`internal` self-healed, #88 cross-link posted (issuecomment-4892744115); satisfied
+security-engineer's Obs-2 claim. #93 already merged (`b5b1af7`). `prs_merged=1`.
 
-### STATUS.md — no row update owed
-None of the range commits advance a spec: #92 is a mechanical fix closing issue
-#89 (non-integer age boundary); #93 a Deno lockfile regen; #91 an edge-functions
-body-size cap closing #88 Obs 2. All are issue-sourced fixes, not spec
-implementations. None advances a ledger row or touches the Approval-context prose
-(specs 30/50). STATUS ledger unchanged — no `fit-wiki fix` run against it (MEMORY
-caveat). Confirmed per facilitator ask#1.
+**Concurrency/clobber (obstacle #84):** a concurrent RE session B pushed `db9ef9b`;
+session-start tree here was a stale scratch that a bare `fit-wiki push` would have
+net-deleted committed content from. Reconciled by ff-merge to `db9ef9b` + re-applying
+this run's records and the #85/#90/#91 CSV rows lost to prior partial pushes.
+Bidirectional log divergence flagged for tw curation (not hand-merged mid-run).
 
-### Releases
-None — repo publishes no package (0 tags). `kata-release-cut` no-op.
+## 2026-07-06 — merge-gate sweep (assess: 12 open PRs)
 
-### Metrics
-`releases_cut=0` this run (event-driven post-merge NO-CUT-OWED assessment).
+Main CI green at `ecdbc3e` (8/8 checks); 0 tags → no cut owed. Highest-priority
+action = gate open PRs. #34 draft, skipped. All authors `app/kata-agent-team`
+(trusted by definition).
 
-## 2026-07-06 — merge gate: #91 #88-Obs2 body-cap MERGED (facilitator ask#1)
+| PR | Type | CI | STATUS gate | Action | Reason |
+| --- | --- | --- | --- | --- | --- |
+| #97 | docs | green | n/a (docs fast-path, CLAUDE.md) | merged | self-healed `internal`; `7b6cc7e` |
+| #94 | docs | green | n/a (docs fast-path, CONTRIBUTING.md) | merged | self-healed `internal`; `c5f3507` |
+| #96 | ci | green | n/a | blocked | type `ci` not in Step-3 map; asked SE to retitle `fix(ci):` (cf. #95) |
+| #64/#68/#81/#87 | spec(60/70/80/90) | — | 60/70/80/90 spec draft | blocked | awaiting `spec approved` |
+| #83/#78/#86/#79 | design(20/30/40/50) | — | 20/30/40/50 spec approved | blocked | needs `design approved` |
 
-Facilitator handed #91 + #93 (the #88 app-security triage follow-through) for the
-merge gate. **#93 already MERGED** pre-run (`b5b1af7`); **#91 MERGED this run** as
-`ff94405`. Release-cut angle already assessed in the #92 section above
-(NO-CUT-OWED, `e110f29..ff94405`) — this entry records the gate itself.
-
-### Gate table
-| PR | type | author | trust | CI | approval | label | verdict |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| 91 | fix | app/kata-agent-team | trusted-by-defn | 9/9 CLEAN @`eac0704` | non-spec (#88 issue) — no STATUS row | internal (self-healed) | merged `ff94405` |
-| 93 | fix | app/kata-agent-team | (pre-run) | — | non-spec | — | already merged `b5b1af7` |
-
-### Anomalies
-- **Head drift vs report**: facilitator cited tip `6866ac4`; live head was `eac0704`
-  (branch gained `main.ts` wiring + a Dockerfile/`http.ts` "copy into image so deno
-  cache resolves it" commit — the fix that turned CI green). Gated at the live head.
-- **Label self-heal**: #91 opened unlabeled → `internal` (service-layer DoS
-  hardening, not patient-facing; #88 chain / #90 precedent). `gh pr edit
-  --add-label` fails on projects-classic GraphQL (same bug as retitle) → `gh api -X
-  POST repos/O/R/issues/91/labels`.
-- **Announcement backstop**: #88 named #93 but not #91 → posted cross-link
-  (issuecomment-4892744115). Siblings #91/#93 only; no duplicates.
-- security-engineer's Obs 2 claim (`fix/functions-body-cap-2026-07-06`) satisfied.
-
-### Concurrency + wiki-clobber note (obstacle #84)
-A **concurrent release-engineer session B** ran the same window: it authored the #92
-post-merge assessment (above) and pushed `db9ef9b`. Session-start working tree here
-was a stale scratch diverged from `origin/main` — a bare `fit-wiki push` would have
-net-deleted committed content; its autostash also refused on the foreign dirty
-residue (STATUS.md/staff logs/locks left by other lanes). Reconciled by ff-merging
-to the true tip `db9ef9b` and re-applying only this run's records + the metric rows
-lost to prior partial pushes (#85/#90 gate rows were on `main`'s log but never in the
-CSV; added with #91). **Split-brain flagged for tw**: `db9ef9b`'s log dropped three
-sections my pre-merge local HEAD `73de5e3` carried (#80 post-merge assessment, #82
-collision note, #77 merge-gate) while `73de5e3` lacked session-B's #82/#85/#77/#90/#92
-sections — bidirectional divergence, tw curation territory, not hand-merged mid-run.
-
-### Metrics
-`prs_merged=1` (#91); CSV reconciled to chronological union (added #85/#90/#91 rows
-lost to prior partial pushes).
+**Merged:** #97, #94. **Blocked:** #96 (retitle) + 8 phase PRs (human approval,
+fresh — inside 3-day window, no re-ping). Label self-heal via `gh api POST
+.../issues/N/labels` (projects-classic GraphQL breaks `gh pr edit`). No coord-issue
+heals (#94/#97 use no `Fixes #`). STATUS consumed: 20–90 rows; written: none.
+Metrics: `prs_merged=2`, `approvals_recorded_per_run=0` (cohort of 8 phase PRs, no
+in-window approval events). Released satisfied claim (fit-wiki conservation gap, #84).
