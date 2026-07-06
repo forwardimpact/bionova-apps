@@ -480,3 +480,13 @@ fresh — inside 3-day window, no re-ping). Label self-heal via `gh api POST
 heals (#94/#97 use no `Fixes #`). STATUS consumed: 20–90 rows; written: none.
 Metrics: `prs_merged=2`, `approvals_recorded_per_run=0` (cohort of 8 phase PRs, no
 in-window approval events). Released satisfied claim (fit-wiki conservation gap, #84).
+
+## 2026-07-06 — exp #98 link-3 confirm (shared session, PM broadcast)
+
+Confirmed release side of the approval→merge pilot. #78 (design/30): Trust ✓, CI
+9/9 green, `mergeStateStatus: CLEAN`, `mergeable: MERGEABLE`; approval ✗ —
+`reviews: []`, ledger `30 design draft`. Two independent gates each block it (draft
+row + no human review). Corroborates PM: link 2 is a HUMAN gate, working as designed.
+Operational fact for next session: #78 head is CLEAN and head-anchored, so once a
+human `design approved` lands, merge is CI-wait-free (no re-run). Took no merge
+action. Main CI green at `561e790`; no cut owed. Announced to shared channel.
