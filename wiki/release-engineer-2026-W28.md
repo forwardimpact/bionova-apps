@@ -169,114 +169,9 @@ None — repo publishes no package (0 tags). #80 touched only
 `prs_merged=1`, `approvals_recorded_per_run=0` →
 `wiki/metrics/kata-release-merge/2026.csv`.
 
-## 2026-07-06 — post-merge release assessment of #80 (facilitator ask#1)
+### exp#42 docs-review dispatch — ARMED (PR #76 merged 9a46cc1)
 
-Facilitator routed a formal `kata-release-cut` Step-2 assessment of #80
-(`a9e3e33`), separate from the merge gate above. Two outcomes.
-
-### Verdict: NO-CUT-OWED
-Four-conjunct claim over `range_from=eb1114a` (prior #71 assessment baseline,
-verified ancestor of HEAD) `.. range_to=9a46cc1` (HEAD; #76 landed after #80):
-1. **Baseline** ✓ — #71 run record cited `eb1114a`, `git merge-base
-   --is-ancestor` confirms ancestor of origin/main.
-2. **Zero publishable paths** ✓ — no publishable-package directory exists in the
-   repo. All four manifests are `private: true`, no `publishConfig`: root
-   `bionova-apps` v0.0.0, `bionova-polaris` (cli), `@bionova/polaris-handlers`,
-   `@bionova/polaris-site`. Directory rule ⇒ every path (handlers src/tests,
-   wiki) is under no publishable dir. #80's per-commit paths (`a9e3e33`
-   handlers-only; `9a98d97` wiki-only) never defeat the conjunct.
-3. **Standing set empty** ✓ — 0 git tags, no publish workflow ever (all
-   `publish|release` grep hits are agent-profile names / comments), no
-   held/deferred cuts, no pending publish-workflow verifications.
-4. **Main CI green** ✓ — HEAD `9a46cc1` full check suite success
-   (compose/audit/edge/context/quality/seed/test/e2e + deploy). Non-success
-   entries are Agent dispatch/docs-review orchestration runs, not release gates.
-Matches CLAUDE.md ("publishes no library of its own"). `kata-release-cut` is a
-no-op here, as at #71.
-
-### STATUS recovery — row 10 advance re-landed (`d2ec55c`)
-The row-10 write I recorded at the #80 merge gate **never reached origin/main** —
-lost to the concurrent wiki regression flagged in the entry above. origin/main
-STATUS showed `10 plan approved`; `plan implemented` had never appeared in any
-committed ledger (`git log -S` empty). #80's own wiki commit `9a98d97` touched
-metrics + the staff log, not STATUS.md. Advanced row 10 `plan approved → plan
-implemented` surgically off the authoritative origin/main base (not the dirty
-working-tree scratch, which carried a spurious `80 spec draft` row + an
-uncommitted Approval-context block — neither committed, neither mine). One-line
-tab-preserving change, path-scoped commit, pushed direct to main (`d2ec55c`).
-Impl-state propagation of a merge already gated — not a trust-gated origination,
-so within release scope per facilitator ask#1.
-
-### Releases
-None — 0 tags, no publishable package. NO-CUT-OWED.
-
-## 2026-07-06 — #82 MERGED (concurrent run) + facilitator ask#1 collision note
-
-#82 (`docs(jtbd)`, tw's em-dash split in `JTBD.md`, doc-review exp #42 cycle 1)
-is **MERGED** — squash `6ee91c3`, on `origin/main`, branch deleted, merged
-11:45:05Z. Classified `product` (JTBD.md documents the product's persona jobs →
-documents a product surface, per work-definition.md decision test); docs
-fast-path cleared approval; trust ✓ (`app/kata-agent-team`); CI 9/9. This log
-entry re-lands the merge record — the concurrent run that merged it never pushed
-its wiki entry to `origin/main`.
-
-**Collision (facilitator ask#1):** two release-engineer invocations gated #82 in
-parallel within one 5-minute window — a product-manager-ask run and my
-facilitator-ask run. Timeline: 11:41:19Z prior "blocked" comment; 11:44:58Z
-"all gates pass. Merging."; **11:45:05Z merge**; 11:46:12Z my "still one gate
-open" comment — posted **67s after the merge** off a session-start snapshot that
-still read OPEN. I retracted it on-PR (pinned to `6ee91c3`). `prs_merged=0` for
-my run.
-
-- **Lesson:** before gating, re-read the PR's **live** state, not the
-  session-start snapshot; one live merge point per PR. Stale-OPEN read cost a
-  contradictory public comment.
-- `gh pr edit --add-label` fails on projects-classic GraphQL; the working
-  add-label path is `gh api -X POST repos/{owner}/{repo}/issues/N/labels` (per
-  MEMORY.md, same class as the `--title` breakage).
-
-## 2026-07-06 — merge gate: #77 functions security-audit MERGED (facilitator ask#3)
-
-Facilitator relayed product-manager's classification call (ask#3): **#77 is
-`internal`**. That cleared the sole outstanding gate flagged for #77 in the
-07-06 assess sweep — it was blocked awaiting a classification label, the only
-gate. Applied the label and merged.
-
-### Gate table
-| PR | type | author | trust | CI | STATUS gate | label | verdict |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| #77 | fix(functions) | app/kata-agent-team | trusted by defn | 9/9 green (incl e2e 3m27s) | no spec ref — n/a | internal | **merged** (squash `0325971`) |
-
-### Detail
-- **Scope:** 5 files, +56/-7, all under `services/polaris-functions/` — embed-seed
-  `..` traversal fix (`resolveSource()` resolves before containment), `String(err)`
-  info-leak fix on 500s (`main.ts`), `--allow-env` scoping (`Dockerfile`/`deno.json`),
-  + negative traversal tests. No `handlers/`/`cli/`/`site/`/`data/synthetic/`.
-- **Classification:** product-manager (ask#3) → `internal`; purely internal
-  hardening, no persona happy-path change (sole client delta = generic 500), matches
-  sibling spec #81 (the carved-out authz decision). Attributed to PM in gate comment.
-- **Label mechanics:** `gh pr edit --add-label` no-op'd on Projects-classic GraphQL
-  deprecation (same as #80/#67); applied `internal` via REST
-  (`POST issues/77/labels`).
-- **Approval:** standalone agent-authored `fix`, no spec id → no STATUS row read,
-  no Step 9 spec check. No `Fixes #N` coordinating issue → Step 8 skip.
-- **Comment gate:** only prior comments are my own gate note + PM's classification;
-  no unresolved trusted-human (top-7) concern. Cleared.
-- Merge comment 4892400465 pinned to head `83ef5e0`; squash merge `0325971`,
-  branch deleted.
-
-### STATUS rows consumed / written
-- Consumed: none (no spec ref). Written: none.
-
-### Releases
-None — repo publishes no package (0 tags). #77 touched only
-`services/polaris-functions/` (Deno edge functions, deployed not published);
-`kata-release-cut` is a no-op here.
-
-### Metrics
-`prs_merged=1`, `approvals_recorded_per_run=0` → `wiki/metrics/kata-release-merge/2026.csv`.
-(The `internal` classification is not a `<phase>:approved` label/APPROVED review, so
-it is not an approval event — same as #80's `product` label recorded 0.)
+Merged 2026-07-06 11:35Z (squash 9a46cc1); workflow 'Agent: Docs Review' active id 307981687. Crons: 40 8 * * * primary + 40 15 * * * backstop (Paris 10:40/17:40). First fire 2026-07-07 08:40 UTC in-window -> functions-readme. Gates cleared: trusted same-repo, classified CI-plumbing/not-a-spec, rebased on latest main, CI 9/9 green (e2e passed 3m13s), facilitator in-session approval = signal. NON-DESTRUCTIVE SMOKE (run 28788620663): did NOT run force:true (bypasses guards -> real review dated 07-06 = off-cadence same-day, pollutes TW's clean 3-day baseline 07-04=7/05=5/06=4, the obstacle-#40 front-load). Instead no-force out-of-window dispatch: scaffolding all green (token/checkout/bootstrap+fit-wiki/window-guard/wiki-push), review chain correctly SKIPPED, zero pollution. #72 apm data point recorded (issue comment 4892332615): no-force smoke didn't reach kata-agent so no apm signal from it; substitute = shift 28769001847 TW cell success (apm resolved kata-skills that run, non-conclusive ~50%); definitive cold-cache point lands 07-07 first cron, self-verify auto-comments race-drops on #72. Orchestration announce channel closed at session end (Stream closed) — report lives in PR #76 / #72 comment / this log.
 
 ## 2026-07-06 — merge gate sweep: 8 open PRs, all blocked (no human/PM signals)
 
@@ -538,6 +433,60 @@ Four-conjunct early-exit, all held:
 ### STATUS.md — no row update owed
 #90 is an issue-sourced internal tooling fix (#72 interim mitigation), not a spec
 implementation. Advances no ledger row.
+
+### Releases
+None — repo publishes no package (0 tags). `kata-release-cut` no-op.
+
+### Metrics
+`releases_cut=0` this run (event-driven post-merge NO-CUT-OWED assessment).
+
+## 2026-07-06 — post-merge release-cut assessment: #92 (facilitator ask#1)
+
+Event-driven post-merge assessment: does #92 (`73de5e3`, "fix(handlers): reject
+non-integer age at the eligibility input boundary (#89)") — plus #93 and #91
+which landed since the prior #90 record — owe a release cut? (#91 merged mid-run;
+range extended to current HEAD per "current state of main".)
+
+### Verdict: NO-CUT-OWED (`range_from`/`B` = `e110f29`, `range_to`/HEAD = `ff94405`)
+Four-conjunct early-exit, all held:
+1. **Baseline** — `B` = `e110f29`, cited as `range_to` by the prior W28 #90
+   NO-CUT record (above); confirmed ancestor of HEAD
+   (`git merge-base --is-ancestor` → YES). Repo publishes no library (CLAUDE.md),
+   **0 git tags**, root + all three workspace members `private:true`. No
+   npm publish/release workflow.
+2. **Zero publishable paths `B..HEAD`** — per-commit union over
+   `e110f29..ff94405` = three commits: `b5b1af7` (#93) touches only
+   `services/polaris-functions/deno.lock`; `73de5e3` (#92) only
+   `products/polaris/handlers/{src,test}`; `ff94405` (#91) only
+   `services/polaris-functions/**` (Deno edge functions). No path is under a
+   publishable-package dir — `services/polaris-functions` is not an npm workspace
+   member, and the three workspace members are all `private:true` (directory
+   rule); `deno.lock` is not an npm pack-manifest file. Product + functions
+   surface only, no library.
+3. **Standing-set** — empty: no held/deferred cuts, no publish-failure retries,
+   no pending npm-publish-workflow verifications (0 tags, no npm publish exists).
+4. **Main CI green (quality gates)** — HEAD `ff94405` all quality gates
+   `success`: check-compose/check-edge/check-context/check-audit/check-test/
+   check-quality. `check-e2e` in progress at time of read (non-blocking to the
+   verdict; historically green on this class of change). **`deploy` fails**
+   (`railway up`: "Project Token not found" — `RAILWAY_TOKEN` empty in this CI
+   environment). This is a **pre-existing ambient condition**, NOT a regression:
+   the deploy job fires `railway up` on any commit touching a deployable surface
+   (functions/site/handlers) and fails identically on already-merged #85
+   (`2469e93`) and #77 (`0325971`); it passes only when a commit touches no
+   deployable path (e110f29/docs). It is a missing-secret / infra config issue —
+   not a format/lint/lockfile triviality I can repair by pushing to `main`, and
+   not introduced by #91/#92/#93. Robustness: even were the deploy failure to
+   force SWEEP-REQUIRED, the sweep finds zero publishable packages ⇒ still no cut
+   (failure mode "forgone savings, never a missed cut"). Surfaced for infra owner.
+
+### STATUS.md — no row update owed
+None of the range commits advance a spec: #92 is a mechanical fix closing issue
+#89 (non-integer age boundary); #93 a Deno lockfile regen; #91 an edge-functions
+body-size cap closing #88 Obs 2. All are issue-sourced fixes, not spec
+implementations. None advances a ledger row or touches the Approval-context prose
+(specs 30/50). STATUS ledger unchanged — no `fit-wiki fix` run against it (MEMORY
+caveat). Confirmed per facilitator ask#1.
 
 ### Releases
 None — repo publishes no package (0 tags). `kata-release-cut` no-op.
