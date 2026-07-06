@@ -119,3 +119,19 @@ await a trusted `design approved` signal on STATUS rows 30/50 (human-only).
 Design-approval turnaround on 30/50 is the binding latency (facilitator tracking
 it). On approval: route-2 kata-plan for each. Standing route-1 backlog behind
 them: specs 20/40 still `spec approved` with no design.
+
+## 2026-07-06
+
+### Decision
+
+**Surveyed:** Assess routes 0–4; handed task via facilitator ask on experiment #74
+
+**Alternatives:** Self-pick from Assess (routes 1/2/4) — declined; task was explicitly handed
+
+**Chosen:** Route 3 — kata-implement spec 10 (eligibility-precheck) on feat/10-eligibility-precheck
+
+**Rationale:** plan-a.md on origin/main, STATUS row 10 = plan approved, no open PR/claim touching spec 10; facilitator green-lit #74
+
+### Spec 10 implemented — PR #80
+
+feat/10-eligibility-precheck: buildPreCheck view-model builder + checkEligibility wiring + CLI template rewrite + tests (39/0). C1–C5 covered; C5 rg guard clean. kata-review panel of 5: zero blocker/high/medium, B4b added. Two plan deviations flagged to product (fallback copy → two sentences per CLAUDE.md style; synthetic custom[] test doubles keep C5 guard clean over all products/). STATUS plan-implemented row left for the merge signal. Routed to release-engineer on #74.
