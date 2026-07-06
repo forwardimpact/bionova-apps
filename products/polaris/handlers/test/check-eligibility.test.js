@@ -77,6 +77,56 @@ test("checkEligibility returns the score, the view model, and inserts a signal",
   expect(res.signal_id).toBeUndefined();
 });
 
+// #89 — a non-integer age (CLI string "55.5" or a fractional/negative number)
+// is rejected at the input boundary before the scorer runs, so it yields a
+// plain-language outcome instead of the internal grammar-drift throw.
+test.each([
+  ["fractional CLI string", "55.5"],
+  ["fractional number", 55.5],
+  ["negative number", -3],
+  ["non-numeric string", "middle-aged"],
+])("checkEligibility rejects a non-integer age (%s) at the input boundary", async (_label, age) => {
+  // No routes: neither the scorer nor the signal insert may be called.
+  const { fetchImpl, calls } = makeFetch([]);
+  const data = createDataContext(env, { fetchImpl });
+  const res = await checkEligibility({
+    data,
+    args: { id: "oncora-phase3" },
+    options: { age, conditions: ["lung_cancer"] },
+  });
+
+  // A plain-language outcome, never a throw. The reason and the fix both name
+  // "whole number", and the standard disclaimer + next step still render.
+  expect(res.summary).toContain("whole number");
+  expect(res.unclear.some((line) => line.includes("whole number"))).toBe(true);
+  expect(typeof res.disclaimer).toBe("string");
+  expect(typeof res.nextStep).toBe("string");
+  // No raw enum token in the patient-facing summary (C3).
+  expect(res.summary).not.toContain("possibly_eligible");
+
+  // The scorer (spec 10 X1) is never invoked and no interest signal is recorded.
+  expect(calls.find((c) => c.url.includes("eligibility-check"))).toBeUndefined();
+  expect(calls.find((c) => c.url.includes("interest_signals"))).toBeUndefined();
+  expect(res.signal_id).toBeUndefined();
+});
+
+// A whole-number age passed as a CLI string is valid and flows to the scorer.
+test("checkEligibility accepts a whole-number age string and scores normally", async () => {
+  const { fetchImpl, calls } = makeFetch([
+    route("/functions/v1/eligibility-check", { match_score: "eligible", reasons: [] }),
+    route("criteria?trial_id=", []),
+    route("interest_signals", null, { status: 201 }),
+  ]);
+  const data = createDataContext(env, { fetchImpl });
+  const res = await checkEligibility({
+    data,
+    args: { id: "oncora-phase3" },
+    options: { age: "55" },
+  });
+  expect(res.match_score).toBe("eligible");
+  expect(calls.find((c) => c.url.includes("eligibility-check"))).toBeDefined();
+});
+
 test("checkEligibility still returns a score if the signal insert fails", async () => {
   const { fetchImpl } = makeFetch([
     route("/functions/v1/eligibility-check", {

@@ -34,6 +34,52 @@ const UNRESOLVED_CONDITION_LINE =
 const AGE_RE = /^Age (\d+) (within|outside) \[(\d+), (\d+)\]$/;
 
 /**
+ * Is the screener's `age` answer a valid age at the input boundary?
+ *
+ * A valid age is a whole number of years. The scorer folds any finite value —
+ * a fraction like 55.5, or a negative — into an `Age N ...` reason, but AGE_RE
+ * above reads only a non-negative integer, so a non-whole age falls through to
+ * the fail-loud throw and surfaces as an internal error, not a plain-language
+ * answer (#89). The handler rejects such an age before the scorer runs; this
+ * predicate draws the line. Absent or blank age is valid here: the scorer
+ * reports it as "Age not provided", which already routes to the plain "add your
+ * age" unclear line.
+ *
+ * @param {unknown} age - the raw `age` screener answer (number or CLI string).
+ * @returns {boolean}
+ */
+export function isAgeInputValid(age) {
+  if (age === undefined || age === null) return true; // absent → not rejected
+  if (typeof age === "number") return Number.isInteger(age) && age >= 0;
+  if (typeof age === "string") {
+    const trimmed = age.trim();
+    if (trimmed === "") return true; // blank → treated as not provided
+    return /^\d+$/.test(trimmed);
+  }
+  return false;
+}
+
+/**
+ * The pre-check view model for an age that failed {@link isAgeInputValid}.
+ * Same shape buildPreCheck returns, so the template renders it unchanged: a
+ * plain-language reason the check did not run and the one step to fix it.
+ *
+ * @returns {ReturnType<typeof buildPreCheck>}
+ */
+export function invalidAgePreCheck() {
+  return {
+    summary:
+      "We could not check your eligibility because the age you entered is not a whole number of years.",
+    supports: [],
+    against: [],
+    unclear: ["Enter a whole number for your age, such as 54, then check again."],
+    coordinatorQuestions: [],
+    disclaimer: DISCLAIMER,
+    nextStep: NEXT_STEP,
+  };
+}
+
+/**
  * @param {{ inclusion: object|null, exclusion: object|null }} criteria
  *   the `criteria?...&select=inclusion,exclusion` row shape; tolerates null halves.
  * @param {{ match_score: string, reasons: string[] }} scoreResult

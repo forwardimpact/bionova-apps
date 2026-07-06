@@ -6,7 +6,11 @@
  * @module check-eligibility
  */
 
-import { buildPreCheck } from "./eligibility-view.js";
+import {
+  buildPreCheck,
+  invalidAgePreCheck,
+  isAgeInputValid,
+} from "./eligibility-view.js";
 
 /**
  * @param {object} ctx
@@ -19,6 +23,17 @@ export async function checkEligibility(ctx) {
   const { db, edgeFunctions } = ctx.data;
   const { id } = ctx.args ?? {};
   const answers = ctx.options ?? {};
+
+  // 0. Guard the age answer at the input boundary, before the scorer runs
+  // (spec 10 X1 keeps the scorer untouched). A non-integer or negative age
+  // would score into an `Age N ...` reason the plain-language view parser
+  // cannot read, surfacing as an internal error rather than an answer (#89).
+  // Reject it here with a plain-language outcome and record no signal — there
+  // is no score to record.
+  if (!isAgeInputValid(answers.age)) {
+    return { ...invalidAgePreCheck(), match_score: "possibly_eligible", reasons: [] };
+  }
+
   const eq = `eq.${encodeURIComponent(id)}`;
 
   // 1. Evaluate eligibility via the edge function (reads criteria.custom[]).
