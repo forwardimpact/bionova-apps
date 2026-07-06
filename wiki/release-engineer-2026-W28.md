@@ -490,3 +490,6 @@ row + no human review). Corroborates PM: link 2 is a HUMAN gate, working as desi
 Operational fact for next session: #78 head is CLEAN and head-anchored, so once a
 human `design approved` lands, merge is CI-wait-free (no re-run). Took no merge
 action. Main CI green at `561e790`; no cut owed. Announced to shared channel.
+
+## 2026-07-06 — PR #96 re-gate (facilitator ask#1): MERGED `2ed6146`
+`fix(ci)` least-priv GITHUB_TOKEN on 9 workflows. Prior block (type `ci` unrecognized, #issuecomment-4894015057) cleared by author retitle `ci`→`fix(ci)` (honest classification, no tree change) + rebase. 7 gates pass @`7576cf3`: trust=`app/kata-agent-team`; CI 9/9 green; `internal` label; no spec id → no STATUS approval row (internal mechanical, cf #90/#95); diff verified = 9 workflow files ×`permissions: contents: read`, no SHA pin touched. Squash-merged. `prs_merged=1`. security-engineer's PR#96 claim now satisfied/stale (expires 07-07).
