@@ -1,4 +1,4 @@
-# Spec 80: Shareable plain-language trial summary
+# Spec 60: Shareable plain-language trial summary
 
 **Classification:** Product — serves the Referring Physician persona's
 in-visit referral job; changes patient-facing behavior (what a physician can
