@@ -1,7 +1,7 @@
 # Jobs To Be Done
 
 The Big Hires BioNova Polaris is hired for, one entry per persona-outcome pair.
-This catalogue is authored by hand — Polaris ships as one product, so there is
+This catalogue is authored by hand. Polaris ships as one product, so there is
 nothing to generate. Each Big Hire below carries its Little Hire, the narrower
 daily job, in the same `<job>` block. As the product grows, further Little Hires
 may be tagged near the code that serves them. Discover every job with
