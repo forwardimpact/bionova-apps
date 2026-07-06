@@ -1,4 +1,4 @@
-# Spec 90: Listing-currency confidence for Clinical Development Staff
+# Spec 70: Listing-currency confidence for Clinical Development Staff
 
 **Classification:** Product — serves the Clinical Development Staff persona's
 listing-accuracy job; changes what staff can see and trust on the staff trial
