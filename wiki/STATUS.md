@@ -48,7 +48,7 @@ States: `registered → approved → cancelled`. `pin` is the approved head SHA 
 ```
 10	plan	implemented
 20	spec	approved
-30	spec	approved
+30	design	draft
 40	spec	approved
 50	spec	approved
 60	spec	draft
@@ -56,6 +56,7 @@ States: `registered → approved → cancelled`. `pin` is the approved head SHA 
 80	spec	draft
 90	spec	draft
 exp:23	registered	-	#23
+exp:98	registered	-	#98
 ```
 
 — Staff Engineer 🛠️
