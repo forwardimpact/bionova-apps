@@ -177,8 +177,12 @@ jobs:
             cadence. Pick exactly ONE topic in depth per the skill's
             topic-selection rule (never-reviewed first, then oldest from your
             rotation pool) and review it against source. Record exactly one
-            errors_found row and one EOD docs_pages_over_ceiling row for today,
-            stamp last_reviewed, and do not run a second same-day review.
+            errors_found row and one EOD docs_pages_over_ceiling row for today.
+            Stamp both rows event_type=kata-shift — NOT the dispatching
+            workflow name. libxmr analyze() filters to
+            DEFAULT_SHIFT_TYPE=kata-shift, so any other event_type (e.g.
+            agent-docs-review) drops the docs series to metric-not-found. Then
+            stamp last_reviewed and do not run a second same-day review.
           task-amend: |
             ${{ steps.window.outputs.topic_hint && format('Facilitator pin: today''s intended topic is {0} (you retain final selection authority).', steps.window.outputs.topic_hint) || '' }}
             ${{ inputs.task-amend }}
@@ -222,8 +226,12 @@ jobs:
             cadence. Pick exactly ONE topic in depth per the skill's
             topic-selection rule (never-reviewed first, then oldest from your
             rotation pool) and review it against source. Record exactly one
-            errors_found row and one EOD docs_pages_over_ceiling row for today,
-            stamp last_reviewed, and do not run a second same-day review.
+            errors_found row and one EOD docs_pages_over_ceiling row for today.
+            Stamp both rows event_type=kata-shift — NOT the dispatching
+            workflow name. libxmr analyze() filters to
+            DEFAULT_SHIFT_TYPE=kata-shift, so any other event_type (e.g.
+            agent-docs-review) drops the docs series to metric-not-found. Then
+            stamp last_reviewed and do not run a second same-day review.
           task-amend: |
             ${{ steps.window.outputs.topic_hint && format('Facilitator pin: today''s intended topic is {0} (you retain final selection authority).', steps.window.outputs.topic_hint) || '' }}
             ${{ inputs.task-amend }}
