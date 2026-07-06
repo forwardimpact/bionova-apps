@@ -75,6 +75,18 @@ covers (see Notes for design).
   this spec must hold regardless of which keys are configured.
 - Email delivery for `notify-updates` (deferred per its own design).
 - Any change to `eligibility-check`'s behavior or scoring.
+- **Restricting the Kong `cors` origin allowlist — considered and deferred**
+  (audit observation 3, #88). The `functions-v1` route runs the `cors` plugin
+  with no config, so it default-allows any origin (`*`). This is not adopted,
+  here or elsewhere, because CORS is not the control that gates these routes:
+  they are gated by the `apikey` header (`key-auth`), not by ambient cookie
+  credentials, so a malicious origin has no CSRF vector and cannot read a
+  response without already holding the key. For the privileged routes the
+  controlling boundary is the anon-rejection this spec adds; an origin
+  allowlist would be strictly dominated by it. `*` is also the correct posture
+  for the public `eligibility-check` read surface (no JTBD pulls for origin
+  restriction, and a lockdown would risk legitimate share/embed flows).
+  Revisit only if credentialed (cookie-based) browser auth is ever introduced.
 
 ## Constraints
 
