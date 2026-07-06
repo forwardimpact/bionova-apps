@@ -1,0 +1,281 @@
+name: "Agent: Docs Review"
+
+# Experiment #42 (Technical Writer docs-review PDSA), obstacle #40.
+#
+# WHY THIS WORKFLOW EXISTS
+# Manual same-day cadence keeps front-loading documentation reviews onto one
+# calendar day (see the exp-42-cycle2/3 and cycle4/5 same-day bursts in
+# wiki/metrics/kata-documentation/2026.csv). That never advances the item-6
+# baseline, so fit-xmr stays at insufficient_data. The kill signal is: if a day
+# passes with no review logged, fix the CADENCE with automation — not more
+# manual discipline. This workflow is that automation.
+#
+# DIVISION OF LABOR (settled with PM/facilitator, ask#3/#4)
+#   release-engineer (this file): the cron/dispatch plumbing — one dispatch per
+#     distinct calendar day, idempotent, self-verifying against a no-trace
+#     fast-fail. This file selects NO topic and writes NO metrics row.
+#   technical-writer (the dispatched shift): topic selection, the review itself,
+#     honest errors_found, last_reviewed stamping, and the one EOD metrics row.
+#
+# THREE ACCEPTANCE CRITERIA (ask#3), and where each is met:
+#   1. Exactly once per calendar day on 07-07/08/09 (07-10 optional) — the
+#      window date-guard (`window` step) + concurrency group. A backstop cron is
+#      safe precisely because of #2.
+#   2. Idempotent per day — the `idempotency` step reads the review-time signal
+#      (today's errors_found row) and skips dispatch if a review already logged.
+#      One predicate governs the morning fire, the backstop fire, and the
+#      self-verify re-dispatch: dispatch iff no review logged today.
+#   3. A real kata-documentation review shift (not a reminder) — the `review-*`
+#      steps invoke kata-agent as technical-writer with a task-text that
+#      commands a scheduled kata-documentation review.
+
+on:
+  schedule:
+    # Offset off the existing slots (shift :00 at 01/10/18 UTC, storyboard 06:00,
+    # audit 07:17) and off the top of the hour to dodge the scheduler stampede.
+    - cron: "40 8 * * *"   # 10:40 Europe/Paris (CEST) — primary daily fire
+    # Backstop: heals a delayed/dropped primary cron or an apm-race fast-fail.
+    # Safe to fire unconditionally because the idempotency guard makes it a
+    # no-op once the primary has logged a review for the day. This is the payoff
+    # of criterion #2 — belt-and-suspenders at zero same-day-burst risk.
+    - cron: "40 15 * * *"  # 17:40 Europe/Paris (CEST) — backstop
+  workflow_dispatch:
+    inputs:
+      task-amend:
+        description: "Additional steering appended to the review task prompt"
+        required: false
+        type: string
+      force:
+        description: "Bypass the window + idempotency guards (cold-cache smoke test)"
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+
+# A backstop run must never cancel a primary run mid-review, and two same-day
+# fires must serialize (the second then no-ops on the idempotency guard).
+concurrency:
+  group: agent-docs-review
+  cancel-in-progress: false
+
+jobs:
+  docs-review:
+    runs-on: ubuntu-latest
+    steps:
+      # Mirror agent-dispatch.yml: gate the whole job on the killswitch before
+      # any token mint. kata-agent runs its own killswitch too; this covers the
+      # guard/verify steps that run outside it.
+      - name: Kata killswitch
+        shell: bash
+        env:
+          KATA_KILLSWITCH: ${{ vars.KATA_KILLSWITCH }}
+        run: |
+          case "$(printf '%s' "${KATA_KILLSWITCH:-}" | tr '[:upper:]' '[:lower:]')" in
+            ""|0|false|no|off) ;;
+            *) echo "::error::KATA_KILLSWITCH engaged (value: ${KATA_KILLSWITCH})." >&2; exit 1 ;;
+          esac
+
+      - name: Generate token
+        id: ci-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ secrets.KATA_APP_ID }}
+          private-key: ${{ secrets.KATA_APP_PRIVATE_KEY }}
+
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+          token: ${{ steps.ci-app.outputs.token }}
+
+      # Install fit-wiki so the guard/verify steps can read the canonical metrics
+      # ledger. kata-agent bundles its own toolchain; this is only for our
+      # pre/post checks. (Same bootstrap the dispatch workflow uses.)
+      - uses: forwardimpact/bootstrap@c852d29b38edbb2e6c037bf3952aac339e9fe8b8 # v1.0.12
+        with:
+          token: ${{ steps.ci-app.outputs.token }}
+          app-id: ${{ secrets.KATA_APP_ID }}
+          clis: fit-wiki
+
+      # --- Criterion 1: window date-guard -------------------------------------
+      # Pure date logic — no state. Decides in-window vs out, exits early
+      # outside 07-07..07-10, and emits the facilitator-decided per-day topic as
+      # a steering HINT. The map is self-documenting (the "per-day topic map for
+      # free" from the ask#4 decision); TW retains final selection authority per
+      # the division of labor (if the hinted topic is already fresh, TW's
+      # skill picks the true oldest). `force` bypasses the window for the
+      # cold-cache smoke test.
+      - name: Window guard
+        id: window
+        shell: bash
+        env:
+          FORCE: ${{ inputs.force }}
+        run: |
+          TODAY="$(date -u +%F)"
+          echo "today=$TODAY" >> "$GITHUB_OUTPUT"
+          # Facilitator-decided topic order (shared decision 2026-07-06).
+          case "$TODAY" in
+            2026-07-07) IN_WINDOW=true; TOPIC=functions-readme ;;
+            2026-07-08) IN_WINDOW=true; TOPIC=deployment ;;
+            2026-07-09) IN_WINDOW=true; TOPIC=operations ;;
+            2026-07-10) IN_WINDOW=true; TOPIC=infrastructure-readme ;;  # optional day
+            *)          IN_WINDOW=false; TOPIC= ;;
+          esac
+          if [ "$FORCE" = "true" ]; then IN_WINDOW=true; echo "::notice::force=true — window guard bypassed"; fi
+          echo "in_window=$IN_WINDOW" >> "$GITHUB_OUTPUT"
+          echo "topic_hint=$TOPIC" >> "$GITHUB_OUTPUT"
+          if [ "$IN_WINDOW" != "true" ]; then
+            echo "::notice::$TODAY is outside the exp-42 window (07-07..07-10) — no dispatch."
+          fi
+
+      # --- Criterion 2: idempotency guard -------------------------------------
+      # Read the review-TIME signal: today's errors_found row. errors_found is
+      # written per review-run (even on 0 findings — see cycle5), so it appears
+      # the moment a review runs, before the EOD docs_pages_over_ceiling row.
+      # Gating on the EOD row instead would false-negative in the mid-day window
+      # and double-dispatch. This signal is shared with agent-shift's TW cell,
+      # so this guard also prevents a same-day burst across the two workflows.
+      - name: Idempotency guard
+        id: idempotency
+        if: steps.window.outputs.in_window == 'true' && inputs.force != true
+        shell: bash
+        env:
+          GH_TOKEN: ${{ steps.ci-app.outputs.token }}
+        run: |
+          fit-wiki pull || true
+          CSV="wiki/metrics/kata-documentation/$(date -u +%Y).csv"
+          TODAY="${{ steps.window.outputs.today }}"
+          if [ -f "$CSV" ] && grep -Eq "^${TODAY},errors_found," "$CSV"; then
+            echo "already_logged=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::A docs review already logged for $TODAY — skipping dispatch (idempotent)."
+          else
+            echo "already_logged=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # --- Criterion 3: dispatch a real review (attempt 1) --------------------
+      # Single-agent kata-agent as technical-writer, commanding the scheduled
+      # kata-documentation review. continue-on-error so an apm-race fast-fail
+      # (obstacle #72, unresolved on the kata-agent cron path) does not end the
+      # job before the self-verify can catch it.
+      - name: Docs review (attempt 1)
+        id: review1
+        if: steps.window.outputs.in_window == 'true' && steps.idempotency.outputs.already_logged != 'true'
+        continue-on-error: true
+        uses: forwardimpact/kata-agent@4363b5ad249cebe6375671ee855988e201a03377 # v1.0.7
+        with:
+          app-id: ${{ secrets.KATA_APP_ID }}
+          app-private-key: ${{ secrets.KATA_APP_PRIVATE_KEY }}
+          anthropic-api-key: ${{ secrets.ANTHROPIC_API_KEY }}
+          killswitch: ${{ vars.KATA_KILLSWITCH }}
+          agent-profile: technical-writer
+          agent-model: "claude-opus-4-8[1m]"
+          wiki: "true"
+          case: docs-review
+          task-text: >-
+            Run a scheduled kata-documentation review for experiment #42's daily
+            cadence. Pick exactly ONE topic in depth per the skill's
+            topic-selection rule (never-reviewed first, then oldest from your
+            rotation pool) and review it against source. Record exactly one
+            errors_found row and one EOD docs_pages_over_ceiling row for today.
+            Stamp both rows event_type=kata-shift — NOT the dispatching
+            workflow name. libxmr analyze() filters to
+            DEFAULT_SHIFT_TYPE=kata-shift, so any other event_type (e.g.
+            agent-docs-review) drops the docs series to metric-not-found. Then
+            stamp last_reviewed and do not run a second same-day review.
+          task-amend: |
+            ${{ steps.window.outputs.topic_hint && format('Facilitator pin: today''s intended topic is {0} (you retain final selection authority).', steps.window.outputs.topic_hint) || '' }}
+            ${{ inputs.task-amend }}
+
+      # --- Self-verify (verify 1) ---------------------------------------------
+      # Did attempt 1 actually log a review? Re-pull and re-check the signal.
+      - name: Verify attempt 1
+        id: verify1
+        if: steps.review1.outcome != 'skipped'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ steps.ci-app.outputs.token }}
+        run: |
+          fit-wiki pull || true
+          CSV="wiki/metrics/kata-documentation/$(date -u +%Y).csv"
+          TODAY="${{ steps.window.outputs.today }}"
+          if [ -f "$CSV" ] && grep -Eq "^${TODAY},errors_found," "$CSV"; then
+            echo "logged=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "logged=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Attempt 1 dispatched but no review logged for $TODAY — likely an apm-race fast-fail (obstacle #72). Re-dispatching once."
+          fi
+
+      # --- Self-verify re-dispatch (attempt 2, exactly once) ------------------
+      - name: Docs review (attempt 2, self-heal)
+        id: review2
+        if: steps.review1.outcome != 'skipped' && steps.verify1.outputs.logged != 'true'
+        continue-on-error: true
+        uses: forwardimpact/kata-agent@4363b5ad249cebe6375671ee855988e201a03377 # v1.0.7
+        with:
+          app-id: ${{ secrets.KATA_APP_ID }}
+          app-private-key: ${{ secrets.KATA_APP_PRIVATE_KEY }}
+          anthropic-api-key: ${{ secrets.ANTHROPIC_API_KEY }}
+          killswitch: ${{ vars.KATA_KILLSWITCH }}
+          agent-profile: technical-writer
+          agent-model: "claude-opus-4-8[1m]"
+          wiki: "true"
+          case: docs-review-retry
+          task-text: >-
+            Run a scheduled kata-documentation review for experiment #42's daily
+            cadence. Pick exactly ONE topic in depth per the skill's
+            topic-selection rule (never-reviewed first, then oldest from your
+            rotation pool) and review it against source. Record exactly one
+            errors_found row and one EOD docs_pages_over_ceiling row for today.
+            Stamp both rows event_type=kata-shift — NOT the dispatching
+            workflow name. libxmr analyze() filters to
+            DEFAULT_SHIFT_TYPE=kata-shift, so any other event_type (e.g.
+            agent-docs-review) drops the docs series to metric-not-found. Then
+            stamp last_reviewed and do not run a second same-day review.
+          task-amend: |
+            ${{ steps.window.outputs.topic_hint && format('Facilitator pin: today''s intended topic is {0} (you retain final selection authority).', steps.window.outputs.topic_hint) || '' }}
+            ${{ inputs.task-amend }}
+
+      # --- Coordination note (a): log the race-drop against #72 ---------------
+      # A caught race-drop is real signal for security-engineer on the kata-agent
+      # cron path (which the #71 scripts/bootstrap.sh mitigation does NOT cover).
+      - name: Log race-drop against #72
+        if: steps.review2.outcome != 'skipped'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ steps.ci-app.outputs.token }}
+        run: |
+          gh issue comment 72 --repo "${{ github.repository }}" --body \
+            "self-verify caught a no-review-logged dispatch on the kata-agent cron path (agent-docs-review, run ${{ github.run_id }}, ${{ steps.window.outputs.today }}). Consistent with the apm 0.12.4 race dropping kata-skills. The #71 scripts/bootstrap.sh serialization does not cover this path; re-dispatched once to heal. Real signal for the durable apm bump." \
+            || echo "::warning::could not comment on #72 (non-fatal)"
+
+      # --- Final assertion: honest failure, never a silent cadence miss -------
+      # If we were in-window with no prior review and STILL nothing logged after
+      # two attempts, fail loudly. A genuine miss must page a human, not slip by
+      # as a false cadence-obstacle-#40 data point.
+      - name: Assert a review landed
+        id: assert
+        if: steps.window.outputs.in_window == 'true' && steps.idempotency.outputs.already_logged != 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ steps.ci-app.outputs.token }}
+        run: |
+          fit-wiki pull || true
+          CSV="wiki/metrics/kata-documentation/$(date -u +%Y).csv"
+          TODAY="${{ steps.window.outputs.today }}"
+          if [ -f "$CSV" ] && grep -Eq "^${TODAY},errors_found," "$CSV"; then
+            echo "::notice::Review logged for $TODAY. Cadence held."
+          else
+            echo "::error::No review logged for $TODAY after two attempts. This is a GENUINE miss, not a cadence obstacle — needs a human."
+            exit 1
+          fi
+
+      # Push any wiki state the guard/verify pulls left dirty (kata-agent pushes
+      # its own review; this is a safety flush).
+      - name: Push wiki changes
+        if: always()
+        uses: forwardimpact/wiki@f88ea81402d4d3411baf9ca0a38cafb11dfa7f60 # v1.0.1
+        with:
+          command: push
+          app-id: ${{ secrets.KATA_APP_ID }}
+          app-private-key: ${{ secrets.KATA_APP_PRIVATE_KEY }}
