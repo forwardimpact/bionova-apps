@@ -8,11 +8,14 @@ const STAFF_JWT_COOKIE = "sb-staff-jwt";
 type SearchParams = Record<string, string | string[] | undefined>;
 type Args = Record<string, string>;
 
+// The web surface reads through the anon key (staff calls carry the staff JWT
+// from `sb-staff-jwt`); it never needs the service-role key, which bypasses RLS.
+// Deliberately absent so it cannot leak from a request path — the CLI admin
+// command is the only caller that uses the service-role key.
 function env() {
   return {
     SUPABASE_URL: process.env.SUPABASE_URL!,
     SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY!,
-    SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY!,
     TEI_URL: process.env.TEI_URL!,
   };
 }

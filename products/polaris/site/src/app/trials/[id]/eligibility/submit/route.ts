@@ -6,11 +6,13 @@ import { ANSWER_PREFIX } from "@/components/eligibility-screener";
 
 export const dynamic = "force-dynamic";
 
+// Anon key only — this public POST records an anonymous interest signal and
+// never needs the RLS-bypassing service-role key. Kept out of the request path
+// deliberately so it cannot leak.
 function env() {
   return {
     SUPABASE_URL: process.env.SUPABASE_URL!,
     SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY!,
-    SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY!,
     TEI_URL: process.env.TEI_URL!,
   };
 }
