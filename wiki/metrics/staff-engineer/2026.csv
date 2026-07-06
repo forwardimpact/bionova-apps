@@ -1,4 +1,13 @@
 date,metric,value,unit,run,note,event_type,host_run
 2026-07-04,specs_awaiting_design,0,count,,,agent-storyboard,28697568296
 2026-07-04,designs_merged,0,count,,,agent-storyboard,28697568296
+2026-07-04,specs_awaiting_design,0,count,,q2-current-condition,agent-storyboard,28697568296
+2026-07-04,designs_merged,0,count,,q2-current-condition,agent-storyboard,28697568296
+2026-07-04,specs_awaiting_plan,0,count,,q2-current-condition,agent-storyboard,28697568296
+2026-07-04,designs_drafted,1,count,,spec-10 design-a PR #57 opened,kata-shift,28717002895
 2026-07-04,specs_awaiting_design,0,count,,spec→design watcher @ origin/main,agent-dispatch,28697911338
+2026-07-04,designs_drafted,0,count,,reviewed+corrected existing design PR #57 (spec 10): X6 match_score retention fix 21afdb8; no new PR opened/merged,agent-dispatch,28717354103
+2026-07-06,specs_awaiting_design,4,count,28785980488,q2-current-condition: specs 20/30/40/50 spec approved on origin/main no design-a,agent-storyboard,28785980488
+2026-07-06,designs_merged,1,count,28785980488,q2-current-condition: spec 10 design-a on origin/main (#57),agent-storyboard,28785980488
+2026-07-06,specs_awaiting_plan,0,count,28785980488,q2-current-condition: spec 10 has plan-a; no other design on main,agent-storyboard,28785980488
+2026-07-06,designs_drafted,2,count,28786484362,specs 30+50 design-a PRs #78/#79 opened (route-1 security migrations; deadline 2026-07-24),agent-skill,28786484362
