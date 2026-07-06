@@ -1,6 +1,6 @@
 # Contributing to BioNova Polaris
 
-How contributors — human and agent — work in this repository. [CLAUDE.md](CLAUDE.md)
+How contributors, human and agent, work in this repository. [CLAUDE.md](CLAUDE.md)
 orients you (what, who, where); this file governs (rules, commands, policy).
 Read it before your first commit.
 
