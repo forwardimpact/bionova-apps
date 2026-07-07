@@ -47,14 +47,15 @@ States: `registered → approved → cancelled`. `pin` is the approved head SHA 
 
 ```
 10	plan	implemented
-20	spec	approved
-30	design	draft
-40	spec	approved
+20	design	approved
+30	design	approved
+40	design	approved
 50	design	approved
 60	spec	draft
 70	spec	draft
 80	spec	draft
 90	spec	draft
+100	spec	draft
 exp:23	registered	-	#23
 exp:98	registered	-	#98
 ```
