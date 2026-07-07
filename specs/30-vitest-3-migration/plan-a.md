@@ -24,23 +24,30 @@ not lost between pre-flight and the eventual implement leg.
 
 - **Atomic baseline removal.** The `vitest` pin, the root `vite` override, the
   re-resolved `bun.lock`, **and** the two `audit-baseline.json` GHSA removals
-  land in **one** PR. `scripts/audit-gate.js` set-diffs live crit/high GHSA ids
-  against the baseline and treats any unmatched live id as unbaselined:
-  remove-without-full-resolve fails closed (live advisory, no baseline cover);
-  bump-without-remove goes stale, then the nightly cron fails closed past
-  `review_by`.
-- **Deadline input.** `2026-07-24` is a **hard** fail-closed gate — the
-  `check-audit.yml` nightly cron (`17 7 * * *`) runs with acceptance-expiry
-  enforcement on schedule; both spec-30 entries carry `review_by: 2026-07-24`.
+  land in **one** PR. `scripts/audit-gate.js` fails on any live crit/high GHSA
+  id **not** covered by the baseline: remove a baseline entry while the advisory
+  is still live and it fails closed (an introduced, unbaselined finding). The
+  reverse — bump without removing the entry — leaves a live-but-resolved
+  mismatch that logs a non-fatal `stale` warning on every run; separately, its
+  `review_by` then fails closed on the nightly cron once the date lapses. Two
+  distinct mechanisms, both satisfied by doing the removal in the same PR.
+- **Deadline input.** Implement-by is **2026-07-24** — a hard fail-closed gate:
+  the `check-audit.yml` nightly cron (`17 7 * * *`) enforces acceptance expiry on
+  schedule, so both spec-30 entries (`review_by: 2026-07-24`) go loud the moment
+  they lapse. Actionable constraint: land the fix before that date; do **not**
+  extend either entry's `review_by` to buy time.
 - **Remove by exact GHSA id, not tracking-issue number.** The baseline
   `review_spec` values are `#31`/`#29`, not the spec-dir numbers 30/50. Match on
   the GHSA id.
 - **Regenerate the lock under bun 1.2.0.** `.tool-versions` pins `bun 1.2.0` and
   `bun.lock` is `lockfileVersion 1`; a newer bun rewrites the lock format (the
   deno-v3→v5 analog). This session's shell ran bun 1.3.11 — **do not** regen the
-  lock with it. **Flag:** every `oven-sh/setup-bun@v2.2.0` step in
-  `.github/workflows/*` passes no `bun-version`, so CI drifts to latest bun; the
-  lock must be regenerated and verified under 1.2.0 regardless of CI drift.
+  lock with it. **Flag (out of scope for this PR):** every
+  `oven-sh/setup-bun@v2.2.0` step in `.github/workflows/*` passes no
+  `bun-version`, so CI drifts to latest bun and would not catch a 1.3.x lock
+  rewrite. Do **not** edit the workflows here — pinning CI bun belongs in a
+  separate item. This plan only requires regenerating and verifying the lock
+  under 1.2.0 locally.
 - **Lockfile-keyed success.** Verify with `bun pm ls vitest` and `bun pm ls vite`
   against the committed `bun.lock`, not against a manifest string.
 - **Coupled end state.** crit/high → 0 needs **both** specs to land (2 entries
@@ -118,8 +125,10 @@ Confirm against the Vitest 3 migration notes that `esbuild.jsx: "automatic"`,
 and the `@`→`src` `resolve.alias` are all still valid. Change a key **only** if
 v3 renamed it; otherwise leave the file untouched.
 
-Verify: `cd products/polaris/site && bunx tsc --noEmit` is clean; `bun run test`
-loads the config without a deprecation error.
+Verify: `cd products/polaris/site && bunx tsc --noEmit` is clean and `bun run
+test` parses the config and starts the run (a Vitest-3 config-key deprecation
+surfaces in the log, not as a non-zero exit — Step 4's suite pass is the hard
+gate).
 
 ### Step 4 — Run the 5 suites under the Vite 6 runtime
 
