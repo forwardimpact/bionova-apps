@@ -30,6 +30,13 @@ the migration-verification spike Cycle 2 in a throwaway worktree off `main`
   `vite` high `GHSA-fx2h-pf6j-xcff` (vulnerable `<=6.4.2`, fixed `6.4.3`) did
   **not** clear — `vitest@3.2.7` transitively pulls `vite@5.4.21`.
 - **Adding root `overrides: { "vite": "^6.4.3" }` → `vite@6.4.3` → 0 crit/high.**
+- **A plain _incremental_ `bun install` does NOT close the `vite` high — the pair
+  stays at 1.** bun 1.3.11 lock-stability keeps the nested `vite@5.4.21`
+  (`<=6.4.2`, still vulnerable) even after the `vitest` bump, because `vite` is
+  transitive under `vitest`/`vite-node`. Two paths reach 0: a **full lock regen**
+  floats `vite→7.3.6` (a vite-**7** major), or the **root `^6.4.3` override**
+  floors it at `vite@6.4.3` (capped in vite-**6**). The bare-bump-only outcome is
+  exp #124's FAIL verdict.
 
 Consequences folded into this plan:
 
@@ -38,6 +45,16 @@ Consequences folded into this plan:
   and 5 pair the override + its GHSA removal with the `vitest` bump — the measured
   result confirms a bare `vitest` bump leaves the high open. Step 2's
   `bun pm ls vite ≥ 6.4.3` is its dedicated verification line.
+- **Why the capped override, not a plain regen.** Both reach 0 crit/high, but a
+  full regen drags `vite` across a _second_ major (5→7.3.6) — a wider migration
+  this plan does not want. The `^6.4.3` override is the minimal lever: it clears
+  the high while keeping `vite` in the 6 line the suite runtime is verified
+  against (Step 4). It also defeats the incremental-install trap head-on — with
+  the override present, even an incremental re-resolve floors `vite` at the fix
+  (measured), so a bare `bun install` cannot silently leave `vite@5.4.21` and
+  reopen the high. This is the [`bun.lock` bare-install-unsound trap (spec 110,
+  #103)](https://github.com/forwardimpact/bionova-apps/issues/103) one layer up —
+  the override, not the install command, is what makes the lock honest here.
 - **No new crit/high from the vite-6 tree.** The measured combined end state is
   0 crit/high, so forcing `vite` across its 5→6 major via the override surfaces
   no new critical/high advisory. Scope does not reopen on that axis.
@@ -228,13 +245,18 @@ first exercise of `jsdom@29` at all (#115's green ran on `jsdom@24`).
 - No file changes expected. If a suite needs a Vitest-3 API adjustment, edit the
   affected `src/__tests__/*.test.tsx` minimally.
 
-Verify (criterion 4): `cd products/polaris/site && bun run test` — all 5 suites
-(admin-trial, trial-detail, sites, eligibility, search) pass **against the
-`jsdom@29` DOM substrate** (confirm `bun pm ls jsdom` = `29.1.1` first). Read a
-failure here as a jsdom-29 DOM interaction before a vitest-3 one — the optional
-de-entangle pre-step (flip jsdom on vitest 2 first, § Security invariants)
-disambiguates the two if this goes red. Do **not** re-pin jsdom to 24 to make it
-pass — that reverts #115.
+Verify (criterion 4): first confirm the runtime under test is the resolved one —
+`bun pm ls vite` reports **`≥ 6.4.3`** (not merely that `vitest` bumped) and
+`bun pm ls jsdom` = `29.1.1`, both read against the committed `bun.lock`. A green
+suite run against a stale `vite@5.4.21` would pass this step while silently
+leaving the `vite` high open (exp #124 measured that the bare `vitest` bump keeps
+`vite@5.4.21` — the pass must be read on the _forced_ vite-6 runtime, not the
+incremental-install default). Then `cd products/polaris/site && bun run test` —
+all 5 suites (admin-trial, trial-detail, sites, eligibility, search) pass
+**against the `jsdom@29` DOM substrate**. Read a failure here as a jsdom-29 DOM
+interaction before a vitest-3 one — the optional de-entangle pre-step (flip jsdom
+on vitest 2 first, § Security invariants) disambiguates the two if this goes red.
+Do **not** re-pin jsdom to 24 to make it pass — that reverts #115.
 
 ### Step 5 — Remove the two resolved entries from the audit baseline
 
