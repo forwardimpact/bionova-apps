@@ -62,6 +62,32 @@ Spec-50-specific:
   does not carry it) — it must simply be **absent** post-bump, not removed.
 - **Remove exactly five ids:** `GHSA-36qx-fr4f-26g5`, `GHSA-8h8q-6873-q5fj`,
   `GHSA-c4j6-fc7j-m34r`, `GHSA-h25m-26qc-wcjf`, `GHSA-q4gf-8mx6-v5v3`.
+- **★ Named plan input — measured security payoff (exp #45 Cycle 1 spike;
+  security-engineer, PR #29 comment 4904367532, full record on #45 comment
+  4904360542).** A resolved `next: ^15.5.16` was **measured** to install
+  `next@15.5.20` and clear **all five** patient-facing `next` highs above —
+  `GHSA-36qx-fr4f-26g5`, `GHSA-8h8q-6873-q5fj`, `GHSA-c4j6-fc7j-m34r` (SSRF,
+  CVSS 8.6), `GHSA-h25m-26qc-wcjf`, `GHSA-q4gf-8mx6-v5v3` — with **no new
+  crit/high** introduced. Repo-wide `bun audit` crit/high fell **7 → 2** this
+  cycle; the residual 2 are the `vitest`/`vite` dev-toolchain pair on spec 30
+  (#31), untouched here (matches the **Coupled end state** invariant). This
+  evidence **corroborates and does not conflict with** the `≥ 15.5.18` floor
+  above: the caret range `^15.5.16` resolves to `15.5.20`, which is `≥ 15.5.18`,
+  so the measured install also clears `GHSA-26hh-7cqf-hhc6`. Whether the
+  implementer pins the exact `15.5.18` (Step 1 diff) or the `^15.5.16` range,
+  the resolved version must land `≥ 15.5.18`.
+  - **Verification line (own):** post-bump, `bun pm ls next` reports resolved
+    `next ≥ 15.5.18` against the committed `bun.lock` (Step 1); `bun audit`
+    reports **zero** `next`-path crit/high **and** the 2 spec-30 ids still
+    present (Steps 7–8). This proves the measured payoff reproduced in-tree.
+  - **BOUNDARY (carried as a risk below):** security measured the **audit
+    conversion only** — this de-risks the security *payoff*, it does **not**
+    certify the migration builds/tests clean. Per exp #45's hypothesis the
+    migration's true cost is build/test/e2e breakage at the async request-API
+    boundary, which is this plan's / the implementation's to measure. The
+    `next` 14 → 15 flip is therefore an **in-scope change with its own
+    build+test+e2e verification line** (see the Risks table), mirroring the
+    jsdom-major treatment on spec 30.
 - **★ Auth-path (admin JWT read).** `buildAdminCtx`
   (`src/lib/build-ctx.ts:46-53`) reads `sb-staff-jwt` via `next/headers`
   `cookies()`, which becomes **async** in 15. The helper turns `async`; its sole
@@ -222,6 +248,7 @@ Libraries used: none (framework bump + async-boundary edits only).
 
 | Risk | Mitigation |
 |---|---|
+| The exp #45 Cycle 1 spike measured the **audit conversion only** (`^15.5.16` → `15.5.20` clears the 5 highs; `bun audit` crit/high 7→2). It does **not** certify the migration builds/tests/e2e clean — per exp #45's own hypothesis the true 14→15 cost is build/test/e2e breakage at the async request-API boundary, not the audit delta. Treating the measured payoff as "migration verified" is the trap. | The `next` 14 → 15 flip is an **in-scope change with its own build+test+e2e verification**: the 5 test suites (Steps 4–6), the standalone `next build` type gate + `just smoke` + `check-e2e` (Step 8). The security evidence de-risks the *payoff*, not the *build* — mirrors the jsdom-major treatment on spec 30 (its criterion-4 names the major flip with its own verification line). |
 | A missed `await` on the admin `cookies()` read silently changes auth/RLS behavior rather than erroring | Step 3 asserts byte-for-byte cookie-absent semantics; the `next build` type gate (Step 8) fails on a Promise-typed token |
 | Implementer targets `15.5.16`, leaving `GHSA-26hh` open | Step 1 pins `≥15.5.18`; Step 7 verify checks `GHSA-26hh` absent from `bun audit` |
 | Lock regenerated under bun 1.3.x, rewriting the format; CI drift hides it | Step 1 pins regen to 1.2.0 and verifies `lockfileVersion 1` explicitly |
