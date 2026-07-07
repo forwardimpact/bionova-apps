@@ -11,8 +11,9 @@ bash scripts/build-seed.sh    # renders SQL + embeddings from the DSL into .buil
 ```
 
 `build-seed.sh` verifies the vendored DSL against `data/synthetic/SOURCE.sha256`
-and the rendered output against `data/synthetic/SEED.sha256` before staging. No
-LLM key is needed — the prose cache is committed.
+before rendering. It does not check the rendered output. `smoke.sh` (SC7) verifies
+that against `data/synthetic/SEED.sha256`. No LLM key is needed. The prose cache is
+committed.
 
 To refresh the domain itself, change the DSL upstream in the monorepo and
 re-vendor (see [data/synthetic/README.md](../data/synthetic/README.md)).
