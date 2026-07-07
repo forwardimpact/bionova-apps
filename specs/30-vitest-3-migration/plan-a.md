@@ -11,10 +11,11 @@
 ## Approach
 
 Two manifest edits re-resolve the lockfile so the runner reaches `vitest@3.2.6`
-and the transitive `vite` is forced to `≥6.4.3`; reconcile `vitest.config.ts`
-against Vitest 3, confirm the 5 suites pass under the Vite 6 runtime, and remove
-the two now-resolved crit/high entries from `security/audit-baseline.json` in the
-same PR so the audit gate self-corrects. WHAT/WHY live in
+and the transitive `vite` is forced to `≥6.4.3`; an explicit `bun update jsdom`
+lands the skewed `jsdom@29` (#115) the plain re-resolve won't carry; reconcile
+`vitest.config.ts` against Vitest 3, confirm the 5 suites pass under the Vite 6 +
+jsdom 29 runtime, and remove the two now-resolved crit/high entries from
+`security/audit-baseline.json` in the same PR so the audit gate self-corrects. WHAT/WHY live in
 [`spec.md`](./spec.md); WHICH/WHERE in [`design-a.md`](./design-a.md).
 
 ## Security invariants (source: security-engineer)
@@ -70,21 +71,32 @@ Spec-30-specific:
   moderates — they are not baselined.
 - **Config-key survival.** Confirm `esbuild.jsx: "automatic"` in
   `vitest.config.ts` is still a valid Vitest 3 key.
-- **jsdom baseline moved to `29.1.1` (Dependabot #115, `ebeb6a6`) — SUPERSEDES
-  the design's "Hold `jsdom@24.1.3`" decision.** design-a.md § Key Decisions and
-  its blast-radius line assume `jsdom@24`; that assumption is stale. Do **not**
-  re-pin `jsdom` to `24.1.3` — the site manifest is now `29.1.1` and reverting a
-  security-cleared dev-dep bump is out of scope. **Watch the lock skew:**
+- **jsdom 24 → 29 flip is IN SCOPE for this migration (Dependabot #115,
+  `ebeb6a6`) — SUPERSEDES the design's "Hold `jsdom@24.1.3`" decision.** design-a.md
+  § Key Decisions and its "jsdom@24 … unchanged" blast-radius line both assume
+  `jsdom@24`; that assumption is stale. Do **not** re-pin `jsdom` to `24.1.3` —
+  the site manifest is now `29.1.1` and reverting a security-cleared dev-dep bump
+  is out of scope. **The skew is un-intentional and does NOT self-heal.**
   `origin/main` carries `package.json → jsdom: 29.1.1` but `bun.lock` still
-  resolves `jsdom@24.1.3` (#115 bumped the manifest without re-resolving the
-  lock). Step 3's `bun install` re-resolve will therefore flip `jsdom` 24 → 29 as
-  a **side effect** of the `vitest`/`vite` change. Consequence: the `vitest@3.2.6`
-  + `jsdom@29` pairing is **un-validated** — #115's "green" ran on the
-  un-re-resolved tree (`jsdom@24`), not 29. Step 4's suite pass is the gate that
-  validates that pairing; read a Step 4 failure as a jsdom-29 interaction before
-  a vitest-3 one. The migration outcome (spec SC 1–6) stays jsdom-version-agnostic
-  — no criterion keys on the jsdom version — but the runtime the suites execute
-  against is not the one the design reasoned over.
+  resolves `jsdom@24.1.3` at both the site descriptor and the resolved entry
+  (#115 bumped the manifest without re-resolving the lock). Security re-verified
+  (bun 1.3.11): a plain `bun install` refreshes other floating deps and **leaves
+  jsdom at 24** — CI's plain install will not flip it either. **So this branch
+  must run an EXPLICIT `bun update jsdom`** (see Step 2a) — the `vitest`/`vite`
+  re-resolve does **not** carry jsdom along. Consequence: the `vitest@3.2.6` +
+  `jsdom@29` pairing is **un-validated**, and this is also the **first exercise of
+  the jsdom major at all** — #115's "green" ran on the un-re-resolved tree
+  (`jsdom@24`), not 29. Step 4 names the flip with its own verification line so
+  the "green didn't cover it" trap does not repeat one layer up. The migration
+  outcome (spec SC 1–6) stays jsdom-version-agnostic — no criterion keys on the
+  jsdom version — but the runtime the suites execute against is not the one the
+  design reasoned over. **Severity LOW:** version-currency devDep bump, `bun audit`
+  clean, no advisory masked — verification-integrity, not exposure; do not
+  over-rotate into hardening.
+- **Optional de-entangle pre-step (not required).** If cheaper triage is wanted:
+  run `bun update jsdom` on `vitest@2` FIRST and confirm the 5 suites still pass,
+  so a jsdom-29 failure is not confounded with a vitest-3 failure. Skippable —
+  Step 4 gates the combined state regardless.
 - **Hold** `@testing-library/react@16.3.2` — do not bump (no bump has landed for
   it; still Vite-6/React-18 compatible).
 - **CI gates:** `check-test` + `check-quality`. No credential surface.
@@ -128,11 +140,25 @@ Run `bun install` **under bun 1.2.0** (activate via `.tool-versions` /
 `lockfileVersion 1`.
 
 Verify: `bun pm ls vitest` reports `≥ 3.2.6`; `bun pm ls vite` reports
-`≥ 6.4.3`; `head` of `bun.lock` still shows `"lockfileVersion": 1`. Also
-confirm `bun pm ls jsdom` now reports `29.1.1` — the re-resolve closes the
-`origin/main` skew (manifest `29.1.1`, lock still `24.1.3` pre-#115-re-resolve),
-so `jsdom` moving 24 → 29 here is expected, not a regression. If the lock keeps
-`jsdom@24.1.3`, the install did not fully re-resolve — do not proceed.
+`≥ 6.4.3`; `head` of `bun.lock` still shows `"lockfileVersion": 1`. **Do not**
+expect this step to move `jsdom` — a plain `bun install` leaves it at `24.1.3`
+(security verified); the flip is Step 2a's explicit job.
+
+### Step 2a — Flip the skewed `jsdom` lock entry to the manifest
+
+Close the un-intentional `origin/main` skew: `package.json` says `jsdom 29.1.1`
+but the lock still resolves `24.1.3` at both the descriptor and resolved entry.
+A plain re-resolve does not carry it, so update it explicitly.
+
+- Modified: `bun.lock`
+
+Run `bun update jsdom` (under bun 1.2.0, same constraint as Step 2). This is the
+first landing of the jsdom major #115 declared — treat it as an in-scope change,
+not incidental lock churn.
+
+Verify: `bun pm ls jsdom` reports `29.1.1`; `rg 'jsdom@24' bun.lock` returns
+nothing (both the descriptor and the resolved entry moved); lock stays
+`lockfileVersion 1`.
 
 ### Step 3 — Reconcile `vitest.config.ts` against Vitest 3
 
@@ -150,15 +176,22 @@ test` parses the config and starts the run (a Vitest-3 config-key deprecation
 surfaces in the log, not as a non-zero exit — Step 4's suite pass is the hard
 gate).
 
-### Step 4 — Run the 5 suites under the Vite 6 runtime
+### Step 4 — Run the 5 suites under the Vite 6 runtime + jsdom 29
 
-Prove the render/query paths survive the Vite major.
+Prove the render/query paths survive the Vite major **and** the jsdom major
+together — this run is the first exercise of `vitest@3.2.6` + `jsdom@29`, and the
+first exercise of `jsdom@29` at all (#115's green ran on `jsdom@24`).
 
 - No file changes expected. If a suite needs a Vitest-3 API adjustment, edit the
   affected `src/__tests__/*.test.tsx` minimally.
 
-Verify: `cd products/polaris/site && bun run test` — all 5 suites (admin-trial,
-trial-detail, sites, eligibility, search) pass.
+Verify (criterion 4): `cd products/polaris/site && bun run test` — all 5 suites
+(admin-trial, trial-detail, sites, eligibility, search) pass **against the
+`jsdom@29` DOM substrate** (confirm `bun pm ls jsdom` = `29.1.1` first). Read a
+failure here as a jsdom-29 DOM interaction before a vitest-3 one — the optional
+de-entangle pre-step (flip jsdom on vitest 2 first, § Security invariants)
+disambiguates the two if this goes red. Do **not** re-pin jsdom to 24 to make it
+pass — that reverts #115.
 
 ### Step 5 — Remove the two resolved entries from the audit baseline
 
@@ -195,13 +228,14 @@ Libraries used: none (dependency-graph + config change only).
 | A bare `vitest` bump lands without the root override, leaving `vite@5.4.21` + the high open | Step 1 pairs both edits; Step 2 verify gates on `bun pm ls vite ≥ 6.4.3` |
 | Baseline entry removed but the advisory is not actually resolved (typo, partial resolve) | `audit-gate.js` treats an unmatched live id as unbaselined → fails closed; Step 6 runs the gate |
 | A Vitest 3 config-key rename silently drops `esbuild.jsx` handling | Step 3 checks the key against v3 notes; Step 4 suites + typecheck gate it |
-| The lock re-resolve pairs `vitest@3.2.6` with `jsdom@29` — a jsdom major (#115) the design never validated and #115's CI never exercised (it ran on the un-re-resolved `jsdom@24`) | Step 4's 5 suites are the gate for the `jsdom@29` DOM substrate; a Step-4 failure is a jsdom-29 interaction until proven a vitest-3 one. Do **not** re-pin jsdom to 24 to sidestep — that reverts a security-cleared bump |
+| The `jsdom@29` flip (#115) silently never lands: a plain `bun install` does **not** move it off `24.1.3` (security verified), so CI would pass on the wrong DOM substrate | Step 2a runs an explicit `bun update jsdom` and verifies `rg 'jsdom@24' bun.lock` is empty; Step 4 confirms `bun pm ls jsdom` = `29.1.1` before reading the suite result |
+| The `vitest@3.2.6` + `jsdom@29` pairing was never exercised together (#115's CI ran on `jsdom@24`); a jsdom-major DOM regression is misread as a vitest-3 break | Step 4 is the gate for the combined state; the optional de-entangle pre-step (jsdom flip on vitest 2 first) isolates a jsdom-29 failure from a vitest-3 one. Do **not** re-pin jsdom to 24 to sidestep — that reverts a security-cleared bump |
 
 ## Execution
 
 Single unit, sequential — no decomposition. Route to an engineering agent via
-`kata-implement` once spec 30 reaches `plan approved`. One PR carries all six
-steps (atomic-removal invariant). This is a clean break: the override and pin
+`kata-implement` once spec 30 reaches `plan approved`. One PR carries every step
+(1 through 6, including 2a's jsdom flip) — the atomic-removal invariant. This is a clean break: the override and pin
 replace the vulnerable resolution outright; no shim, no fallback path.
 
 — Staff Engineer 🛠️
