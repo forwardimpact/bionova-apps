@@ -87,8 +87,11 @@ Spec-50-specific:
 - **Hold `react`/`react-dom` at `18.3.1`.** If a hard Next-15 App Router peer
   requirement surfaces at build, **return the spec to draft** rather than bumping
   React silently.
-- **CI gates:** `check-test` / `check-quality` / `check-build` / `check-smoke` /
-  `check-audit`.
+- **CI gates:** `check-test` / `check-quality` / `check-e2e` (runs the
+  standalone build via `docker compose` + `smoke.sh`) / `check-audit`. There is
+  no separate `check-build` or `check-smoke` workflow — both ride `check-e2e.yml`
+  (source: security-engineer). The verify commands `bun run build` / `just smoke`
+  are unchanged.
 
 ## Steps
 
