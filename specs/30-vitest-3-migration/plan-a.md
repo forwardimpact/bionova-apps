@@ -11,8 +11,9 @@
 ## Approach
 
 Two manifest edits re-resolve the lockfile so the runner reaches `vitest@3.2.6`
-and the transitive `vite` is forced to `≥6.4.3`; an explicit `bun update jsdom`
-lands the skewed `jsdom@29` (#115) the plain re-resolve won't carry; reconcile
+and the transitive `vite` is forced to `≥6.4.3`; the skewed `jsdom@29` (#115)
+lands to the exact manifest pin — a non-frozen re-resolve floats it (measured,
+exp #124), with an explicit `bun update jsdom` as the guaranteed floor; reconcile
 `vitest.config.ts` against Vitest 3, confirm the 5 suites pass under the Vite 6 +
 jsdom 29 runtime, and remove the two now-resolved crit/high entries from
 `security/audit-baseline.json` in the same PR so the audit gate self-corrects. WHAT/WHY live in
@@ -154,14 +155,23 @@ Spec-30-specific:
   § Key Decisions and its "jsdom@24 … unchanged" blast-radius line both assume
   `jsdom@24`; that assumption is stale. Do **not** re-pin `jsdom` to `24.1.3` —
   the site manifest is now `29.1.1` and reverting a security-cleared dev-dep bump
-  is out of scope. **The skew is un-intentional and does NOT self-heal.**
+  is out of scope. **The skew is un-intentional.**
   `origin/main` carries `package.json → jsdom: 29.1.1` but `bun.lock` still
   resolves `jsdom@24.1.3` at both the site descriptor and the resolved entry
-  (#115 bumped the manifest without re-resolving the lock). Security re-verified
-  (bun 1.3.11): a plain `bun install` refreshes other floating deps and **leaves
-  jsdom at 24** — CI's plain install will not flip it either. **So this branch
-  must run an EXPLICIT `bun update jsdom`** (see Step 2a) — the `vitest`/`vite`
-  re-resolve does **not** carry jsdom along. Consequence: the `vitest@3.2.6` +
+  (#115 bumped the manifest without re-resolving the lock). **The criterion is
+  the RESOLVED lock, not the command that gets it there** (facilitator ask#1;
+  security-engineer re-measurement, [issue #45 comment 4908981432](https://github.com/forwardimpact/bionova-apps/issues/45#issuecomment-4908981432)):
+  in a fresh worktree off `main` @ `bbddb88` (bun 1.3.11), a plain **non-frozen**
+  `bun install` DID reconcile `jsdom` 24 → 29.1.1 to satisfy the exact `29.1.1`
+  manifest pin — so an explicit `bun update jsdom` is **belt-and-suspenders, not
+  the only path**. The earlier "plain install leaves jsdom at 24" observation
+  was likely a `--frozen`/dirty-state artifact, not a lock-stability law. This
+  branch therefore **verifies the resolved `bun.lock` `jsdom` entry is `≥29`
+  regardless of which install path produced it** (Step 2a / criterion 4); Step 2a
+  still runs the explicit `bun update jsdom` as the guaranteed floor so the flip
+  cannot depend on install-path luck, but the pass/fail signal keys on the
+  resolved lock, not on that command being the one that moved it.
+  Consequence: the `vitest@3.2.6` +
   `jsdom@29` pairing is **un-validated**, and this is also the **first exercise of
   the jsdom major at all** — #115's "green" ran on the un-re-resolved tree
   (`jsdom@24`), not 29. Step 4 names the flip with its own verification line so
@@ -218,25 +228,28 @@ Run `bun install` **under bun 1.2.0** (activate via `.tool-versions` /
 `lockfileVersion 1`.
 
 Verify: `bun pm ls vitest` reports `≥ 3.2.6`; `bun pm ls vite` reports
-`≥ 6.4.3`; `head` of `bun.lock` still shows `"lockfileVersion": 1`. **Do not**
-expect this step to move `jsdom` — a plain `bun install` leaves it at `24.1.3`
-(security verified); the flip is Step 2a's explicit job.
+`≥ 6.4.3`; `head` of `bun.lock` still shows `"lockfileVersion": 1`. This step
+**may** already float `jsdom` to `29.1.1` — a non-frozen `bun install` off a
+clean tree reconciles the lock to the exact manifest pin (measured, exp #124).
+Do not rely on it either way: Step 2a's explicit `bun update jsdom` is the
+guaranteed floor, and criterion 4 keys on the resolved lock entry, not on which
+command moved it.
 
-### Step 2a — Flip the skewed `jsdom` lock entry to the manifest
+### Step 2a — Confirm the `jsdom` lock entry reached the manifest pin
 
 Close the un-intentional `origin/main` skew: `package.json` says `jsdom 29.1.1`
-but the lock still resolves `24.1.3` at both the descriptor and resolved entry.
-A plain re-resolve does not carry it, so update it explicitly.
+but the lock resolved `24.1.3` at both the descriptor and resolved entry. The
+target is the **resolved lock, not a specific command** — Step 2's non-frozen
+re-resolve may already have floated it to the exact pin (measured, exp #124), but
+do not depend on that. Run `bun update jsdom` (under bun 1.2.0, same constraint as
+Step 2) as the guaranteed floor: it is a no-op if Step 2 already moved the entry
+and forces the flip if it did not. This is the first landing of the jsdom major
+#115 declared — treat it as an in-scope change, not incidental lock churn.
 
-- Modified: `bun.lock`
-
-Run `bun update jsdom` (under bun 1.2.0, same constraint as Step 2). This is the
-first landing of the jsdom major #115 declared — treat it as an in-scope change,
-not incidental lock churn.
-
-Verify: `bun pm ls jsdom` reports `29.1.1`; `rg 'jsdom@24' bun.lock` returns
-nothing (both the descriptor and the resolved entry moved); lock stays
-`lockfileVersion 1`.
+Verify (feeds criterion 4): `bun pm ls jsdom` reports `≥ 29` (the manifest pins
+`29.1.1`); `rg 'jsdom@24' bun.lock` returns nothing (both the descriptor and the
+resolved entry moved); lock stays `lockfileVersion 1`. The pass keys on the
+resolved lock regardless of which install path (Step 2 or this step) moved it.
 
 ### Step 3 — Reconcile `vitest.config.ts` against Vitest 3
 
@@ -263,13 +276,20 @@ first exercise of `jsdom@29` at all (#115's green ran on `jsdom@24`).
 - No file changes expected. If a suite needs a Vitest-3 API adjustment, edit the
   affected `src/__tests__/*.test.tsx` minimally.
 
-Verify (criterion 4): first confirm the runtime under test is the resolved one —
+Verify (criterion 4): first confirm the runtime under test is the resolved one,
+reading the committed `bun.lock` — **not** any particular install command:
 `bun pm ls vite` reports **`≥ 6.4.3`** (not merely that `vitest` bumped) and
-`bun pm ls jsdom` = `29.1.1`, both read against the committed `bun.lock`. A green
-suite run against a stale `vite@5.4.21` would pass this step while silently
-leaving the `vite` high open (exp #124 measured that the bare `vitest` bump keeps
-`vite@5.4.21` — the pass must be read on the _forced_ vite-6 runtime, not the
-incremental-install default). Then `cd products/polaris/site && bun run test` —
+`bun pm ls jsdom` reports **`≥ 29`** (the manifest pins `29.1.1`). Both assertions
+key on the resolved lock entry regardless of the path that produced it — Step 2's
+non-frozen re-resolve or Step 2a's explicit `bun update jsdom` (exp #124 measured
+that a fresh non-frozen install already floats jsdom to the exact pin, so the
+explicit update is belt-and-suspenders). A green suite run against a stale
+`vite@5.4.21` would pass this step while silently leaving the `vite` high open
+(exp #124 measured that the bare `vitest` bump keeps `vite@5.4.21` — the pass must
+be read on the _forced_ vite-6 runtime, not the incremental-install default);
+likewise a green run against a stale `jsdom@24` would pass on the wrong DOM
+substrate, which is why the assertion is the resolved `≥29` lock entry, not the
+command. Then `cd products/polaris/site && bun run test` —
 all 5 suites (admin-trial, trial-detail, sites, eligibility, search) pass
 **against the `jsdom@29` DOM substrate**. Read a failure here as a jsdom-29 DOM
 interaction before a vitest-3 one — the optional de-entangle pre-step (flip jsdom
@@ -311,7 +331,7 @@ Libraries used: none (dependency-graph + config change only).
 | A bare `vitest` bump lands without the root override, leaving `vite@5.4.21` + the high open | Step 1 pairs both edits; Step 2 verify gates on `bun pm ls vite ≥ 6.4.3` |
 | Baseline entry removed but the advisory is not actually resolved (typo, partial resolve) | `audit-gate.js` treats an unmatched live id as unbaselined → fails closed; Step 6 runs the gate |
 | A Vitest 3 config-key rename silently drops `esbuild.jsx` handling | Step 3 checks the key against v3 notes; Step 4 suites + typecheck gate it |
-| The `jsdom@29` flip (#115) silently never lands: a plain `bun install` does **not** move it off `24.1.3` (security verified), so CI would pass on the wrong DOM substrate | Step 2a runs an explicit `bun update jsdom` and verifies `rg 'jsdom@24' bun.lock` is empty; Step 4 confirms `bun pm ls jsdom` = `29.1.1` before reading the suite result |
+| The `jsdom@29` flip (#115) silently never lands, so CI would pass on the wrong DOM substrate | Criterion 4 keys on the **resolved** `bun.lock` `jsdom` entry (`≥ 29`), not on an install command — a non-frozen re-resolve floats it (measured, exp #124) and Step 2a's explicit `bun update jsdom` is the belt-and-suspenders floor. Step 2a verifies `rg 'jsdom@24' bun.lock` is empty; Step 4 confirms `bun pm ls jsdom ≥ 29` before reading the suite result |
 | The `vitest@3.2.6` + `jsdom@29` pairing was never exercised together (#115's CI ran on `jsdom@24`); a jsdom-major DOM regression is misread as a vitest-3 break | Step 4 is the gate for the combined state; the optional de-entangle pre-step (jsdom flip on vitest 2 first) isolates a jsdom-29 failure from a vitest-3 one. Do **not** re-pin jsdom to 24 to sidestep — that reverts a security-cleared bump |
 
 ## Execution
