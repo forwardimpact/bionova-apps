@@ -1,0 +1,177 @@
+> **⚠️ PRE-FLIGHT — blocked on `design approved`, DO NOT MERGE.**
+> This plan is staged under experiment [#108](https://github.com/forwardimpact/bionova-apps/issues/108)
+> against the already-merged [`design-a.md`](./design-a.md) while the spec row
+> sits at `design draft` on `wiki/STATUS.md`. It carries **no** ledger write and
+> **must not** land until a trusted human writes `design approved` for spec 30.
+> Held as a **draft PR**; the `kata-release-merge` gate cannot merge a draft. If
+> approval never comes, discard this branch — the cost is one thrown-away plan.
+
+# Plan 30 — `vitest` 2 → 3 + floated `vite` override
+
+## Approach
+
+Two manifest edits re-resolve the lockfile so the runner reaches `vitest@3.2.6`
+and the transitive `vite` is forced to `≥6.4.3`; reconcile `vitest.config.ts`
+against Vitest 3, confirm the 5 suites pass under the Vite 6 runtime, and remove
+the two now-resolved crit/high entries from `security/audit-baseline.json` in the
+same PR so the audit gate self-corrects. WHAT/WHY live in
+[`spec.md`](./spec.md); WHICH/WHERE in [`design-a.md`](./design-a.md).
+
+## Security invariants (source: security-engineer)
+
+These constrain the implementer beyond what the design states. Cited so they are
+not lost between pre-flight and the eventual implement leg.
+
+- **Atomic baseline removal.** The `vitest` pin, the root `vite` override, the
+  re-resolved `bun.lock`, **and** the two `audit-baseline.json` GHSA removals
+  land in **one** PR. `scripts/audit-gate.js` set-diffs live crit/high GHSA ids
+  against the baseline and treats any unmatched live id as unbaselined:
+  remove-without-full-resolve fails closed (live advisory, no baseline cover);
+  bump-without-remove goes stale, then the nightly cron fails closed past
+  `review_by`.
+- **Deadline input.** `2026-07-24` is a **hard** fail-closed gate — the
+  `check-audit.yml` nightly cron (`17 7 * * *`) runs with acceptance-expiry
+  enforcement on schedule; both spec-30 entries carry `review_by: 2026-07-24`.
+- **Remove by exact GHSA id, not tracking-issue number.** The baseline
+  `review_spec` values are `#31`/`#29`, not the spec-dir numbers 30/50. Match on
+  the GHSA id.
+- **Regenerate the lock under bun 1.2.0.** `.tool-versions` pins `bun 1.2.0` and
+  `bun.lock` is `lockfileVersion 1`; a newer bun rewrites the lock format (the
+  deno-v3→v5 analog). This session's shell ran bun 1.3.11 — **do not** regen the
+  lock with it. **Flag:** every `oven-sh/setup-bun@v2.2.0` step in
+  `.github/workflows/*` passes no `bun-version`, so CI drifts to latest bun; the
+  lock must be regenerated and verified under 1.2.0 regardless of CI drift.
+- **Lockfile-keyed success.** Verify with `bun pm ls vitest` and `bun pm ls vite`
+  against the committed `bun.lock`, not against a manifest string.
+- **Coupled end state.** crit/high → 0 needs **both** specs to land (2 entries
+  here + 5 in spec 50). Spec 30 alone leaves the `next` highs open.
+- **Watcher-safe.** `plan-a.md` is not read by `scripts/spec-design-watcher.js`;
+  staging it advances no ledger state.
+
+Spec-30-specific:
+
+- **Override lives in repo-root `package.json`.** bun honors `overrides` only
+  from the workspace-root manifest; root has none today (confirmed). An entry in
+  the site manifest is ignored.
+- **Override shape `^6.4.3`** — floating caret: floor above the fix, capped
+  within vite 6. Not a frozen pin (`6.4.3`), not widened to vite 7.
+- **Both deps must move together.** The lock must resolve `vitest ≥ 3.2.6`
+  **and** `vite ≥ 6.4.3`. A bare `vitest` bump leaves `vite@5.4.21` resolved and
+  the `vite` high open.
+- **Remove exactly two ids:** `GHSA-5xrq-8626-4rwp` (crit) and
+  `GHSA-fx2h-pf6j-xcff` (vite high). Do **not** touch the three sub-threshold
+  moderates — they are not baselined.
+- **Config-key survival.** Confirm `esbuild.jsx: "automatic"` in
+  `vitest.config.ts` is still a valid Vitest 3 key.
+- **Hold** `jsdom@24.1.3` and `@testing-library/react@16.3.2` — do not bump.
+- **CI gates:** `check-test` + `check-quality`. No credential surface.
+
+## Steps
+
+### Step 1 — Pin the runner and add the root `vite` override
+
+Move the runner to the patched major and force the transitive `vite` past the
+fix from the workspace root.
+
+- Modified: `products/polaris/site/package.json`, `package.json` (repo root)
+
+`products/polaris/site/package.json` `devDependencies`:
+
+```diff
+-    "vitest": "2.1.9",
++    "vitest": "3.2.6",
+```
+
+Repo-root `package.json` — add a new top-level `overrides` block (none exists
+today; place it after `devDependencies`):
+
+```json
+  "overrides": {
+    "vite": "^6.4.3"
+  }
+```
+
+Verify: `git diff` shows exactly these two edits; no `vitest` override, no
+`vite` entry in the site manifest.
+
+### Step 2 — Re-resolve the lockfile under bun 1.2.0
+
+Regenerate `bun.lock` so the resolved tree reflects both edits.
+
+- Modified: `bun.lock`
+
+Run `bun install` **under bun 1.2.0** (activate via `.tool-versions` /
+`mise`/`asdf`; do not use the ambient 1.3.x). Confirm the lock stays
+`lockfileVersion 1`.
+
+Verify: `bun pm ls vitest` reports `≥ 3.2.6`; `bun pm ls vite` reports
+`≥ 6.4.3`; `head` of `bun.lock` still shows `"lockfileVersion": 1`.
+
+### Step 3 — Reconcile `vitest.config.ts` against Vitest 3
+
+Adjust only keys Vitest 3 renamed; keep the existing shape.
+
+- Modified (only if a v3 rename requires it): `products/polaris/site/vitest.config.ts`
+
+Confirm against the Vitest 3 migration notes that `esbuild.jsx: "automatic"`,
+`test.environment: "jsdom"`, `test.globals`, `test.setupFiles`, `test.include`,
+and the `@`→`src` `resolve.alias` are all still valid. Change a key **only** if
+v3 renamed it; otherwise leave the file untouched.
+
+Verify: `cd products/polaris/site && bunx tsc --noEmit` is clean; `bun run test`
+loads the config without a deprecation error.
+
+### Step 4 — Run the 5 suites under the Vite 6 runtime
+
+Prove the render/query paths survive the Vite major.
+
+- No file changes expected. If a suite needs a Vitest-3 API adjustment, edit the
+  affected `src/__tests__/*.test.tsx` minimally.
+
+Verify: `cd products/polaris/site && bun run test` — all 5 suites (admin-trial,
+trial-detail, sites, eligibility, search) pass.
+
+### Step 5 — Remove the two resolved entries from the audit baseline
+
+Shrink the gate baseline so it confirms the debt is gone instead of carrying
+stale suppressions. **Same PR as Steps 1–2** (atomic-removal invariant).
+
+- Modified: `security/audit-baseline.json`
+
+Delete exactly the `GHSA-5xrq-8626-4rwp` and `GHSA-fx2h-pf6j-xcff` entries from
+`advisories`. Leave every other entry (the 5 `next` ids owned by spec 50)
+untouched.
+
+Verify: `security/audit-baseline.json` is valid JSON; the two ids are absent;
+the 5 `next` ids remain; `bun scripts/audit-gate.js` reports no unbaselined
+crit/high from the `vitest`/`vite` paths.
+
+### Step 6 — Full gate pass
+
+Confirm the migration is clean end-to-end.
+
+- No file changes.
+
+Verify: `bun audit` reports no advisory on the `vitest` or `vite` path
+(criteria 2–3); `just lint` clean (criterion 5); `bun scripts/audit-gate.js`
+green.
+
+Libraries used: none (dependency-graph + config change only).
+
+## Risks
+
+| Risk | Mitigation |
+|---|---|
+| Implementer regenerates `bun.lock` under bun 1.3.x, rewriting the lock format | Step 2 pins the regen to bun 1.2.0; CI setup-bun drifts to latest, so the format divergence would pass CI silently — verify `lockfileVersion 1` explicitly |
+| A bare `vitest` bump lands without the root override, leaving `vite@5.4.21` + the high open | Step 1 pairs both edits; Step 2 verify gates on `bun pm ls vite ≥ 6.4.3` |
+| Baseline entry removed but the advisory is not actually resolved (typo, partial resolve) | `audit-gate.js` treats an unmatched live id as unbaselined → fails closed; Step 6 runs the gate |
+| A Vitest 3 config-key rename silently drops `esbuild.jsx` handling | Step 3 checks the key against v3 notes; Step 4 suites + typecheck gate it |
+
+## Execution
+
+Single unit, sequential — no decomposition. Route to an engineering agent via
+`kata-implement` once spec 30 reaches `plan approved`. One PR carries all six
+steps (atomic-removal invariant). This is a clean break: the override and pin
+replace the vulnerable resolution outright; no shim, no fallback path.
+
+— Staff Engineer 🛠️
