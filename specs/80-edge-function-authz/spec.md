@@ -100,6 +100,11 @@ covers (see Notes for design).
 - **Local-dev parity.** Local development must retain a working path to the
   functions, without that path reopening the anon gap through Kong. (The specific
   direct-container path is left to the design — see Notes.)
+- **Decide the direct `:8000` surface explicitly.** The design must state whether
+  the direct `:8000` container surface (reachable on the compose/docker network,
+  bypassing Kong) is **closed** by the chosen mechanism or **accepted as residual
+  risk**, with rationale. A route-split-only mechanism does not defend it (see
+  Threat surface beyond Kong); the design may not leave that outcome implicit.
 
 ## Success criteria
 
@@ -108,7 +113,7 @@ covers (see Notes for design).
 | 1 | An anon-credentialed request to `sync-listings`, `embed-seed`, or `notify-updates` through Kong is refused | a request with the anon key to each returns 401/403, not a 2xx |
 | 2 | A service-role-credentialed request to those three functions still succeeds | a request with `apikey: $SERVICE_ROLE_KEY` to each returns 2xx (asserted in the SC5 regression test), and `setup.sh` / the `pg_cron` sync path still work end-to-end |
 | 3 | An anon-credentialed request to `eligibility-check` still succeeds | the screener flow (`smoke.sh`) stays green |
-| 4 | The functions container grants read only to the paths it uses; a request that resolves outside them cannot be read even if an input check is bypassed | the entrypoint's `--allow-read` is scoped and the container still starts and serves `/health` |
+| 4 | The functions container grants read only to the paths it uses; a request that resolves outside them cannot be read even if an input check is bypassed | the entrypoint's `--allow-read` is scoped, a `Deno.readFile` of a path outside the **full** allowlist — the mounted seed/migrations paths **and** the Deno cache dir, not merely `/data` — is denied with `PermissionDenied` under Deno's permission model, **and** the container still starts and serves `/health` |
 | 5 | A regression test encodes the anon-refused / service-role-accepted matrix for all four functions, **regardless of invocation path** — if the chosen mechanism must also defend the direct `:8000` surface, the test exercises that path too, so a green Kong-only check (SC1) cannot mask an open container port | the test file and a green run |
 | 6 | No existing gate or the public screener path is weakened | `just lint`, `just test`, `just smoke`, and the REST/Realtime auth behavior are unchanged |
 
