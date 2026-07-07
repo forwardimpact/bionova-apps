@@ -50,7 +50,7 @@ States: `registered → approved → cancelled`. `pin` is the approved head SHA 
 20	spec	approved
 30	design	draft
 40	spec	approved
-50	spec	approved
+50	design	draft
 60	spec	draft
 70	spec	draft
 80	spec	draft
