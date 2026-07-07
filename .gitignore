@@ -32,3 +32,9 @@ apm_modules/
 .claude/agents/
 .claude/skills/
 .github/agents/
+
+# Agent memory. wiki/ is its own git repo (github.com/forwardimpact/bionova-apps.wiki),
+# hydrated and pushed by fit-wiki. It is the single authoritative ledger the merge
+# gate reads. Tracking it here too forked STATUS.md into a stale shadow (issue #105);
+# the app repo must not track wiki/ at all.
+/wiki/

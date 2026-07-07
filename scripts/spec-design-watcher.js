@@ -18,8 +18,13 @@
 // Sources:
 //   --root=<dir>   read specs/ and wiki/STATUS.md from a plain directory tree
 //                  (used by the fixture test; no git, deterministic).
-//   default        read specs/ and wiki/STATUS.md from a git ref (--ref, default
-//                  origin/main) — only merged artifacts count.
+//   default        read specs/ and design-a.md from a git ref (--ref, default
+//                  origin/main) — only merged artifacts count — but read
+//                  STATUS.md from the working-tree wiki/ checkout, which fit-wiki
+//                  hydrates from the nested wiki repo (bionova-apps.wiki). That
+//                  wiki-repo copy is the single authoritative ledger the merge
+//                  gate also reads; the app-repo blob at origin/main:wiki/STATUS.md
+//                  was a stale shadow and is no longer tracked (issue #105).
 //
 // Modes:
 //   --json         print the full result object and exit; never records.
@@ -120,8 +125,12 @@ export function fsSource(root) {
 }
 
 // Git source: only artifacts merged into <ref> count. Enumerates specs/*/spec.md
-// and design-a.md from the tree, reads STATUS.md and merge dates from git.
-export function gitSource(ref) {
+// and design-a.md from the tree and reads merge dates from git — those are
+// app-repo artifacts, so "merged into <ref>" is the right gate. STATUS.md is the
+// approval ledger; its authoritative copy lives in the nested wiki repo, checked
+// out by fit-wiki into the working tree, so it is read from disk, not from <ref>
+// (issue #105). An optional statusPath overrides the working-tree location (test).
+export function gitSource(ref, statusPath) {
   const git = (args) =>
     execFileSync("git", args, { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] });
   let tree = "";
@@ -145,9 +154,17 @@ export function gitSource(ref) {
       .filter(Boolean)
       .map((m) => m[1]),
   );
+  // Read STATUS.md from the working-tree wiki/ checkout (fit-wiki-hydrated from
+  // the wiki repo), not from `${ref}:wiki/STATUS.md`. Resolve it relative to the
+  // git top-level so cwd does not matter; caller may override for tests.
   let statusText = "";
   try {
-    statusText = git(["show", `${ref}:wiki/STATUS.md`]);
+    let path = statusPath;
+    if (!path) {
+      const top = git(["rev-parse", "--show-toplevel"]).trim();
+      path = join(top, "wiki", "STATUS.md");
+    }
+    statusText = existsSync(path) ? readFileSync(path, "utf8") : "";
   } catch {
     statusText = "";
   }
