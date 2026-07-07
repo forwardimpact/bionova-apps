@@ -4,10 +4,11 @@
 behavior; it defends the repository-wide invariant that no real secret ever
 lands in a public, permanently-readable history.
 
-**Persona / job:** No direct persona. It backstops every job by protecting the
-`CONTRIBUTING.md` § Security invariant ("assume every commit is world readable,
-forever") at the one point where a leak becomes irreversible — the merge to
-`main`.
+**Persona / job:** The affected actor is every contributor and every fork-PR
+author, on the job "merge to `main` without landing a real secret." It backstops
+every job by protecting the `CONTRIBUTING.md` § Security invariant ("assume every
+commit is world readable, forever") at the one point where a leak becomes
+irreversible — the merge to `main`.
 
 ## Problem
 
@@ -94,7 +95,9 @@ finding that is not already allowlisted or fingerprint-accepted.
   dependency: its ruleset and config are local. There is therefore no
   infrastructure-error class that justifies passing a PR the scanner could not
   vet. A scanner that cannot complete blocks the merge, exactly as a finding
-  does.
+  does. A missing or malformed `.gitleaks.toml` / `.gitleaksignore` is one such
+  incomplete run: the scanner cannot load its committed config, so it fails the
+  check closed rather than scanning with defaults or skipping the file.
 - **No `pull_request_target` with untrusted-head checkout.** The check must not
   use a trigger that grants a fork PR's code access to repository secrets or a
   write token; a secret scanner has no need for either, and that combination is
@@ -115,12 +118,12 @@ finding that is not already allowlisted or fingerprint-accepted.
 |---|---|---|
 | 1 | A `check-secrets` check runs on every PR and on push to `main` | a named check appears and runs on a test PR's checks tab |
 | 2 | The check fails when a **non-demo JWT** joins or replaces the exact demo keys in `.env.example`, and when a real key is planted in an ordinary tracked file | a throwaway PR planting both turns the check red, proving the `.gitleaks.toml` allowlist exempts only the exact demo values (value-scoped), not the `.env.example` file and not the tree at large |
-| 3 | The check scans full reachable history and stays green over it — the `.gitleaksignore`-accepted historical commits do not re-fire | the introducing PR's check log shows a full-history scan reporting zero unaccepted findings |
+| 3 | The check scans full reachable history and stays green over it — the `.gitleaksignore`-accepted historical commits do not re-fire, and the green is achieved without widening the acceptance set | the introducing PR's check log shows a full-history scan reporting zero unaccepted findings, **and** the PR diff adds no new `.gitleaks.toml` or `.gitleaksignore` entry — a durable, diff-checkable artifact that the ephemeral check log does not by itself preserve |
 | 4 | The introducing PR is itself green — gate and any needed acceptance land together | the PR merges without red-walling `main` |
 | 5 | The CI verdict matches the documented local `gitleaks` run — same `.gitleaks.toml`, same `.gitleaksignore`, same history | a locally-clean tree is clean in CI; the check log shows both config files in use |
 | 6 | The check runs and reports on a pull request opened from a fork | a fork PR shows the `check-secrets` result on its checks tab |
 | 7 | A red `check-secrets` blocks the merge | `check-secrets` is a required status check; a PR with a planted secret cannot be merged |
-| 8 | A scanner that cannot complete fails the check closed — there is no path that passes a PR the scanner did not vet | an induced scanner failure turns the check red, not green |
+| 8 | A non-zero `gitleaks` exit for any reason **other than a findings exit** — crash, timeout, or unloadable config — fails the check closed; there is no path that passes a PR the scanner did not vet | an induced scanner failure (e.g. a malformed config) exits non-zero for a non-findings reason and turns the check red, not green |
 | 9 | `CONTRIBUTING.md` § Security states the gate is live, names the config, and states the false-positive acceptance rule for both the current tree and immutable history | `CONTRIBUTING.md` |
 
 — Security Engineer 🔒
