@@ -65,7 +65,7 @@ must be sequenced to avoid a merge collision.
 | Static security headers | The site sends `X-Frame-Options` (or CSP `frame-ancestors`), `X-Content-Type-Options: nosniff`, `Referrer-Policy`, and `Permissions-Policy` on every response |
 | Content-Security-Policy | The site sends a CSP that allowlists exactly the sources the patient surface loads, with a documented `report-only` → `enforce` rollout |
 | HSTS decision | A recorded decision on whether HSTS is set at the app layer or the Railway edge, with its TLS-termination assumption stated |
-| Verification hook | A check (smoke or test) that asserts the required headers are present on a named route, so the protection cannot silently regress |
+| Verification hook | A check (smoke or test) that asserts the required headers are present on a named route, plus a mechanical assertion that the emitted `Content-Security-Policy` matches an explicit expected source list held in a fixture, so neither the header set nor the CSP source list can silently regress |
 
 **Out of scope:**
 
@@ -80,16 +80,21 @@ must be sequenced to avoid a merge collision.
 
 | # | Criterion | Verified by |
 |---|---|---|
-| 1 | The four static headers are present on a page response and on a named `/api/*` GET | `curl -sD- -o /dev/null <route>` shows each header on the page and the api route |
-| 2 | A CSP header is present and the patient surface (search, trial detail, eligibility screener) renders and functions under it | `just smoke` / e2e passes with CSP active |
-| 3 | The design records the CSP source-allowlist rationale and the `report-only` → `enforce` step (documentation gate) | The shipped CSP header string enumerates each allowlisted source named in the design |
-| 4 | The design records the HSTS decision and its TLS-termination assumption (documentation gate) | Present in the design |
-| 5 | A regression check fails if a required header is removed | The added test/smoke assertion fails when a header is dropped |
+| 1 | The four static headers are present on a page response and on the `/api/health` GET route (the stablest concrete `/api/*` route — no async boundary, per the Spec 50 design). This route is a representative sample of the global `headers()` config, not an exhaustive per-route check | `curl -sD- -o /dev/null <route>` shows each header on the page and on `/api/health` |
+| 2 | A CSP header is present in **enforce** mode (not report-only) and the patient surface (search, trial detail, eligibility screener) renders and functions under it | `just smoke` / e2e passes with CSP **enforced** — a report-only CSP never blocks, so this acceptance is only meaningful in enforce mode; report-only would pass vacuously and could not catch a too-strict policy |
+| 3 | The design records the CSP source-allowlist rationale and the `report-only` → `enforce` rollout step (documentation gate) | The recorded rationale is present in the design |
+| 4 | The emitted `Content-Security-Policy` header matches an explicit expected source list held in a test fixture, decoupled from the design prose (mechanical regression gate) | A test asserts the emitted CSP string equals the fixture's expected source list; it fails on any drift. The fixture is the source of truth for the assertion — it does not read the design |
+| 5 | The design records the HSTS decision and its TLS-termination assumption (documentation gate) | Present in the design |
+| 6 | A regression check fails if a required header is removed | The added test/smoke assertion fails when a header is dropped |
 
 ## Dependencies
 
-- **Spec 50 (`next` 14→15)** — approved, not yet implemented; its design also
-  edits `next.config.mjs`. This spec sequences after Spec 50 merges, or is
-  coordinated into it, so the two `next.config.mjs` edits do not collide.
+- **Spec 50 (`next` 14→15)** — its spec and design are already merged; only the
+  implementation is outstanding. Spec 50 **implements** the config key-move
+  (`experimental.outputFileTracingRoot` → the top-level key in
+  `next.config.mjs`), and that edit lands at implementation — which is exactly
+  where it collides with this spec's `headers()` addition to the same file. This
+  spec therefore sequences after Spec 50 **implements**, or is coordinated into
+  its implementation, so the two `next.config.mjs` edits do not collide.
 
 — Security Engineer 🔒
