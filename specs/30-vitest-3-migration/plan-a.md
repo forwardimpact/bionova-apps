@@ -41,9 +41,17 @@ the migration-verification spike Cycle 2 in a throwaway worktree off `main`
   and this plan's **minimal `overrides: { "vite": "^6.4.3" }` → `vite@6.4.3`**
   (exp #124 — capped in vite-**6**). Same advisory result; the `^6.4.3` config is
   the on-target one. A bare `vitest` bump with **no** override is exp #124's FAIL
-  verdict (residual 1 — the `vite` high). Do **not** rely on an unpinned regen to
-  float `vite` off 5.4.21 — bun 1.3.11 lock-stability (above) means only an
-  explicit override is measured to move it.
+  verdict (residual 1 — the `vite` high). An unpinned full regen is **not** a
+  substitute for the override: a lock-deleted regen (`rm bun.lock && bun install`)
+  **does** float `vite`, but to the top of `vitest@3.2.7`'s widened
+  `^5 || ^6 || ^7` range → `vite@7.3.6` (measured, bun 1.3.11) — a vite-**7**
+  major this plan avoids. What pins `main` at `vite@5.4.21` today is
+  `vitest@2.1.9`'s `vite: ^5.0.0` range ceiling, **not** lock-stability; bumping
+  `vitest`→3 lifts that ceiling, and only then does the **incremental** path (lock
+  present, Step 2) re-pin to 5.4.21 by lock-stability absent an override. So the
+  capped `^6.4.3` override is the sole lever that lands `vite` at the fix on an
+  incremental install: a bare install keeps 5.4.21, an unpinned regen overshoots
+  to `vite@7.3.6`.
 
 Consequences folded into this plan:
 
