@@ -228,7 +228,17 @@ Run `bun install` **under bun 1.2.0** (activate via `.tool-versions` /
 `lockfileVersion 1`.
 
 Verify: `bun pm ls vitest` reports `≥ 3.2.6`; `bun pm ls vite` reports
-`≥ 6.4.3`; `head` of `bun.lock` still shows `"lockfileVersion": 1`. This step
+`≥ 6.4.3`; **and** `rg 'vite@5\.' bun.lock` returns nothing — assert the
+*resolved nested* entry moved, not merely that a top-level version resolved. The
+residual is lock-stability, not bun preference (security-engineer, exp #124,
+issuecomment-4908949045): `vitest@3.2.6`/`vite-node@3.2.4` both allow
+`vite ^5||^6||^7`, so an incremental resolve preserves the incumbent nested
+`vite@5.4.21`, and a bare top-level `vite@7` pin does **not** dislodge the nested
+`vitest/vite` + `vite-node/vite` — only the root `overrides.vite` (this plan's
+lever) or a full regen reaches that subtree. `bun pm ls vite` without `--all`
+reports the deduped top-of-tree resolution, so the grep is what proves no stray
+`vite@5.x` survives below it — mirrors Step 2a's `rg 'jsdom@24'` assertion.
+`head` of `bun.lock` still shows `"lockfileVersion": 1`. This step
 **may** already float `jsdom` to `29.1.1` — a non-frozen `bun install` off a
 clean tree reconciles the lock to the exact manifest pin (measured, exp #124).
 Do not rely on it either way: Step 2a's explicit `bun update jsdom` is the
@@ -278,8 +288,10 @@ first exercise of `jsdom@29` at all (#115's green ran on `jsdom@24`).
 
 Verify (criterion 4): first confirm the runtime under test is the resolved one,
 reading the committed `bun.lock` — **not** any particular install command:
-`bun pm ls vite` reports **`≥ 6.4.3`** (not merely that `vitest` bumped) and
-`bun pm ls jsdom` reports **`≥ 29`** (the manifest pins `29.1.1`). Both assertions
+`bun pm ls vite` reports **`≥ 6.4.3`** (not merely that `vitest` bumped), the
+Step 2 `rg 'vite@5\.' bun.lock` grep still returns nothing (the nested resolved
+entry, not just the top-of-tree dedup), and `bun pm ls jsdom` reports **`≥ 29`**
+(the manifest pins `29.1.1`). All assertions
 key on the resolved lock entry regardless of the path that produced it — Step 2's
 non-frozen re-resolve or Step 2a's explicit `bun update jsdom` (exp #124 measured
 that a fresh non-frozen install already floats jsdom to the exact pin, so the
@@ -328,7 +340,7 @@ Libraries used: none (dependency-graph + config change only).
 | Risk | Mitigation |
 |---|---|
 | Implementer regenerates `bun.lock` under bun 1.3.x, rewriting the lock format | Step 2 pins the regen to bun 1.2.0; CI setup-bun drifts to latest, so the format divergence would pass CI silently — verify `lockfileVersion 1` explicitly |
-| A bare `vitest` bump lands without the root override, leaving `vite@5.4.21` + the high open | Step 1 pairs both edits; Step 2 verify gates on `bun pm ls vite ≥ 6.4.3` |
+| A bare `vitest` bump lands without the root override, leaving `vite@5.4.21` + the high open | Step 1 pairs both edits; Step 2 verify gates on `bun pm ls vite ≥ 6.4.3` **and** `rg 'vite@5\.' bun.lock` empty (asserts the nested resolved entry moved, not just the top-of-tree dedup) |
 | Baseline entry removed but the advisory is not actually resolved (typo, partial resolve) | `audit-gate.js` treats an unmatched live id as unbaselined → fails closed; Step 6 runs the gate |
 | A Vitest 3 config-key rename silently drops `esbuild.jsx` handling | Step 3 checks the key against v3 notes; Step 4 suites + typecheck gate it |
 | The `jsdom@29` flip (#115) silently never lands, so CI would pass on the wrong DOM substrate | Criterion 4 keys on the **resolved** `bun.lock` `jsdom` entry (`≥ 29`), not on an install command — a non-frozen re-resolve floats it (measured, exp #124) and Step 2a's explicit `bun update jsdom` is the belt-and-suspenders floor. Step 2a verifies `rg 'jsdom@24' bun.lock` is empty; Step 4 confirms `bun pm ls jsdom ≥ 29` before reading the suite result |
