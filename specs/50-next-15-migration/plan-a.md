@@ -228,6 +228,7 @@ Libraries used: none (framework bump + async-boundary edits only).
 | `outputFileTracingRoot` move changes the standalone `server.js` emit path | Value unchanged; Step 8 asserts `server.js` at `products/polaris/site/` |
 | React 18.3.1 hits a hard Next-15 peer requirement at build | Build + smoke gate it; if it surfaces, return spec to draft — do not bump React silently |
 | `buildCtxFromRequest` accidentally async-ified, breaking route-handler auth | Step 3 explicitly holds it synchronous; it reads `NextRequest`, not `next/headers` |
+| Page/handler counts differ across artifacts: `design-a.md` says "8 dynamic pages / 16 `force-dynamic` declarations"; spec 50's scope table says "9 pages, 4 dynamic". This is a counting-convention difference, **not a spec defect** — both are valid cuts (PM ruling 2026-07-07: "9 pages" = the 9 `page.tsx`; "4 dynamic" = the `[id]` param routes), and the caching-posture invariant is stated correctly on both. No spec re-open owed. | **Verified enumeration this run: 9 `page.tsx`, 8 `route.ts`, 16 `force-dynamic` declarations.** Do not trust any single count blindly — **confirm the exact page/handler enumeration against the tree at implement time** (the numbers Step 4/5/8 assert). The Step 8 caching-posture walk (all 16 `force-dynamic` present) is the gate that catches a stale count. |
 
 ## Execution
 
