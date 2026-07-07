@@ -33,10 +33,16 @@ the migration-verification spike Cycle 2 in a throwaway worktree off `main`
 - **A plain _incremental_ `bun install` does NOT close the `vite` high — the pair
   stays at 1.** bun 1.3.11 lock-stability keeps the nested `vite@5.4.21`
   (`<=6.4.2`, still vulnerable) even after the `vitest` bump, because `vite` is
-  transitive under `vitest`/`vite-node`. Two paths reach 0: a **full lock regen**
-  floats `vite→7.3.6` (a vite-**7** major), or the **root `^6.4.3` override**
-  floors it at `vite@6.4.3` (capped in vite-**6**). The bare-bump-only outcome is
-  exp #124's FAIL verdict.
+  transitive under `vitest`/`vite-node`. Closing the high needs an **explicit
+  forced `vite` override** — security measured two override configs, both → 0
+  crit/high: the **superset `overrides: { "vite": "^7" }` → `vite@7.3.6`**
+  (security's headline isolated run — off this plan's cap, a vite-**7** major),
+  and this plan's **minimal `overrides: { "vite": "^6.4.3" }` → `vite@6.4.3`**
+  (exp #124 — capped in vite-**6**). Same advisory result; the `^6.4.3` config is
+  the on-target one. A bare `vitest` bump with **no** override is exp #124's FAIL
+  verdict (residual 1 — the `vite` high). Do **not** rely on an unpinned regen to
+  float `vite` off 5.4.21 — bun 1.3.11 lock-stability (above) means only an
+  explicit override is measured to move it.
 
 Consequences folded into this plan:
 
@@ -45,9 +51,10 @@ Consequences folded into this plan:
   and 5 pair the override + its GHSA removal with the `vitest` bump — the measured
   result confirms a bare `vitest` bump leaves the high open. Step 2's
   `bun pm ls vite ≥ 6.4.3` is its dedicated verification line.
-- **Why the capped override, not a plain regen.** Both reach 0 crit/high, but a
-  full regen drags `vite` across a _second_ major (5→7.3.6) — a wider migration
-  this plan does not want. The `^6.4.3` override is the minimal lever: it clears
+- **Why the capped `^6.4.3`, not the superset `^7`.** Both override configs reach
+  0 crit/high (measured), but `^7` drags `vite` across a _second_ major
+  (5→7.3.6) — a wider migration this plan does not want. The `^6.4.3` override is
+  the minimal lever: it clears
   the high while keeping `vite` in the 6 line the suite runtime is verified
   against (Step 4). It also defeats the incremental-install trap head-on — with
   the override present, even an incremental re-resolve floors `vite` at the fix
