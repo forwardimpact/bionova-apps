@@ -18,6 +18,48 @@ jsdom 29 runtime, and remove the two now-resolved crit/high entries from
 `security/audit-baseline.json` in the same PR so the audit gate self-corrects. WHAT/WHY live in
 [`spec.md`](./spec.md); WHICH/WHERE in [`design-a.md`](./design-a.md).
 
+## Measured grounding (exp #124 — supersedes the earlier prediction)
+
+The full crit/high path is now **MEASURED**, not predicted. Security-engineer ran
+the migration-verification spike Cycle 2 in a throwaway worktree off `main`
+(`bbddb88`) and posted the result on [issue #45](https://github.com/forwardimpact/bionova-apps/issues/45)
+/ [#124](https://github.com/forwardimpact/bionova-apps/issues/124):
+
+- **next-15 + vitest-3 + jsdom-29 exactly as specced → 1 crit/high, not 0.** The
+  `vitest` critical (`GHSA-5xrq-8626-4rwp`) and all 5 `next` highs cleared, but the
+  `vite` high `GHSA-fx2h-pf6j-xcff` (vulnerable `<=6.4.2`, fixed `6.4.3`) did
+  **not** clear — `vitest@3.2.7` transitively pulls `vite@5.4.21`.
+- **Adding root `overrides: { "vite": "^6.4.3" }` → `vite@6.4.3` → 0 crit/high.**
+
+Consequences folded into this plan:
+
+- **The root `vite ≥6.4.3` override is now a REQUIRED in-scope change, not
+  optional.** Without it the residual is 1 (the `vite` high). This is why Steps 1
+  and 5 pair the override + its GHSA removal with the `vitest` bump — the measured
+  result confirms a bare `vitest` bump leaves the high open. Step 2's
+  `bun pm ls vite ≥ 6.4.3` is its dedicated verification line.
+- **No new crit/high from the vite-6 tree.** The measured combined end state is
+  0 crit/high, so forcing `vite` across its 5→6 major via the override surfaces
+  no new critical/high advisory. Scope does not reopen on that axis.
+- **The override does not interact adversely with the jsdom 24→29 flip.** The
+  measured tree already carried `jsdom@29` alongside the override and still
+  reached 0 crit/high. `jsdom` has no `vite` in its subtree, so the override
+  never touches it; the two majors are independent re-resolves that co-resolve
+  clean.
+- **The measured "0" is the COUPLED end state (spec 30 + spec 50 together).** The
+  spike bumped `next` too, so `0 crit/high` requires both specs to land. Spec 30
+  **alone** removes only the `vitest` crit + `vite` high (2 of 7); the 5 `next`
+  highs stay live and baselined (spec 50 owns them). The "Coupled end state"
+  invariant below is unchanged by the measurement.
+- **Version note:** the spike measured `vitest@3.2.7`; this plan pins `3.2.6` —
+  both are `≥3.2.6`, the floor that clears the crit, and both pull `vite@5.4.21`
+  transitively, so both require the override. The pin is unaffected.
+- **Scope caveat carried from Cycle 1:** the spike measures the **crit/high
+  count only** — it is an `audit` read, not a test-run. Whether `vitest@3` runs
+  the 5 suites **against the forced `vite@6` major** is UNMEASURED and belongs to
+  this implementation. `vitest@3.2` supports `vite@6` (a documented combination,
+  not a forced incompatibility), but Step 4 is the hard gate that proves the run.
+
 ## Security invariants (source: security-engineer)
 
 These constrain the implementer beyond what the design states. Cited so they are
@@ -65,7 +107,8 @@ Spec-30-specific:
   within vite 6. Not a frozen pin (`6.4.3`), not widened to vite 7.
 - **Both deps must move together.** The lock must resolve `vitest ≥ 3.2.6`
   **and** `vite ≥ 6.4.3`. A bare `vitest` bump leaves `vite@5.4.21` resolved and
-  the `vite` high open.
+  the `vite` high open — **measured** (exp #124): `vitest@3.2.7` transitively
+  pulls `vite@5.4.21`, and only the root `^6.4.3` override floors it at the fix.
 - **Remove exactly two ids:** `GHSA-5xrq-8626-4rwp` (crit) and
   `GHSA-fx2h-pf6j-xcff` (vite high). Do **not** touch the three sub-threshold
   moderates — they are not baselined.
