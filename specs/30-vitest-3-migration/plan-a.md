@@ -112,6 +112,17 @@ not lost between pre-flight and the eventual implement leg.
   against the committed `bun.lock`, not against a manifest string.
 - **Coupled end state.** crit/high → 0 needs **both** specs to land (2 entries
   here + 5 in spec 50). Spec 30 alone leaves the `next` highs open.
+- **CSV tripwire — residual 1 = re-open, not celebrate (source: security-engineer,
+  exp #45/#124).** When specs 30 + 50 both land, `critical_high_advisories` in the
+  metrics CSV drops **7 → 0 in one step**. If it drops to **1**, the residual is
+  the `vite` high `GHSA-fx2h-pf6j-xcff` and it means the root `overrides.vite ^6.4.3`
+  input was lost between this plan and the merged diff (measured: `vitest@3.2.7`
+  resolves its `^5` vite band to `vite@5.4.21` **without** the override → the high
+  survives; the override forces `vite@6.4.3` → the high clears). Read a residual 1
+  as override-lost, re-open — do not treat it as expected coupling slack. This
+  plan fails that case **closed**, not silent: Step 5 removes the `vite`-high
+  baseline entry in the same PR, so if the override is lost the still-live high is
+  unbaselined and `audit-gate.js` fails closed (it cannot merge at residual 1).
 - **Watcher-safe.** `plan-a.md` is not read by `scripts/spec-design-watcher.js`;
   staging it advances no ledger state.
 
