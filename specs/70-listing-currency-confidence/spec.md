@@ -54,14 +54,27 @@ admin trial page shows; it does not change any patient-facing view. The Little
 Hire — *watch which trials are drawing enrollment interest* — is already served
 by the interest-signal summary on the same view and is out of scope here.
 
+This surface makes **two distinct guarantees, not one**. The currency signal
+(S1–S3) answers *is this listing current* — was it refreshed within the sync
+cadence. The published-criteria confirmation (S4) answers *did the sync publish
+the right criteria* — it shows the stored inclusion and exclusion rules so staff
+can check them against the protocol. Freshness does not imply correctness: a
+listing synced within cadence can still carry a wrong criterion, and only the S4
+criteria display, not the last-synced marker, catches that. The design and plan
+must treat these as two separate guarantees and never let the currency marker
+stand in for criterion confirmation. Because the seed build is the sole source
+and the sync the sole writer, an overdue marker proves the expected sync did not
+run on cadence — a real failure mode — not that the content has drifted; S3
+frames overdue as a missed sync cadence, not proven protocol drift.
+
 In scope:
 
 | # | The listing-currency surface will… |
 | --- | --- |
 | S1 | Record, when the sync refreshes a listing, **when that listing was last synced** from the protocol source — a per-listing marker that outlives the sync response, so currency is derived from a real record and never invented by the view. |
 | S2 | Surface on the staff trial view **when the listing was last refreshed** from the protocol source, in staff-readable terms, so staff can tell at a glance whether they are looking at today's protocol. |
-| S3 | Distinguish a **current** listing from one that is **overdue** — one that has not been refreshed within the expected sync cadence — so staff can act on a stale listing rather than assume it is fresh. The cadence threshold is a design decision. |
-| S4 | Present the trial's **eligibility criteria as published to patients** — the inclusion and exclusion criteria exactly as the sync stored them — framed so staff can confirm the sync published the protocol the trial is running under, directly tempering the Anxiety about a wrong-criterion sync. |
+| S3 | Distinguish a **current** listing from one that is **overdue** — one whose expected sync did not run on cadence — so staff can act on a stale listing rather than assume it is fresh. The sync runs daily (03:00 UTC `pg_cron`); the overdue threshold is anchored to that known cadence, but its exact value is a design decision. |
+| S4 | Present the trial's **eligibility criteria as published to patients** — the inclusion and exclusion `custom[]` free-text rules exactly as the sync stored them — framed so staff can confirm the sync published the protocol the trial is running under, directly tempering the Anxiety about a wrong-criterion sync. Whether the surface also shows the structured criteria fields (`age_min`, `age_max`, `ecog_max`, `conditions_required`) is a design decision; the `custom[]` free-text rules are the required minimum. |
 | S5 | Be **staff-only** and read-only: it reports currency and published criteria; it does not change the patient-facing listing and adds no new editable field. |
 
 Explicitly excluded:
@@ -88,7 +101,7 @@ not the file that asserts it.
 | C1 | When the sync refreshes a listing, it records a per-listing last-synced marker that persists after the sync response returns and is readable independently of it. | An automated test asserting that after a non-dry-run sync of `oncora-phase3`, a per-listing last-synced marker for that trial is readable independently of the sync response — the marker exists in stored state, not only in the aggregate `{ trials_upserted, criteria_upserted }` counts the sync returns. |
 | C2 | The staff trial view exposes, for `oncora-phase3`, when its listing was last refreshed from the protocol source. | An automated test asserting the staff view for `oncora-phase3` surfaces a last-refreshed value read from the C1 marker, presented alongside the existing trial and interest-signal content. |
 | C3 | The staff view distinguishes a current listing from an overdue one, relative to whatever sync cadence the design fixes. | An automated test that, given the cadence the design fixes, seeds one listing whose last-synced marker is inside that window and one whose marker is older than it, and asserts the first renders as current and the second as overdue — the boundary value comes from the design, the test asserts the relative behavior. |
-| C4 | The staff view presents `oncora-phase3`'s eligibility criteria — both inclusion and exclusion — exactly as the sync stored them, framed as the published criteria. | An automated test asserting the staff view reproduces every stored inclusion and exclusion `custom[]` string for `oncora-phase3` verbatim (including, e.g., the inclusion string "Measurable disease per RECIST 1.1") under a published-criteria framing, so staff can confirm what the sync published. |
+| C4 | The staff view presents `oncora-phase3`'s eligibility criteria — both inclusion and exclusion `custom[]` free-text rules — exactly as the sync stored them, framed as the published criteria. | An automated test asserting the staff view reproduces every stored inclusion and exclusion `custom[]` string for `oncora-phase3` verbatim (including, e.g., the inclusion string "Measurable disease per RECIST 1.1") under a published-criteria framing, so staff can confirm what the sync published. |
 | C5 | The surface is staff-only and changes no patient-facing view. | An automated test asserting the currency surface is reachable only with a staff token on the staff view, and a test of the patient-facing trial view asserting it renders no last-synced or currency field. |
 | C6 | The surface composes only the synced listing and a sync timestamp, and introduces no new stored domain content. | An automated test asserting the currency response is built only from the existing trial / criteria rows plus the last-synced marker; `rg` over `products/` and `services/polaris-functions/` (excluding `data/synthetic/` and `*/test.*` fixtures) finds no hard-coded `oncora-phase3` inclusion or exclusion criterion string in non-test source. |
 
