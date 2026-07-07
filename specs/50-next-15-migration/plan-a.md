@@ -32,10 +32,12 @@ Shared with spec 30, plus the auth-path assertions unique to this migration.
 
 - **Atomic baseline removal.** The `next` pin, re-resolved `bun.lock`, config
   move, async-boundary edits, **and** the 5 `audit-baseline.json` GHSA removals
-  land in **one** PR. `scripts/audit-gate.js` set-diffs live crit/high GHSA ids
-  vs the baseline and treats an unmatched live id as unbaselined:
-  remove-without-full-resolve fails closed; bump-without-remove goes stale, then
-  the nightly cron fails closed past `review_by`.
+  land in **one** PR. `scripts/audit-gate.js` fails on any live crit/high GHSA
+  id **not** covered by the baseline: removing an entry while its advisory is
+  still live fails closed (introduced, unbaselined). The reverse — bump without
+  removing — logs a non-fatal `stale` warning every run, and separately its
+  `review_by` fails closed on the nightly cron once the date lapses. Two
+  mechanisms, both satisfied by doing the removal in the same PR.
 - **Deadline input.** `2026-07-24` is a **hard** fail-closed gate
   (`check-audit.yml` cron `17 7 * * *`, acceptance-expiry enforced on schedule);
   all five spec-50 entries carry `review_by: 2026-07-24`.
