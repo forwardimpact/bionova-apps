@@ -70,7 +70,23 @@ Spec-30-specific:
   moderates — they are not baselined.
 - **Config-key survival.** Confirm `esbuild.jsx: "automatic"` in
   `vitest.config.ts` is still a valid Vitest 3 key.
-- **Hold** `jsdom@24.1.3` and `@testing-library/react@16.3.2` — do not bump.
+- **jsdom baseline moved to `29.1.1` (Dependabot #115, `ebeb6a6`) — SUPERSEDES
+  the design's "Hold `jsdom@24.1.3`" decision.** design-a.md § Key Decisions and
+  its blast-radius line assume `jsdom@24`; that assumption is stale. Do **not**
+  re-pin `jsdom` to `24.1.3` — the site manifest is now `29.1.1` and reverting a
+  security-cleared dev-dep bump is out of scope. **Watch the lock skew:**
+  `origin/main` carries `package.json → jsdom: 29.1.1` but `bun.lock` still
+  resolves `jsdom@24.1.3` (#115 bumped the manifest without re-resolving the
+  lock). Step 3's `bun install` re-resolve will therefore flip `jsdom` 24 → 29 as
+  a **side effect** of the `vitest`/`vite` change. Consequence: the `vitest@3.2.6`
+  + `jsdom@29` pairing is **un-validated** — #115's "green" ran on the
+  un-re-resolved tree (`jsdom@24`), not 29. Step 4's suite pass is the gate that
+  validates that pairing; read a Step 4 failure as a jsdom-29 interaction before
+  a vitest-3 one. The migration outcome (spec SC 1–6) stays jsdom-version-agnostic
+  — no criterion keys on the jsdom version — but the runtime the suites execute
+  against is not the one the design reasoned over.
+- **Hold** `@testing-library/react@16.3.2` — do not bump (no bump has landed for
+  it; still Vite-6/React-18 compatible).
 - **CI gates:** `check-test` + `check-quality`. No credential surface.
 
 ## Steps
@@ -112,7 +128,11 @@ Run `bun install` **under bun 1.2.0** (activate via `.tool-versions` /
 `lockfileVersion 1`.
 
 Verify: `bun pm ls vitest` reports `≥ 3.2.6`; `bun pm ls vite` reports
-`≥ 6.4.3`; `head` of `bun.lock` still shows `"lockfileVersion": 1`.
+`≥ 6.4.3`; `head` of `bun.lock` still shows `"lockfileVersion": 1`. Also
+confirm `bun pm ls jsdom` now reports `29.1.1` — the re-resolve closes the
+`origin/main` skew (manifest `29.1.1`, lock still `24.1.3` pre-#115-re-resolve),
+so `jsdom` moving 24 → 29 here is expected, not a regression. If the lock keeps
+`jsdom@24.1.3`, the install did not fully re-resolve — do not proceed.
 
 ### Step 3 — Reconcile `vitest.config.ts` against Vitest 3
 
@@ -175,6 +195,7 @@ Libraries used: none (dependency-graph + config change only).
 | A bare `vitest` bump lands without the root override, leaving `vite@5.4.21` + the high open | Step 1 pairs both edits; Step 2 verify gates on `bun pm ls vite ≥ 6.4.3` |
 | Baseline entry removed but the advisory is not actually resolved (typo, partial resolve) | `audit-gate.js` treats an unmatched live id as unbaselined → fails closed; Step 6 runs the gate |
 | A Vitest 3 config-key rename silently drops `esbuild.jsx` handling | Step 3 checks the key against v3 notes; Step 4 suites + typecheck gate it |
+| The lock re-resolve pairs `vitest@3.2.6` with `jsdom@29` — a jsdom major (#115) the design never validated and #115's CI never exercised (it ran on the un-re-resolved `jsdom@24`) | Step 4's 5 suites are the gate for the `jsdom@29` DOM substrate; a Step-4 failure is a jsdom-29 interaction until proven a vitest-3 one. Do **not** re-pin jsdom to 24 to sidestep — that reverts a security-cleared bump |
 
 ## Execution
 
