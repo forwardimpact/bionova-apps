@@ -21,8 +21,12 @@ Each service carries a `railway.toml` declaring its `watchPaths`, builder
 (Dockerfile or image), and healthcheck path. See:
 
 - `infrastructure/{postgres,kong,pgbouncer,postgrest,gotrue,storage,tei}/railway.toml`
-- `products/polaris/site/railway.toml` (also watches `products/polaris/handlers/**`)
+- `products/polaris/site/railway.toml`
 - `services/polaris-functions/railway.toml`
+
+The `polaris-site` service watches only `products/polaris/site/**`. Because the
+site bundles the shared handlers, `deploy.yml` redeploys it when a push touches
+`products/polaris/handlers/**` too.
 
 ## Deploy token
 
