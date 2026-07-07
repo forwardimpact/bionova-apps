@@ -51,19 +51,23 @@ stop a leak.
 
 A new CI check that runs `gitleaks` against the repository's **full commit
 history** reachable on the branch, using the committed `.gitleaks.toml`
-allowlist and the `.gitleaksignore` fingerprint file, on the same PR and
-push-to-`main` triggers as the dependency-audit gate, and fails the build on any
-finding that is not already allowlisted or fingerprint-accepted.
+allowlist and the `.gitleaksignore` fingerprint file, on **two** of the
+dependency-audit gate's three triggers — **pull request and push to `main`**,
+**not** its daily `schedule` cron — and fails the build on any finding that is
+not already allowlisted or fingerprint-accepted. The cron is deliberately
+omitted: a secret scan has no remote advisory feed that can flip a verdict
+against unchanged history, so a nightly re-run adds no value; copying
+`check-audit.yml`'s triggers verbatim would inherit an idle scheduled scan.
 
 **In scope**
 
 | Item | What it means |
 | --- | --- |
-| A named `check-secrets` check | Appears on every pull request and on push to `main`; visible on the checks tab, same as `check-audit`. |
+| A named `check-secrets` check | Runs and appears on the checks tab on every pull request and on push to `main` — the same two triggers as `check-audit`, **excluding** its daily `schedule` cron (see Scope prose for why). |
 | Scans full reachable history, not only the diff | The threat is a real secret in *any* commit that reaches `main`. The check scans the branch's full commit history, so the accepted commits recorded in `.gitleaksignore` are actually present to the scan and the four historical findings stay suppressed rather than re-firing. |
 | Uses the committed config | The check scans with `.gitleaks.toml` (allowlist) and honors `.gitleaksignore` (the accepted historical findings), so the CI verdict matches what a contributor sees running `gitleaks` locally. |
 | Runs on fork PRs with no secret dependency | `gitleaks` needs no repository secrets, so the check runs and reports on pull requests from forks — the external-contributor case the Problem names. |
-| Blocks the merge | A red `check-secrets` prevents the PR from merging; the check is a required status check, not an advisory tab. |
+| Blocks the merge (once required) | A red `check-secrets` prevents the PR from merging **once the check is registered in branch protection's required set**. The workflow file only *produces* the check run; making it *block* is an out-of-tree branch-protection admin action, owned by the trusted-human maintainer (`dickolsson`), sequenced after first green on `main` — see the "Requiredness is a branch-protection admin action" constraint. |
 | Fails closed on any non-clean result | Any unallowlisted, unaccepted finding — or a scanner that cannot complete — turns the check red. |
 | Green on the tree as it stands | The introducing change is itself green over full history; the gate and any needed acceptance land together, never red-walling `main`. |
 | `CONTRIBUTING.md` reflects reality | § Security no longer says the gate "is not yet in place"; it states the gate is live, names the config it uses, and states how to accept a verified false positive (allowlist for the current tree, `.gitleaksignore` fingerprint for immutable history). |
@@ -105,12 +109,40 @@ finding that is not already allowlisted or fingerprint-accepted.
 - **The acceptance set narrows, never silently grows.** Every allowlist or
   fingerprint acceptance is a reviewable diff carrying a dated reason under
   security-engineer review, exactly as the audit-baseline model works today.
+- **Requiredness is a branch-protection admin action, sequenced after green.**
+  A workflow file only *produces* a `check-secrets` check run; whether a red run
+  actually *blocks* merge lives in the branch-protection "required status
+  checks" setting for `main` — an admin-only surface the CI integration token
+  cannot write (it gets `403` there, the same wall the dependency-audit gate's
+  requiredness sits behind). Registering `check-secrets` in that required set is
+  therefore an out-of-tree action owned by the **trusted-human maintainer with
+  repo-admin rights (`dickolsson`)**, not by this change's diff. It must be
+  registered **only after the check has reported green at least once on `main`**
+  — never before. Registering a required check that has never reported wedges
+  *every* open PR on a check that will never turn green, stalling the merge
+  queue repo-wide. Order: land the workflow (green over full history) → confirm
+  the green run on `main` → then the maintainer flips requiredness on.
+- **The allowlist config is itself a human-review-gated bypass surface.** A
+  future PR that plants a secret *and* a matching `.gitleaks.toml` /
+  `.gitleaksignore` entry in the same diff scans clean — the gate cannot
+  self-detect an exemption authored to hide the very secret it exempts. The
+  closing control is human review of any diff touching those two files: the
+  `.github/CODEOWNERS` wildcard already routes them to the agent team, but this
+  spec requires an explicit CODEOWNERS entry assigning `.gitleaks.toml` and
+  `.gitleaksignore` to security-engineer / trusted-human review, made blocking
+  by the same "require review from code owners" branch-protection setting the
+  requiredness action (above) covers. Until that CODEOWNERS-plus-branch-
+  protection pairing lands, the residual is **accepted on the record** as gated
+  by the existing trusted-human merge approval — no PR merges without it — and
+  by the "acceptance set narrows, never silently grows" constraint. The gate
+  does not, and cannot, close this surface by itself.
 - **Must not weaken any existing gate** (`check-audit`, `check-edge`, lint,
   typecheck, test, `coaligned`, smoke).
-- **Least privilege.** The check reads the repository and nothing more; it
-  declares `contents: read`, consistent with the other CI workflows (#96). PR
-  annotations or SARIF upload (which would need broader scopes) are out of
-  scope, so `contents: read` stays the ceiling.
+- **Least privilege.** The check runs with a read-only token — no write scope,
+  no secrets access — consistent with the least-privilege posture the other CI
+  workflows adopted (#96). PR annotations or SARIF upload, which would need
+  broader scopes, are out of scope, so read-only stays the ceiling. The exact
+  permission token is a design decision, not a spec constraint.
 
 ## Success criteria
 
@@ -122,8 +154,9 @@ finding that is not already allowlisted or fingerprint-accepted.
 | 4 | The introducing PR is itself green — gate and any needed acceptance land together | the PR merges without red-walling `main` |
 | 5 | The CI verdict matches the documented local `gitleaks` run — same `.gitleaks.toml`, same `.gitleaksignore`, same history | a locally-clean tree is clean in CI; the check log shows both config files in use |
 | 6 | The check runs and reports on a pull request opened from a fork | a fork PR shows the `check-secrets` result on its checks tab |
-| 7 | A red `check-secrets` blocks the merge | `check-secrets` is a required status check; a PR with a planted secret cannot be merged |
-| 8 | A non-zero `gitleaks` exit for any reason **other than a findings exit** — crash, timeout, or unloadable config — fails the check closed; there is no path that passes a PR the scanner did not vet | an induced scanner failure (e.g. a malformed config) exits non-zero for a non-findings reason and turns the check red, not green |
+| 7 | A red `check-secrets` blocks the merge — **after** the maintainer registers it as required, and **only** once it has first reported green on `main` | the trusted-human maintainer (`dickolsson`) adds `check-secrets` to `main`'s required-status-checks set after the first green run on `main`; a PR with a planted secret then cannot be merged. Registration before the first green run is explicitly disallowed (it would wedge every open PR) |
+| 7a | The two allowlist-config files carry an explicit code-owner review requirement | `.github/CODEOWNERS` names a security-engineer / trusted-human reviewer for `.gitleaks.toml` and `.gitleaksignore`; a diff touching either requires that review before merge (made blocking by branch protection's code-owner-review setting) |
+| 8 | A non-zero `gitleaks` exit for any reason **other than a findings exit** — crash, timeout, or unloadable config — fails the check closed; there is no path that passes a PR the scanner did not vet | an induced scanner failure (e.g. a malformed config) exits non-zero for a non-findings reason and turns the check red, not green. (Findings exit and error exit both fail closed identically — the distinction is defensive framing only, so the plan should **not** branch on the specific exit code: any non-zero fails the check.) |
 | 9 | `CONTRIBUTING.md` § Security states the gate is live, names the config, and states the false-positive acceptance rule for both the current tree and immutable history | `CONTRIBUTING.md` |
 
 — Security Engineer 🔒
