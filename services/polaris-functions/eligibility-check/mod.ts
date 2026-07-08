@@ -65,6 +65,18 @@ export function normalizeRequest(raw: EligibilityRequest): EligibilityRequest {
   };
 }
 
+// Condition ids have two forms in the generated world: the catalog, the
+// trial_conditions junction, and search all speak hyphen (`diabetes-t2`), but
+// the criteria arrays store underscore (`diabetes_t2`). The self-check shows the
+// patient the hyphen form, so canonicalize both sides to hyphen before comparing
+// membership — otherwise `["diabetes-t2"].includes("diabetes_t2")` is false and a
+// diabetic is told they did not report diabetes (#131). This is the one shared
+// comparison site both surfaces funnel through, so it is the minimal correct
+// place; canonicalizing here (not at seed-render) keeps the fix local and off the
+// verbatim-vendored story.dsl, and revisits spec 10's X1 "edge fn untouched"
+// scoping choice for a correctness defect. Reason strings keep the raw form.
+const canon = (s: string): string => s.replaceAll("_", "-");
+
 // Pure scoring. Exclusion match wins outright. Otherwise every inclusion
 // criterion must be satisfied for `eligible`; any unknown (missing answer or
 // missing field) with no exclusion fail yields `possibly_eligible`; a definite
@@ -72,7 +84,7 @@ export function normalizeRequest(raw: EligibilityRequest): EligibilityRequest {
 export function score(criteria: Criteria, req: EligibilityRequest): EligibilityResponse {
   const reasons: string[] = [];
   const answers = req.custom_answers ?? {};
-  const patientConditions = req.conditions ?? [];
+  const patientConditions = (req.conditions ?? []).map(canon);
 
   // --- Exclusion checks: any match → not_eligible ---
   let excluded = false;
@@ -85,7 +97,7 @@ export function score(criteria: Criteria, req: EligibilityRequest): EligibilityR
   }
 
   const excludedConditionHits = criteria.exclusion.conditions_excluded.filter((c) =>
-    patientConditions.includes(c)
+    patientConditions.includes(canon(c))
   );
   for (const c of excludedConditionHits) {
     reasons.push(`Excluded condition: ${c}`);
@@ -129,7 +141,7 @@ export function score(criteria: Criteria, req: EligibilityRequest): EligibilityR
     }
   } else {
     for (const required of inc.conditions_required) {
-      if (patientConditions.includes(required)) {
+      if (patientConditions.includes(canon(required))) {
         reasons.push(`Has required condition: ${required}`);
       } else {
         reasons.push(`Missing required condition: ${required}`);
