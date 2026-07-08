@@ -68,6 +68,46 @@ Deno.test("score: fully-qualified patient is eligible", () => {
   assertEquals(out.match_score, "eligible");
 });
 
+Deno.test("score: hyphen-form required condition still matches (#131)", () => {
+  // The id a real patient copies from the CLI/UI is hyphenated (`diabetes-t2`);
+  // the criteria row stores underscore (`diabetes_t2`). Both must resolve to the
+  // same condition, or a diabetic is told they did not report diabetes.
+  const out = score(criteria, {
+    trial_id: "diabetes-prevention",
+    age: 55,
+    ecog: 0,
+    conditions: ["diabetes-t2"],
+    custom_answers: {
+      "HbA1c between 7.0% and 10.5%": true,
+      "BMI between 25 and 40": true,
+      "On stable metformin dose for 3+ months": true,
+    },
+  });
+  assertEquals(out.match_score, "eligible");
+});
+
+Deno.test("score: hyphen-form excluded condition still excludes (#131)", () => {
+  // Otherwise-eligible patient whose only bar is a hyphen-form excluded
+  // condition — isolates the exclusion comparison, so it flips eligible ->
+  // not_eligible only when the exclusion side is canonicalized too.
+  const out = score(criteria, {
+    trial_id: "diabetes-prevention",
+    age: 55,
+    ecog: 0,
+    conditions: ["diabetes-t2", "type-1-diabetes"],
+    custom_answers: {
+      "HbA1c between 7.0% and 10.5%": true,
+      "BMI between 25 and 40": true,
+      "On stable metformin dose for 3+ months": true,
+    },
+  });
+  assertEquals(out.match_score, "not_eligible");
+  assertEquals(
+    out.reasons.some((r) => r.includes("Excluded condition")),
+    true,
+  );
+});
+
 Deno.test("score: exclusion custom match is not_eligible", () => {
   const out = score(criteria, {
     trial_id: "diabetes-prevention",
