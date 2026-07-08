@@ -26,5 +26,8 @@
     "eslint": "9.39.4",
     "eslint-config-prettier": "10.1.8",
     "prettier": "3.9.4"
+  },
+  "overrides": {
+    "vite": "^6.4.3"
   }
 }
