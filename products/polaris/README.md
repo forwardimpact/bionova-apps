@@ -10,7 +10,7 @@ The patient-facing clinical trial discovery product. One product, three units:
 
 Both surfaces dispatch into the same `handlers/`. The CLI renders with
 `libformat`; the web renders with React. No handler hand-authors
-patient-facing copy — every explainer, FAQ, consent summary, site description,
+patient-facing copy. Every explainer, FAQ, consent summary, site description,
 patient story, and therapy description is generated from `story.dsl` and read
 from a seed table.
 
@@ -19,5 +19,5 @@ from a seed table.
 | Persona | Hires Polaris to… |
 | --- | --- |
 | Patient / Advocate | find trials relevant to their condition without reading dense protocols |
-| Clinical Development Staff | manage trial listings, update criteria, monitor enrollment interest |
+| Clinical Development Staff | manage trial listings and monitor enrollment interest |
 | Referring Physician | search on behalf of patients, bookmark and share trial details |
