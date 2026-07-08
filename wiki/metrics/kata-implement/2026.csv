@@ -1,2 +1,0 @@
-date,metric,value,unit,run,note,event_type,host_run
-2026-07-06,implementations_shipped,1,count,,route_taken=3; routes_eligible=[3]; spec 10 eligibility-precheck → PR #80 (handed via #74),agent-dispatch,28786796931
