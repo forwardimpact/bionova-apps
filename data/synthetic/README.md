@@ -9,7 +9,7 @@ consent summary, and patient story — originates here.
 | File | Role |
 | --- | --- |
 | `story.dsl` | The synthetic-data DSL, vendored verbatim from the monorepo |
-| `prose-cache.json` | The committed prose cache — makes the build credential-free |
+| `prose-cache.json` | The committed prose cache, which makes the build credential-free |
 | `SOURCE.sha256` | Integrity of the two vendored files |
 | `SEED.sha256` | Determinism anchor for the rendered SQL + embeddings |
 | `PROVENANCE.md` | Where the DSL came from and which renderer produced the seed |
@@ -19,7 +19,7 @@ consent summary, and patient story — originates here.
 `fit-terrain build` renders the seed into `data/synthetic/.build/` (disposable)
 and `build-seed.sh` stages the SQL into
 `products/polaris/site/supabase/migrations/20250101*_seed_*.sql`. None of that is
-committed — it is regenerated from `story.dsl`. The build makes **no LLM calls**:
+committed. It is regenerated from `story.dsl`. The build makes **no LLM calls**:
 it renders from the committed prose cache, so no API key is needed.
 
 ## Auditing the app
