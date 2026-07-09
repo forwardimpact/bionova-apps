@@ -92,11 +92,18 @@ jobs:
       # Install fit-wiki so the guard/verify steps can read the canonical metrics
       # ledger. kata-agent bundles its own toolchain; this is only for our
       # pre/post checks. (Same bootstrap the dispatch workflow uses.)
+      # bun-version pins bootstrap's internal setup-bun to the .tool-versions
+      # line (bun 1.2.0); mirror agent-dispatch.yml (#160). Without it bootstrap
+      # forwards its own default (1.3.11) and the kata-agent SessionStart
+      # `bun install` runs under that ambient bun. A setup-bun placed before this
+      # step is overwritten by bootstrap's internal setup-bun (last writer), so
+      # the pin must be passed here, on the bootstrap call itself.
       - uses: forwardimpact/bootstrap@01112fad2fa58c513a9f0a7bbb68412056e4b2e2 # v1.0.13
         with:
           token: ${{ steps.ci-app.outputs.token }}
           app-id: ${{ secrets.KATA_APP_ID }}
           clis: fit-wiki
+          bun-version: "1.2.0"
 
       # --- Criterion 1: window date-guard -------------------------------------
       # Pure date logic — no state. Decides in-window vs out, exits early

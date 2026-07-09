@@ -67,11 +67,19 @@ jobs:
           token: ${{ steps.ci-app.outputs.token }}
       # harness runs fit-harness off PATH and installs nothing; bootstrap
       # installs the CLIs the harness, cost, and wiki-push steps invoke directly.
+      # bun-version pins bootstrap's internal setup-bun to the .tool-versions
+      # line (bun 1.2.0). Without it, bootstrap forwards its own default
+      # (1.3.11) to setup-bun, which prepends that bun to PATH; the SessionStart
+      # `bun install` in scripts/bootstrap.sh then installs under that ambient
+      # bun. A setup-bun placed BEFORE this step cannot win. Bootstrap's
+      # internal setup-bun runs after it and overwrites PATH (last writer). The
+      # pin must be passed here, on the bootstrap call itself. (#160)
       - uses: forwardimpact/bootstrap@01112fad2fa58c513a9f0a7bbb68412056e4b2e2 # v1.0.13
         with:
           token: ${{ steps.ci-app.outputs.token }}
           app-id: ${{ secrets.KATA_APP_ID }}
           clis: fit-harness fit-trace fit-wiki
+          bun-version: "1.2.0"
       - name: Assess and Act
         id: assess
         uses: forwardimpact/harness@b7409ad9a1df4ff75eca8fe68041b5384f75bd7e # v1.0.3
