@@ -49,23 +49,29 @@ console.
 
 In scope:
 
-- A staff-authenticated read that returns, for every trial, the trial's
+- A staff-authenticated read that returns, for every trial — including trials
+  with no interest yet, which appear with all-zero aggregates — the trial's
   identity and its interest aggregates (eligible / possibly-eligible /
-  not-eligible / total) in a single request that takes no trial id.
+  not-eligible / total) in one read that takes no trial id. `trials` is the
+  driving set; interest signals attach to it, so a trial with zero signals is
+  still listed. The overview reads no new table and widens no grant.
 - A staff CLI invocation that renders this overview and takes no trial id.
 - A staff web surface that renders this overview, takes no trial id, and links
   each trial into its existing per-trial view for depth. The web route topology
   and the CLI verb spelling are the design's call.
-- An ordering that surfaces where interest concentrates — trials readable in an
-  order driven by interest volume or recency, not an arbitrary or id order.
+- An ordering that surfaces where interest concentrates — trials read primarily
+  by interest volume, most-interest-first, not by id or an arbitrary order. The
+  order must be deterministic: the design names the exact ordering rule and a
+  stable tie-break for trials of equal volume.
 - The same staff gate and output-encoding the per-trial view already sits
   behind.
 
 ## Non-goals
 
-- **No new interest capture.** The overview is a read-only projection of the
-  existing `interest_signals` rows. It adds no writable table, no new column,
-  and no story.dsl edit.
+- **No new interest capture.** The overview is a read-only rollup: it reads
+  every trial and reports the interest signals already recorded against it
+  (zero where a trial has none). It adds no writable table, no new column, and
+  no story.dsl edit.
 - **No schema or RLS change.** The staff SELECT across `interest_signals`
   already exists. The overview consumes it; it does not widen it.
 - **Not per-trial criteria depth.** Enriching the single-trial staff view with
@@ -100,18 +106,20 @@ of waiting until someone complains.
   PR #87): the overview sits behind the same staff gate and inherits the same
   encoding. Sequence after them where the surfaces overlap, but do not block on
   them.
-- Spec 70 (per-trial staff criteria view): co-design. #128 is interest breadth
-  (portfolio index); 70 is per-trial criteria-currency depth. Different data
-  domains, complementary and parallel — the overview links into the same
-  per-trial view 70 enriches. Share one staff-view vocabulary so the surfaces
-  read consistently.
+- Spec 70 (per-trial staff criteria view): complementary, not a dependency.
+  #128 is interest breadth (a portfolio index over interest signals); 70 is
+  per-trial criteria depth (over criteria rows). Different data domains — the
+  overview links into the same per-trial view 70 enriches, without duplicating
+  it.
 
 ## Success criteria
 
 1. A staff-authenticated overview call that supplies no trial id returns every
    seeded trial with its four interest aggregates (eligible, possibly-eligible,
-   not-eligible, total). Verify by invoking the overview with a staff token and
-   asserting every seeded trial appears with its counts.
+   not-eligible, total), including trials with zero interest signals, which
+   appear with all-zero counts. Verify by invoking the overview with a staff
+   token, seeding at least one trial with no interest signals, and asserting
+   every seeded trial appears — the zero-signal trial with all-zero counts.
 2. The overview is answerable without knowing ids in advance: neither staff
    surface accepts or requires a trial id. Verify by confirming the CLI
    invocation and the web surface each return the overview with no id supplied.
@@ -120,10 +128,12 @@ of waiting until someone complains.
    each trial's overview row against its per-trial signals. This oracle is the
    shipped per-trial aggregation, so it catches any drift in the counting rule —
    distinct from criterion 1, which checks the read itself.
-4. The overview orders trials so concentration of interest is legible — by
-   interest volume or recency, not id order. Verify by seeding at least two
-   trials with different interest volumes and asserting the rendered order
-   follows interest, not id, with a defined tie-break.
+4. The overview orders trials primarily by interest volume, most-interest-first,
+   so concentration is legible, and the order is deterministic — a documented,
+   stable tie-break resolves trials of equal volume. Verify by seeding at least
+   two trials with different interest volumes and asserting the rendered order
+   follows interest volume, not id, and that equal-volume trials fall in the
+   design's documented tie-break order.
 5. Without a staff token the overview returns an unauthorized state, not data —
    matching the per-trial gate. Verify by calling the overview with no token and
    asserting it errors or renders the staff-access-required state rather than
