@@ -24,7 +24,9 @@ describe("AdminTrialPage", () => {
       new Error("manageTrial requires ctx.data.token (staff JWT)"),
     );
 
-    const ui = await AdminTrialPage({ params: { id: "diabetes-prevention" } });
+    const ui = await AdminTrialPage({
+      params: Promise.resolve({ id: "diabetes-prevention" }),
+    });
     render(ui);
 
     expect(screen.getByText("Staff access required")).toBeInTheDocument();
@@ -37,7 +39,9 @@ describe("AdminTrialPage", () => {
       signals: { eligible: 5, possibly_eligible: 3, not_eligible: 2, total: 10 },
     });
 
-    const ui = await AdminTrialPage({ params: { id: "diabetes-prevention" } });
+    const ui = await AdminTrialPage({
+      params: Promise.resolve({ id: "diabetes-prevention" }),
+    });
     render(ui);
 
     expect(screen.getByText("Interest signals")).toBeInTheDocument();

@@ -28,7 +28,9 @@ describe("SitesPage", () => {
       ],
     });
 
-    const ui = await SitesPage({ searchParams: { specialty: "oncology" } });
+    const ui = await SitesPage({
+      searchParams: Promise.resolve({ specialty: "oncology" }),
+    });
     render(ui);
 
     expect(screen.getByText("Boston Cancer Center")).toBeInTheDocument();
