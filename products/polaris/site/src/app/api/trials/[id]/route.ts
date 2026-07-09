@@ -6,9 +6,10 @@ export const dynamic = "force-dynamic";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
+  const { id } = await params;
   return NextResponse.json(
-    await showTrial(buildCtxFromRequest(request, { id: params.id })),
+    await showTrial(buildCtxFromRequest(request, { id })),
   );
 }

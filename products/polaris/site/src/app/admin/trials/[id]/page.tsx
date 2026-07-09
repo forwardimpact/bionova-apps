@@ -11,9 +11,10 @@ export const dynamic = "force-dynamic";
 export default async function AdminTrialPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
-  const ctx = buildAdminCtx({}, { id: params.id });
+  const { id } = await params;
+  const ctx = await buildAdminCtx({}, { id });
 
   let result: { trial: any; signals: SignalSummary } | null = null;
   let unauthorized = false;
@@ -48,10 +49,10 @@ export default async function AdminTrialPage({
 
   return (
     <main className="flex gap-6">
-      <AdminSidebar trialId={params.id} />
+      <AdminSidebar trialId={id} />
       <div className="flex-1 space-y-6">
         <h1 className="text-2xl font-bold">
-          {trial?.name ?? params.id}{" "}
+          {trial?.name ?? id}{" "}
           <span className="text-sm font-normal text-muted-foreground">
             (staff)
           </span>

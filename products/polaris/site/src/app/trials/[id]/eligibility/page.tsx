@@ -10,16 +10,20 @@ export default async function EligibilityPage({
   params,
   searchParams,
 }: {
-  params: { id: string };
-  searchParams: Record<string, string | string[] | undefined>;
+  params: Promise<{ id: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const ctx = buildCtx({}, { id: params.id });
+  const { id } = await params;
+  const resolvedSearchParams = await searchParams;
+  const ctx = buildCtx({}, { id });
   const result = (await showTrial(ctx)) as {
     trial: { name?: string } | null;
     criteria: Criteria;
   };
   const score =
-    typeof searchParams.score === "string" ? searchParams.score : undefined;
+    typeof resolvedSearchParams.score === "string"
+      ? resolvedSearchParams.score
+      : undefined;
 
   return (
     <main className="space-y-6">
@@ -36,7 +40,7 @@ export default async function EligibilityPage({
         Answer each question. We record only your answers and the result — never
         any identifying information.
       </p>
-      <EligibilityScreener trialId={params.id} criteria={result.criteria} />
+      <EligibilityScreener trialId={id} criteria={result.criteria} />
     </main>
   );
 }

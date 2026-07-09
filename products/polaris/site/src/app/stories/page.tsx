@@ -7,15 +7,16 @@ export const dynamic = "force-dynamic";
 export default async function StoriesPage({
   searchParams,
 }: {
-  searchParams: Record<string, string | string[] | undefined>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const ctx = buildCtx(searchParams);
+  const resolvedSearchParams = await searchParams;
+  const ctx = buildCtx(resolvedSearchParams);
   const result = (await listStories(ctx)) as {
     stories: Array<{ id: string; condition_id: string; story: string }>;
   };
   const condition =
-    typeof searchParams.condition === "string"
-      ? searchParams.condition
+    typeof resolvedSearchParams.condition === "string"
+      ? resolvedSearchParams.condition
       : undefined;
 
   return (

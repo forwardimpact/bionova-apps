@@ -10,9 +10,10 @@ export const dynamic = "force-dynamic";
 export default async function TrialPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
-  const ctx = buildCtx({}, { id: params.id });
+  const { id } = await params;
+  const ctx = buildCtx({}, { id });
   const result = (await showTrial(ctx)) as any;
   const { trial, criteria, sites, conditions, principal_investigator, faq, consentSummary } =
     result;

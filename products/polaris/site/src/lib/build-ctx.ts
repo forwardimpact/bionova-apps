@@ -43,8 +43,11 @@ export function buildCtx(searchParams: SearchParams = {}, args: Args = {}) {
 // Admin page Server Components. The staff JWT lives in the `sb-staff-jwt`
 // cookie; when absent, `ctx.data.token` is undefined and `manageTrial` throws
 // its documented precondition rather than performing an anon PATCH.
-export function buildAdminCtx(searchParams: SearchParams = {}, args: Args = {}) {
-  const token = cookies().get(STAFF_JWT_COOKIE)?.value;
+export async function buildAdminCtx(
+  searchParams: SearchParams = {},
+  args: Args = {},
+) {
+  const token = (await cookies()).get(STAFF_JWT_COOKIE)?.value;
   return freezeInvocationContext({
     data: createDataContext(env(), { token }),
     args,

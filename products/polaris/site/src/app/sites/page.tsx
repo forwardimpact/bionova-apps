@@ -8,13 +8,14 @@ export const dynamic = "force-dynamic";
 export default async function SitesPage({
   searchParams,
 }: {
-  searchParams: Record<string, string | string[] | undefined>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const ctx = buildCtx(searchParams);
+  const resolvedSearchParams = await searchParams;
+  const ctx = buildCtx(resolvedSearchParams);
   const result = (await listSites(ctx)) as { sites: Site[] };
   const specialty =
-    typeof searchParams.specialty === "string"
-      ? searchParams.specialty
+    typeof resolvedSearchParams.specialty === "string"
+      ? resolvedSearchParams.specialty
       : undefined;
 
   return (

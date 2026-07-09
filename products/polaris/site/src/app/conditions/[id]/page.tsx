@@ -6,9 +6,10 @@ export const dynamic = "force-dynamic";
 export default async function ConditionPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
-  const ctx = buildCtx({}, { id: params.id });
+  const { id } = await params;
+  const ctx = buildCtx({}, { id });
   const result = (await showCondition(ctx)) as {
     condition: { name?: string; severity?: string } | null;
     explainer: string | null;
