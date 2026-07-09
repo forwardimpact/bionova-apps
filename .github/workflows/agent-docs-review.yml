@@ -20,7 +20,9 @@ name: "Agent: Docs Review"
 # THREE ACCEPTANCE CRITERIA (ask#3), and where each is met:
 #   1. Exactly once per calendar day on 07-07/08/09 (07-10 optional) — the
 #      window date-guard (`window` step) + concurrency group. A backstop cron is
-#      safe precisely because of #2.
+#      safe precisely because of #2. Window later extended through 07-13 for
+#      exp #154 (facilitator ask#2): the kata-shift docs_pages_over_ceiling
+#      series needs a clean point on each of 07-10/11/12/13 to reach n>=6.
 #   2. Idempotent per day — the `idempotency` step reads the review-time signal
 #      (today's errors_found row) and skips dispatch if a review already logged.
 #      One predicate governs the morning fire, the backstop fire, and the
@@ -115,18 +117,27 @@ jobs:
           TODAY="$(date -u +%F)"
           echo "today=$TODAY" >> "$GITHUB_OUTPUT"
           # Facilitator-decided topic order (shared decision 2026-07-06).
+          # 07-11..07-13 extend the window for exp #154 (facilitator ask#2): the
+          # kata-shift docs_pages_over_ceiling series needs one clean point on
+          # each of 07-10/11/12/13 to reach n>=6 by 2026-07-13, zero slack. No
+          # facilitator topic was decided for these days, so TOPIC is left empty
+          # — TW's topic-selection rule picks the true oldest (final selection
+          # authority per the division of labor).
           case "$TODAY" in
             2026-07-07) IN_WINDOW=true; TOPIC=functions-readme ;;
             2026-07-08) IN_WINDOW=true; TOPIC=deployment ;;
             2026-07-09) IN_WINDOW=true; TOPIC=operations ;;
-            2026-07-10) IN_WINDOW=true; TOPIC=infrastructure-readme ;;  # optional day
+            2026-07-10) IN_WINDOW=true; TOPIC=infrastructure-readme ;;
+            2026-07-11) IN_WINDOW=true; TOPIC= ;;  # exp #154 accumulation day
+            2026-07-12) IN_WINDOW=true; TOPIC= ;;  # exp #154 accumulation day
+            2026-07-13) IN_WINDOW=true; TOPIC= ;;  # exp #154 accumulation day
             *)          IN_WINDOW=false; TOPIC= ;;
           esac
           if [ "$FORCE" = "true" ]; then IN_WINDOW=true; echo "::notice::force=true — window guard bypassed"; fi
           echo "in_window=$IN_WINDOW" >> "$GITHUB_OUTPUT"
           echo "topic_hint=$TOPIC" >> "$GITHUB_OUTPUT"
           if [ "$IN_WINDOW" != "true" ]; then
-            echo "::notice::$TODAY is outside the exp-42 window (07-07..07-10) — no dispatch."
+            echo "::notice::$TODAY is outside the exp-42/#154 window (07-07..07-13) — no dispatch."
           fi
 
       # --- Criterion 2: idempotency guard -------------------------------------
@@ -253,6 +264,20 @@ jobs:
       # If we were in-window with no prior review and STILL nothing logged after
       # two attempts, fail loudly. A genuine miss must page a human, not slip by
       # as a false cadence-obstacle-#40 data point.
+      #
+      # Two distinct failure modes, two distinct human pages:
+      #   (a) no errors_found row at all -> the review never ran (apm-race that
+      #       even attempt 2 could not heal). GENUINE miss.
+      #   (b) errors_found row present, but the EOD docs_pages_over_ceiling row is
+      #       absent or NOT event_type=kata-shift. exp #154 counts only
+      #       kata-shift-stamped rows (libxmr analyze() filters to
+      #       DEFAULT_SHIFT_TYPE=kata-shift), so an agent-shift mis-stamp
+      #       (obstacle #145) would read "Cadence held" here yet accumulate to
+      #       zero -> a SILENT n-miss. A re-dispatch cannot fix a stamp (the
+      #       review already ran), so this pages a human to restamp.
+      # SCOPE: assert ONLY docs_pages_over_ceiling. docs_staleness_age_days is
+      # DELIBERATELY agent-shift per RFC #139 decision-1 pending the #146
+      # reframe — never assert or convert it here.
       - name: Assert a review landed
         id: assert
         if: steps.window.outputs.in_window == 'true' && steps.idempotency.outputs.already_logged != 'true'
@@ -263,12 +288,19 @@ jobs:
           fit-wiki pull || true
           CSV="wiki/metrics/kata-documentation/$(date -u +%Y).csv"
           TODAY="${{ steps.window.outputs.today }}"
-          if [ -f "$CSV" ] && grep -Eq "^${TODAY},errors_found," "$CSV"; then
-            echo "::notice::Review logged for $TODAY. Cadence held."
-          else
+          if [ ! -f "$CSV" ] || ! grep -Eq "^${TODAY},errors_found," "$CSV"; then
             echo "::error::No review logged for $TODAY after two attempts. This is a GENUINE miss, not a cadence obstacle — needs a human."
             exit 1
           fi
+          # event_type is the 7th CSV field; host_run (possibly empty) is the 8th
+          # and last, and carries no comma. Anchoring on ,kata-shift,<no-comma>$
+          # matches the docs_pages_over_ceiling row for TODAY iff its event_type
+          # is exactly kata-shift, regardless of the quoted note's commas.
+          if ! grep -Eq "^${TODAY},docs_pages_over_ceiling,.*,kata-shift,[^,]*$" "$CSV"; then
+            echo "::error::A review logged for $TODAY but its docs_pages_over_ceiling row is missing or NOT event_type=kata-shift. exp #154 counts only kata-shift-stamped rows, so this would SILENTLY miss (obstacle #145 mis-stamp). Needs a human to restamp — a re-dispatch will not fix a stamp."
+            exit 1
+          fi
+          echo "::notice::Review logged and docs_pages_over_ceiling kata-shift point recorded for $TODAY. Cadence held (exp #154 point counted)."
 
       # Push any wiki state the guard/verify pulls left dirty (kata-agent pushes
       # its own review; this is a safety flush).
