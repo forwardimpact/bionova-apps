@@ -12,7 +12,7 @@ rendered locally from these files; they are never authored or committed.
 - Integrity: `SOURCE.sha256` (run `sha256sum -c SOURCE.sha256` here)
 
 `story.dsl` is byte-identical to the monorepo's copy at the provenance SHA.
-Editing the vendored DSL is out of scope — domain changes are made in the
+Editing the vendored DSL is out of scope. Domain changes are made in the
 monorepo and re-vendored.
 
 ## Renderer
