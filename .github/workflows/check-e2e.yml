@@ -14,6 +14,8 @@ jobs:
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version-file: .tool-versions
       - run: bun install
       - run: cp .env.example .env
       # The libterrain release carrying prereqs A+B is not yet on npm. When it
