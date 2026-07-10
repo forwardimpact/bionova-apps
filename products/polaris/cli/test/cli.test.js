@@ -1,5 +1,4 @@
-import { test } from "node:test";
-import assert from "node:assert/strict";
+import { test, expect } from "bun:test";
 import { createDefaultRuntime } from "@forwardimpact/libutil/runtime";
 import { createDataContext } from "@bionova/polaris-handlers/context";
 import { createBionovaCli } from "../src/definition.js";
@@ -23,27 +22,27 @@ function makeCli() {
 test("parse: search with condition option", () => {
   const cli = makeCli();
   const parsed = cli.parse(["search", "--condition=diabetes"]);
-  assert.ok(parsed);
-  assert.deepEqual(parsed.positionals, ["search"]);
-  assert.equal(parsed.values.condition, "diabetes");
+  expect(parsed).toBeTruthy();
+  expect(parsed.positionals).toEqual(["search"]);
+  expect(parsed.values.condition).toBe("diabetes");
 });
 
 test("parse: admin trial resolves nested subcommand positionals", () => {
   const cli = makeCli();
   const parsed = cli.parse(["admin", "trial", "abc-123"]);
-  assert.ok(parsed);
-  assert.deepEqual(parsed.positionals, ["admin", "trial", "abc-123"]);
+  expect(parsed).toBeTruthy();
+  expect(parsed.positionals).toEqual(["admin", "trial", "abc-123"]);
 });
 
 test("parse: --help returns null (help printed)", () => {
   const cli = makeCli();
-  assert.equal(cli.parse(["--help"]), null);
+  expect(cli.parse(["--help"])).toBeNull();
 });
 
 test("parse: global --json flag is recognized on read commands", () => {
   const cli = makeCli();
   const parsed = cli.parse(["search", "--condition=diabetes", "--json"]);
-  assert.equal(parsed.values.json, true);
+  expect(parsed.values.json).toBe(true);
 });
 
 test("dispatch: builds a frozen InvocationContext", async () => {
@@ -67,15 +66,15 @@ test("dispatch: builds a frozen InvocationContext", async () => {
   );
   const parsed = cli.parse(["go", "42"]);
   const result = await cli.dispatch(parsed, { data: { x: 1 } });
-  assert.equal(result, "ok");
-  assert.ok(Object.isFrozen(seen));
-  assert.equal(seen.args.id, "42");
+  expect(result).toBe("ok");
+  expect(Object.isFrozen(seen)).toBe(true);
+  expect(seen.args.id).toBe("42");
 });
 
 test("definition exposes all 9 commands", () => {
   const cli = makeCli();
   // re-parse each top-level command name resolves (no throw)
   for (const name of ["search", "trial", "condition", "eligibility", "sites", "stories", "about", "repl"]) {
-    assert.ok(cli.parse([name, "--help"]) === null, `${name} --help prints help`);
+    expect(cli.parse([name, "--help"])).toBeNull();
   }
 });
