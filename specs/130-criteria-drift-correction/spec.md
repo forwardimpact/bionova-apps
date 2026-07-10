@@ -20,10 +20,10 @@ The shipped staff surface can neither show those criteria nor act on them: the
 staff trial read fetches the criteria rows from the store, but no shipped staff
 surface renders them, and no write path can change them.
 
-`manageTrial` is the only staff write path (CLI `admin trial <id> --update`, web
-admin trial page), and it already fails closed without a token. Its update
-allowlist covers `status`, `current_enrollment`, `estimated_end_date`, and
-`arms`. A trial's eligibility criteria — its `inclusion` fields (`age_min`,
+The shipped staff write path (`manageTrial`, reachable from the CLI admin trial
+verb and the web admin trial page) is the only way staff change a trial, and it
+already fails closed without a staff token. Its update allowlist covers
+`status`, `current_enrollment`, `estimated_end_date`, and `arms`. A trial's eligibility criteria — its `inclusion` fields (`age_min`,
 `age_max`, `conditions_required`, `ecog_max`) and the `custom[]` clinical
 free-text rules on both `inclusion` and `exclusion` — are read back at the data
 layer but never patchable, and a key outside the allowlist is silently dropped.
@@ -51,7 +51,7 @@ edit written to the database would be silently reverted on the next sync. Worse,
 editing the vendored DSL is out of scope — domain changes are made in the
 upstream monorepo and re-vendored — so this repository does not own the source
 the correction must reach. An editable database path would create a second source
-of record, clobbered by the next `build-seed.sh`, and could not be applied here
+of record, clobbered by the next seed re-render, and could not be applied here
 even in principle. A correction that quietly un-fixes itself on a screening field
 is worse than the gap it closes. The correction must terminate at the source of
 record, not at a live database row.
@@ -60,9 +60,12 @@ record, not at a live database row.
 
 This spec defines a **staff-initiated correction-request workflow**: a way for
 staff to flag a specific trial's criterion as stale, propose the corrected value,
-and emit a durable, structured correction request routed toward the source of
-record (the upstream `story.dsl` re-vendor). It is a path from *"this is stale"*
-to *"a correction is in flight,"* not a dead-end alert and not a live editor.
+and record a durable, structured correction request in a form a human carries to
+the source of record (the upstream `story.dsl` re-vendor). It is a path from
+*"this is stale"* to *"a correction is recorded and ready to carry upstream,"*
+not a dead-end alert and not a live editor. Routing the recorded request into the
+upstream monorepo is a human step outside this repository; the spec delivers the
+record, not the delivery.
 
 **What "a criterion" means here.** A trial's criteria are stored as one row per
 trial holding two structures, `inclusion` and `exclusion`; individual criteria
@@ -73,10 +76,16 @@ one free-text `custom[]` rule identified by the half it lives on and its positio
 in that array (for example, `inclusion.custom[2]`). This naming scheme is the
 correction's unit of work; how it is encoded is a design decision.
 
-The workflow reuses the shipped authenticated `manageTrial` write path — which
-fails closed without a token at the handler and gates the staff role at the
-database (RLS) — and composes with spec 70's detection surface (which criterion
-is stale). It records intent only; it never mutates the live `trials` or
+The workflow reuses the shipped authenticated staff write path (`manageTrial`),
+which fails closed without a staff token at the handler, and composes with spec
+70's detection surface (which criterion is stale). One authorization subtlety the
+design must resolve, not assume: the default staff CLI authenticates with the
+service-role credential, which bypasses row-level security, so the request log's
+staff-only read (S6) cannot rely on a `role=staff` RLS policy holding for that
+caller. Whether S6 is enforced by an RLS policy that a genuine staff JWT
+satisfies, by the same handler-level token check the write path uses, or by both,
+is a design decision; the WHAT is that neither raising a request nor reading the
+log is reachable without a staff token. It records intent only; it never mutates the live `trials` or
 `criteria` rows and never touches any patient-facing view. Any proposed value the
 workflow renders back to staff is output-encoded like the rest of the staff
 surface; this is the one hardening obligation the request path carries, and it is
@@ -95,8 +104,8 @@ In scope:
 | --- | --- |
 | S1 | Let staff initiate, against a specific trial and a specific named criterion, a correction request that captures the current value, the proposed corrected value, and a free-text reason. |
 | S2 | Record each accepted request as a durable, staff-scoped entry that no later request overwrites, capturing the identity the request token carries, when it was raised, the target trial and criterion, and the current-versus-proposed values — a change record for a clinical screening field. The recorded identity is whatever the authenticating token presents; on a surface authenticated by a shared credential (the CLI service-role key today) that identity is the shared one, not a distinct person, so the record proves *what changed and when*, and *who* only to the granularity the surface's credential provides. |
-| S3 | Validate a proposed correction against the shape of the target criterion before recording it, so no malformed correction enters the request store. A proposed age range must satisfy `age_min ≤ age_max` with both a non-negative integer; a proposed `ecog_max` must be a non-negative integer; a proposed `conditions_required` must be a list of well-formed condition ids; the free-text `custom[]` rules carry no structural constraint and are recorded as given. The age check is the load-bearing case because those bounds feed the patient eligibility pre-check directly. |
-| S4 | Record each request so that the target trial, the target criterion (per the naming scheme above), and the proposed value are each an independently addressable field — not a single free-text blob — so a human can apply it as a `story.dsl` change upstream without re-keying it. |
+| S3 | Validate a proposed correction against the shape of the target criterion before recording it, so no malformed correction enters the request store. A proposed age range must satisfy `age_min ≤ age_max` with both a non-negative integer; a proposed `ecog_max` must be a non-negative integer; a proposed `conditions_required` must be a list of condition ids (list-shape only — whether ids are checked against the conditions table is a design decision); the free-text `custom[]` rules carry no structural constraint and are recorded as given. The age check is the load-bearing case because those bounds drive the patient eligibility scoring. |
+| S4 | Record each request so that a human can read the target trial, the target criterion (per the naming scheme above), and the proposed value back separately and apply it as a `story.dsl` change upstream without re-keying — not recover them by parsing a single free-text blob. How the record is structured to achieve this is a design decision. |
 | S5 | Leave the live listing unchanged on submit: it mutates no `trials` or `criteria` row and no patient-facing view; the listing changes only when the correction is applied at the source and re-rendered. |
 | S6 | Be staff-only: initiating a request, and reading the request log, require a staff token; neither is reachable from any patient-facing surface. |
 
@@ -117,16 +126,18 @@ Each is a claim plus the command or path that verifies it. The automated tests
 below run under the repository test harness (`just test`), exercising the seeded
 trial `oncora-phase3` (ONCORA-301), whose criteria the sync publishes. Which
 layer hosts each assertion is a design decision; the criteria name the behavior
-to assert, not the file that asserts it. Where a criterion names a seeded value,
-it asserts the field is present and well-formed, not a re-vendorable exact value.
+to assert, not the file that asserts it. Tests key on the stable id
+`oncora-phase3` and the criterion field paths, never on a re-vendorable value
+(the display name `ONCORA-301`, an exact age bound, or a `custom[]` string) —
+each criterion asserts the field is present and well-formed, not an exact value.
 
 | # | Claim | Verified by |
 | --- | --- | --- |
 | C1 | Staff can raise a correction request against `oncora-phase3` for a named criterion, capturing current value, proposed value, and reason. | An automated test that submits a correction request for a named `oncora-phase3` criterion with a proposed value and reason, and asserts the request is accepted and retrievable with all three fields intact. |
 | C2 | Each accepted request is recorded as a durable, staff-scoped entry that a later request does not overwrite, carrying the token identity, when, target trial, target criterion, and current-versus-proposed values. | An automated test asserting that after two corrections are raised against `oncora-phase3`, both entries persist independently (neither overwrites the other) and each carries the recorded token identity, timestamp, trial, criterion, and both values. |
 | C3 | A proposed age correction that violates `age_min ≤ age_max` (or is negative or non-integer) is rejected and never recorded; a proposed `ecog_max` that is negative or non-integer is likewise rejected. | An automated test submitting a proposed age range with `age_min > age_max` and asserting the request is rejected with a validation error and no entry is written; companion tests asserting a valid age range and a valid `ecog_max` are accepted and a negative `ecog_max` is rejected. |
-| C4 | Submitting a correction request mutates no live listing and no patient-facing view. | An automated test asserting that after a correction request is raised for `oncora-phase3`, the trial's stored `criteria` values are unchanged (value-equal to before) and the patient-facing trial view renders the same criteria as before. |
-| C5 | Each request exposes the target trial, the target criterion (per the naming scheme), and the proposed value as three independently addressable fields, suitable for a human to apply upstream without re-keying. | An automated test asserting the recorded request exposes the target trial id, the target criterion name (e.g. `inclusion.age_min` or `inclusion.custom[2]`), and the proposed value as three separate retrievable fields — reading each field back independently — and that none of the three is recoverable only by parsing a free-text blob. |
+| C4 | Submitting a correction request writes no `trials` or `criteria` row and no patient-facing view. | An automated test asserting that after a correction request is raised for `oncora-phase3`, the trial's stored `criteria` values are unchanged (value-equal to before) and the patient-facing trial view renders the same criteria as before. |
+| C5 | A human can read the target trial, the target criterion (per the naming scheme), and the proposed value back separately from a recorded request, without parsing a free-text blob. | An automated test asserting the recorded request returns the target trial id, the target criterion name (e.g. `inclusion.age_min` or `inclusion.custom[2]`), and the proposed value each read back separately, and that none of the three is recoverable only by parsing a free-text blob. |
 | C6 | The workflow is staff-only: raising a request and reading the log both require a staff token, and neither is reachable from a patient surface. | An automated test asserting an anonymous (no staff token) call to raise or read a correction request is refused, and a patient-facing trial-view test asserting it exposes no correction-request entry point or log. |
 
 ## Dependencies and relationships
