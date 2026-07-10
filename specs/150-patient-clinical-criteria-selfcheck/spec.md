@@ -82,6 +82,20 @@ In scope:
 like every other `story.dsl`-derived string; this spec introduces no raw or
 unescaped rendering path for criterion text.
 
+**Input-path constraint (MEDIUM-1):** An exclusion answered *false* is the one
+S2 case the scorer emits no reason for — it signals an exclusion only when
+answered affirmatively, so from the score result alone an answered-false
+exclusion is indistinguishable from an unanswered one. Surfacing the
+answered-false one as supporting fit (C8) therefore requires the input path to
+carry the patient's `custom_answers` through to `buildPreCheck`, keyed by the
+verbatim criterion text the scorer keys on — the `Record<string, boolean>` the
+web surface already builds, available in the handler as
+`ctx.options.custom_answers`. The design owns the exact shape (as illustration,
+`buildPreCheck`'s signature grows to include `custom_answers`); what this fixes
+at spec altitude is that S2's answered-false case is unreachable without this
+input-path addition — the plan-time fork that the resolved outcome direction
+does not close on its own.
+
 Explicitly excluded:
 
 | # | Out of scope | Why |
@@ -111,5 +125,6 @@ on a re-vendorable exact string such as `DIABPREV-201`.
 | C5 | Each custom criterion is shown as its verbatim `custom[]` string, and no hand-authored criterion prose is introduced outside `data/synthetic/`. | A handler test asserting the rendered custom criteria equal the fixture's `custom[]` strings verbatim, plus `rg` over `products/` finding no trial-specific eligibility-criterion strings committed outside `data/synthetic/`. |
 | C6 | The pre-check adds no new recorded field: the anonymous interest signal still carries exactly `trial_id`, `screener_answers`, and `match_score` (no PII), with the custom answers inside `screener_answers`. | A handler test asserting the `interest_signals` insert body has exactly those keys. |
 | C7 | A self-reported exclusion marked affirmatively fires regardless of whether the surface passes a boolean or a string; a non-affirmative or blank value never fires it. | A handler test asserting both — an affirmative boolean and an affirmative string each fire the exclusion, while a non-affirmative and a blank value each leave it unfired. |
+| C8 | An exclusion custom criterion the patient answers *false* — affirmatively lacking the excluding condition, so it is a criterion they met — is surfaced under "where you likely fit," not routed to the coordinator, and is distinguished from an unanswered exclusion, which stays a coordinator question. | A handler/template test over a `diabetes-prevention`-shaped fixture supplying one exclusion custom answered false and another left unanswered, asserting the answered-false one appears in the supports section and the unanswered one stays in coordinator questions. |
 
 — Product Manager 🌱
