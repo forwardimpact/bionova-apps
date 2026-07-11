@@ -60,8 +60,8 @@ signals, PM-owned) as the only remaining Item-1 risk.
 |---|---|
 | Merge-on-signal trigger | On an enumerated approval signal on a `gate:in-flight` **design** PR — a `design:approved` label-add or an APPROVED review — a `kata-release-merge` gate pass is dispatched within minutes, instead of waiting for the next scheduled Shift |
 | Gate-body identity | The signal-triggered pass performs the **full, unchanged** gate body: trust verification, PR classification, rebase-on-`main`, CI-green requirement, the `wiki/STATUS.md` ledger / enumerated-signal gate, and the bot merge. The signal is a trigger only — it is never a substitute for any gate check, never originates approval, never writes a ledger row, and never enables admin-merge |
-| Signal-commit binding (G1) | An approval signal counts only for the exact PR head commit it was emitted against — the **human-approved head**. Any change to the PR head after the signal — by the author or any external actor — invalidates it and re-requires approval; the gate does not merge a head a contributor changed after approval. The gate's own rebase-on-`main` (the Gate-body-identity row) is exempt — **not** an invalidating event — **only when it replays the reviewed diff unchanged**; a conflict-resolving rebase that alters the tree the human reviewed re-requires the signal. So the exemption never transfers a human's approval to a tree they did not review, yet a clean rebase does not perpetually kill the gate's own trigger |
-| Trusted-actor gate (G2) | An approval signal counts only when the actor that emitted it belongs to the strict-hold trusted human set; never the bot. Signal state `APPROVED` is necessary, not sufficient. The concrete membership source is a design decision |
+| Signal-commit binding (G1) | An approval signal counts only for the exact PR head commit it was emitted against — the **human-approved head**. Any change to the PR head after the signal — by the author or any external actor — invalidates it and re-requires approval; the gate does not merge a head a contributor changed after approval. The gate's own rebase-on-`main` (the Gate-body-identity row) is exempt — **not** an invalidating event — **only when it replays the reviewed diff unchanged**; a conflict-resolving rebase that alters the reviewed diff re-requires the signal. So the exemption never transfers a human's approval to a diff they did not review, yet a clean rebase does not perpetually kill the gate's own trigger |
+| Trusted-actor gate (G2) | An approval signal counts only when the actor that emitted it belongs to the strict-hold trusted human set; never the bot. Signal state `APPROVED` is necessary, not sufficient. If the trusted human set is empty or cannot be verified at trigger time, the signal does not count and the reactor does not merge — an unresolvable set fails closed, never open. The membership **source** is a design decision; its fail-closed behavior on an empty or unverifiable set is not |
 | Least-privilege trigger surface (G3) | The signal-triggered path exposes no privileged-input surface beyond what the scheduled gate already exposes: it runs with the least privilege its merge requires and never lets untrusted PR-supplied content reach a privileged operation. It is no more exploitable than today's scheduled gate |
 | Draft-hold retirement note | Governance documentation records that merge-on-signal supersedes the pre-flight draft-hold pattern, so future design PRs need not be held in DRAFT before their spec lands on `main`. This spec delivers the documented note only; staff-engineer performs the actual retirement when the trigger lands |
 
@@ -106,10 +106,11 @@ that label is part of this change.
    scenario: approve, contributor push, confirm no merge. The gate's own
    rebase-on-`main` that replays the reviewed diff unchanged is not such a push
    and does not invalidate the signal; a conflict-resolving rebase that alters
-   the reviewed tree does re-require it.
+   the reviewed diff does re-require it.
 4. (G2) An `APPROVED` review or `design:approved` label from an actor outside the
    trusted human set does not trigger a merge — verify by a scenario with a
-   non-trusted actor.
+   non-trusted actor, and by a scenario where the trusted set resolves empty or
+   errors at trigger time, confirming no merge (fail-closed).
 5. (G3) The signal-triggered path exposes no privileged-input surface beyond what
    the scheduled gate already exposes — verify by a security review of the
    trigger against the existing Dispatch trust-gate posture.
