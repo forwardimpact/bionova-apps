@@ -10,9 +10,9 @@ Every step needs admin on `forwardimpact/bionova-apps`.
 ## 1. Create the Kata GitHub App
 
 The agent workflows (`agent-dispatch`, `agent-shift`, `agent-storyboard`,
-`agent-coaching`) mint a short-lived token from a GitHub App with
-`actions/create-github-app-token`. The `wiki` action uses the same App to push
-agent memory. Create one App for this repository.
+`agent-coaching`, `agent-docs-review`) mint a short-lived token from a GitHub
+App with `actions/create-github-app-token`. The `wiki` action uses the same App
+to push agent memory. Create one App for this repository.
 
 1. Go to **Settings → Developer settings → GitHub Apps → New GitHub App** on the
    account or organization that owns the repo.
