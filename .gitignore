@@ -1,5 +1,10 @@
 node_modules/
 .env
+# Next.js local env overrides (.env.local, .env.production.local, …). The bare
+# `.env` above does not match these names, and the site reads them for local
+# secrets. `.env.example` is tracked (public template) and does not end in
+# `.local`, so it stays committed.
+.env*.local
 *.log
 dist/
 build/
