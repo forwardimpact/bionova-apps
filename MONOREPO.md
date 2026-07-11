@@ -12,8 +12,8 @@ know where everything lives.
 | `services/` | Deployable services. Today: `polaris-functions/` (Supabase Edge Functions, Deno). | [services/polaris-functions/README.md](services/polaris-functions/README.md) |
 
 This repo consumes Forward Impact **libraries** from npm
-(`@forwardimpact/libcli`, `libui`, `libformat`, `libtemplate`, `librepl`); it
-does not vendor or publish any library of its own.
+(`@forwardimpact/libcli`, `libui`, `libformat`, `libtemplate`, `librepl`,
+`libutil`); it does not vendor or publish any library of its own.
 
 ## Support units
 
@@ -34,7 +34,7 @@ does not vendor or publish any library of its own.
 
 ## Source of truth
 
-Auditing what the app contains means reading `data/synthetic/story.dsl` — one
-legible DSL file — not reverse-engineering SQL dumps. Changing the domain means
+Auditing what the app contains means reading `data/synthetic/story.dsl`, one
+legible DSL file, not reverse-engineering SQL dumps. Changing the domain means
 editing the DSL in the upstream monorepo, regenerating the prose cache there,
 and re-vendoring here. See spec 1160 in `forwardimpact/monorepo`.
