@@ -60,7 +60,7 @@ signals, PM-owned) as the only remaining Item-1 risk.
 |---|---|
 | Merge-on-signal trigger | On an enumerated approval signal on a `gate:in-flight` **design** PR — a `design:approved` label-add or an APPROVED review — a `kata-release-merge` gate pass is dispatched within minutes, instead of waiting for the next scheduled Shift |
 | Gate-body identity | The signal-triggered pass performs the **full, unchanged** gate body: trust verification, PR classification, rebase-on-`main`, CI-green requirement, the `wiki/STATUS.md` ledger / enumerated-signal gate, and the bot merge. The signal is a trigger only — it is never a substitute for any gate check, never originates approval, never writes a ledger row, and never enables admin-merge |
-| Signal-commit binding (G1) | An approval signal counts only for the exact PR head commit it was emitted against. A push to the PR head after the signal invalidates the signal; the gate does not merge a head that changed after approval |
+| Signal-commit binding (G1) | An approval signal counts only for the exact PR head commit it was emitted against — the **human-approved head**. An external or author push to the PR head after the signal invalidates the signal; the gate does not merge a head a contributor changed after approval. The gate's own rebase-on-`main` (the Gate-body-identity row) is **not** an invalidating event — it preserves the approved tree, re-runs every gate check, and must neither kill its own trigger nor transfer the human's approval to a tree they did not review |
 | Trusted-actor gate (G2) | An approval signal counts only when the actor that emitted it belongs to the strict-hold trusted human set; never the bot. Signal state `APPROVED` is necessary, not sufficient. The concrete membership source is a design decision |
 | Least-privilege trigger surface (G3) | The signal-triggered path exposes no privileged-input surface beyond what the scheduled gate already exposes: it runs with the least privilege its merge requires and never lets untrusted PR-supplied content reach a privileged operation. It is no more exploitable than today's scheduled gate |
 | Draft-hold retirement note | Governance documentation records that merge-on-signal supersedes the pre-flight draft-hold pattern, so future design PRs need not be held in DRAFT before their spec lands on `main`. This spec delivers the documented note only; staff-engineer performs the actual retirement when the trigger lands |
@@ -101,9 +101,10 @@ that label is part of this change.
    never an admin-merge and never a ledger-approval write — verify by running a
    signal-triggered and a scheduled pass against an identical PR and comparing
    the decision, the merge method, and that no ledger row was written.
-3. (G1) A commit pushed to the PR head after the approval signal does not result
-   in a merge; the stale signal is rejected — verify by a scenario: approve,
-   push, confirm no merge.
+3. (G1) A commit a contributor pushes to the PR head after the approval signal
+   does not result in a merge; the stale signal is rejected — verify by a
+   scenario: approve, contributor push, confirm no merge. The gate's own
+   rebase-on-`main` is not such a push and does not invalidate the signal.
 4. (G2) An `APPROVED` review or `design:approved` label from an actor outside the
    trusted human set does not trigger a merge — verify by a scenario with a
    non-trusted actor.
