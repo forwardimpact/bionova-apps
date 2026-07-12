@@ -52,8 +52,9 @@ In scope:
   workspace manifests.
 - Dependabot pull requests, which update manifests only, must still be able to
   reach a green, mergeable state under the new enforcement.
-- The currently-stale `bun.lock` on `main` is brought into agreement with the
-  manifests so the enforced state is reachable.
+- The `bun.lock` on `main` must agree with the manifests so the enforced state
+  is reachable. `0424959` (#147) reconciled the drift that motivated this on
+  2026-07-08.
 - `CONTRIBUTING.md` states the committed-lockfile requirement and how a
   contributor updates the lock after changing a manifest.
 
