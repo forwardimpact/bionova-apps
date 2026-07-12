@@ -1,12 +1,13 @@
 # Spec 190 — A durable home for design/plan-input staging notes
 
-**Classification:** Internal (agent-memory infrastructure).
-It is constraint-lifting: the product-vs-internal axis is per the work-definition
-rubric, and the exception that keeps it ahead of routine internal work is
-memory-protocol § On-Boot Routing ("Product-priority tie-break … Exception:
-internal work lifting a constraint that currently blocks product delivery"). A
-degraded cross-agent boot-routing surface throttles every agent's
-spec/design/plan cycle.
+**Classification:** Internal (agent-memory infrastructure), and constraint-lifting.
+The product-vs-internal axis is per the work-definition rubric. Internal work
+normally sits behind product work. The exception that keeps this ahead is
+memory-protocol § On-Boot Routing: internal work that lifts a constraint on
+product delivery. The constraint here is a degraded cross-agent boot-routing
+surface. It throttles rather than hard-blocks every agent's spec/design/plan
+cycle, and the exception holds because that surface sits on the critical path of
+every product spec's design and plan step.
 
 **Persona / job:** No direct persona. The job is internal: keep the agent team's
 shared boot-routing surface legible. The product delivery it unblocks is the
@@ -48,6 +49,15 @@ visibility. It is the single surface every agent reads on boot to learn what is
 in flight and who owns it. Accretion past the cap degrades that read for every
 agent, and the degradation compounds daily.
 
+**Non-goal: this spec does not relieve the acute breach on a bounded timeline.**
+The convention does not re-trim the table. The one safe curation pass already
+shipped (17 → 15 rows), and this spec adds no schedule for draining the roughly
+eight staging notes seated today. Those clear only as each owning spec's
+design or plan step consumes its note. So the row count can stay over the
+10-row cap for weeks after the convention is adopted. What changes is that new
+notes stop re-accreting the overage. The success criteria below verify the
+convention's properties, not a rows-over-cap trajectory, by design.
+
 ## Scope
 
 **In scope:**
@@ -69,6 +79,15 @@ agent, and the degradation compounds daily.
 | The genuinely cross-cutting infra/governance obstacles (the `fit-wiki` hazards, the APM race, exp governance) | Legitimately shared full rows, not staging notes; untouched |
 | `technical-writer.md` own-summary bloat — a distinct own-summary surface over its own word budget, unrelated to the shared table | A separate cycle |
 
+**Non-goals:**
+
+- **Relieving the acute row-over-cap breach on any bounded timeline.** This spec
+  neither re-trims the table nor schedules the drain of the notes seated today;
+  they clear only as each owning spec consumes its note. Success is that new
+  notes stop re-accreting the overage, not that the count returns under 10 by a
+  date. The criteria verify the convention's properties, not a rows-over-cap
+  trajectory.
+
 **Constraints:**
 
 - **Cross-agent visibility must not regress** — the load-bearing criterion, SC1.
@@ -87,7 +106,7 @@ agent, and the degradation compounds daily.
 | 2 | The convention states a quantified per-note maximum footprint for the shared surface | the convention document names a concrete per-note maximum — a specific line or word count — that a given entry can be checked against |
 | 3 | A staging note's full detail resolves from its shared-surface entry with no loss | the convention includes a worked example whose shared-surface entry names a stable, durable location a reader follows to the full detail; the concrete pointer form is the design's choice |
 | 4 | The convention defines the delete-on-consume lifecycle: a note is removed from the shared surface when its owning spec's design/plan step consumes it, distinct from curation's trim-when-settled | the convention document states the delete-on-consume trigger |
-| 5 | The lifecycle is net-zero on the shared surface: a note seated then consumed per the convention leaves no residual footprint | seating a test note then consuming it per the convention returns the shared surface to its pre-seat footprint, measured in whatever unit the convention defines under SC2 |
+| 5 | The lifecycle is net-zero on the shared surface: a note seated then consumed per the convention leaves no residual footprint | seating a test note, then following the pointer from its shared-surface entry to its full detail and confirming the detail resolves intact, then consuming the note per the convention returns the shared surface to its pre-seat footprint, measured in whatever unit the convention defines under SC2 |
 | 6 | Writer-facing guidance is updated so whoever seats a note follows the rule | the convention document shows the updated writer guidance |
 | 7 | The convention is usable today without any upstream tooling or contract-text change | seating and consuming a note per the convention succeeds over the current `fit-wiki` / curation flow, with no upstream dependency |
 
@@ -125,7 +144,8 @@ agent, and the degradation compounds daily.
   amendment; (2) the `fit-wiki inbox promote` bounded-note behavior. Both are
   upstream (no bot PR); reference them from the design.
 - **Do not re-trim the shared table** as part of this arc — the safe curation
-  trim already shipped (17 → 15 rows). This spec is the durable rule that keeps
-  it from re-accreting; the existing backlog drains as each note is consumed.
+  trim already shipped (17 → 15 rows), and no-re-trim is now a stated non-goal
+  (see Scope). This spec is the durable rule that keeps the table from
+  re-accreting; the existing backlog drains as each note is consumed.
 
 — Technical Writer 📝
