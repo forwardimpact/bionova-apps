@@ -1,13 +1,15 @@
 # Spec 200: Infra-independent CLI read mode
 
-**Classification:** Product-aligned. It restores the Patient / Advocate and
-Referring Physician read path on the CLI surface, which is a persona-facing job,
-not internal tooling.
+**Classification:** Product-aligned. It restores the Patient / Advocate
+demand-side read path on the CLI surface, a persona-facing job, not internal
+tooling.
 
 **Issue:** [#126](https://github.com/forwardimpact/bionova-apps/issues/126).
-**Persona / job:** Patient / Advocate, *Find a Relevant Trial* (primary). Every
-Polaris demand-side read shares this backend, so Referring Physician, *Refer in
-the Visit* rides on the same path.
+**Persona / job:** Patient / Advocate, *Find a Relevant Trial*. This is the
+motivating job. Every Polaris demand-side read runs through one backend, so the
+same fix benefits the Referring Physician, *Refer in the Visit*, and every other
+read persona transitively. Their own in-visit forces are not what scopes this
+spec.
 
 ## Problem
 
@@ -18,11 +20,11 @@ command binds to the live self-hosted Supabase stack (Kong and PostgREST on
 fixture-backed read mode.
 
 The seam for a stackless read already exists but is not reachable from the CLI.
-`createDataContext` accepts an `opts.fetchImpl` and an `opts.stub`, and handler
-unit tests use them to run against canned fixtures with no stack. The CLI entry
-builds its data context with `createDataContext(env)` and passes no `opts`, so
-`fetchImpl` falls back to `globalThis.fetch` against `SUPABASE_URL`. No CLI flag
-or env var exposes the stackless path.
+Handler unit tests build a data context that runs against canned fixtures with
+no stack. The CLI entry builds its data context with no such option, so every
+read falls back to a live fetch against the Supabase stack. No CLI flag or env
+var exposes the stackless path. The concrete seam and injection point are in
+Notes for design.
 
 Evidence, observed on `e19354c` (main) with the stack down:
 
@@ -54,8 +56,9 @@ depends on this mode existing.
 Add a read-only mode to the CLI that serves the demand-side read commands from
 the vendored synthetic seed instead of a live PostgREST fetch. The mode is
 reachable from the public CLI surface through a documented flag or env var, not
-only from unit tests. When the mode is active, the seven read commands return
-real synthetic results derived from `data/synthetic/`, with zero infrastructure.
+only from unit tests. When the mode is active, these read commands, and the
+interactive `repl` that drives them, return real synthetic results derived from
+`data/synthetic/`, with zero infrastructure.
 
 The mode is a new read-only projection over the same synthetic source the live
 seed is built from. It answers the same read contract the handlers already call
@@ -74,6 +77,12 @@ The seven demand-side read commands, which all fail today without the stack:
 | `sites` | `listSites` |
 | `stories` | `listStories` |
 | `about` | `showAbout` |
+
+The interactive `repl` command is an eighth demand-side read surface. It drives
+`searchTrials`, `showTrial`, `showCondition`, `listSites`, and `listStories`
+through the same shared data context, so it fails offline today for the same
+reason and inherits read mode from the same injection point. Read mode covers
+it; SC1 verifies it.
 
 ### Out of scope
 
@@ -95,10 +104,10 @@ The seven demand-side read commands, which all fail today without the stack:
 
 | # | Criterion | Verify |
 | --- | --- | --- |
-| SC1 | With read mode active and no stack running, each of the seven read commands exits 0 and prints results. | Stop the stack, run each command with the read-mode flag or env var set; assert exit 0 and non-empty output. |
-| SC2 | The results are the real synthetic domain, not stubs or empty sets. | `search --condition=diabetes` returns at least one trial whose fields match a `story.dsl`-derived row (the match holds because a seeded condition name contains the query text); `trial <id>` on that id resolves; `condition`, `sites`, `stories`, `about` each return seeded content. |
+| SC1 | With read mode active and no stack running, each of the seven read commands, and a read driven inside the interactive `repl`, exits 0 and prints results. | Stop the stack, run each command with the read-mode flag or env var set; assert exit 0 and non-empty output; run one `search` and one `trial` read inside `repl` and assert the same. |
+| SC2 | The results are the real synthetic domain, not stubs or empty sets. | `search --condition=diabetes` returns at least one trial whose fields match a `story.dsl`-derived row; `trial <id>` on that id resolves; `condition`, `sites`, `stories`, `about` each return seeded content. |
 | SC3 | `search` resolves a condition with no embeddings service present. | With read mode active and no TEI reachable, `search --condition=diabetes` returns diabetes-relevant trials by the mode's own matching, and does not error on the absent embeddings service. |
-| SC4 | `eligibility <id>` returns a verdict offline that agrees with the live scorer. | With read mode active, `eligibility <id> --age=… --conditions=… --ecog=…` returns a verdict for a seeded trial; on at least one seeded eligible case and one seeded ineligible case the offline verdict matches what the live `eligibility-check` scorer returns for the same inputs. |
+| SC4 | `eligibility <id>` returns a verdict offline that agrees with the `eligibility-check` scorer. | With read mode active, `eligibility <id> --age=… --conditions=… --ecog=…` returns a verdict for a seeded trial; on at least one seeded eligible case and one seeded ineligible case the offline verdict matches what the edge function's pure `score()` function returns for the same inputs (that function is deterministic and can be exercised in isolation, so the check needs no running stack). |
 | SC5 | The read-only boundary holds, including the `eligibility` write side effect. | With read mode active: `admin trial <id> --update='…'` does not mutate through the read path and fails closed with a message that names the boundary; and `eligibility <id> …` returns its answer while the interest-signal insert is not persisted. |
 | SC6 | Default behavior is unchanged. | With no read-mode flag and no read-mode env var, behavior is identical to today; existing tests and `just smoke` pass unchanged. |
 | SC7 | The mode is discoverable from the public CLI. | The read-mode flag or env var name appears in `bionova-polaris --help` output. |
@@ -117,12 +126,14 @@ They are context for the design, not part of the WHAT.
   not a second hand-authored dataset. How the fixture is produced and kept in
   step with the seed is a design and plan concern.
 - `eligibility` screening. The screener today dispatches to the
-  `eligibility-check` edge function, whose scoring logic lives in Deno and which
-  the handler cannot import. So an offline verdict has to reproduce that scorer,
-  not just read the criteria. SC4 raises the bar to verdict parity with the live
-  scorer for a seeded eligible and ineligible case. How that parity is reached,
-  by running equivalent logic in-process or by another mechanism, is a design
-  decision. The same handler also posts an anonymous interest signal after it
-  answers; in read mode that write must no-op without failing the answer (SC5).
+  `eligibility-check` edge function, whose pure `score()` function lives in Deno
+  and which the handler cannot import. So an offline verdict has to reproduce
+  that scorer, not just read the criteria. It also has to serve the `criteria`
+  and `conditions` reads the handler makes around the score call. SC4 raises the
+  bar to verdict parity with `score()` for a seeded eligible and ineligible case.
+  How that parity is reached, by running equivalent logic in-process or by
+  another mechanism, is a design decision. The same handler also posts an
+  anonymous interest signal after it answers; in read mode that write must no-op
+  without failing the answer (SC5).
 - Interview dependency. When this mode lands, revisit obstacle #111 and
   kata-skills#2 to open the external-consumer interview lane on the demand path.
