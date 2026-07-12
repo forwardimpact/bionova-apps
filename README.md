@@ -8,7 +8,7 @@ hand-authored domain content. The app is a surface over a generated world.
 
 This repository is the reference example of an **external team** consuming
 Forward Impact libraries (`libcli`, `libui`, `libformat`, `libtemplate`,
-`librepl`) and the synthetic-data build (`fit-terrain` + `story.dsl`).
+`librepl`, `libutil`) and the synthetic-data build (`fit-terrain` + `story.dsl`).
 
 ## Quickstart
 
@@ -42,7 +42,7 @@ the Forward Impact monorepo (provenance recorded in
 `fit-terrain build` against them to render the SQL migrations and embeddings
 JSONL into a disposable build directory, stages the migrations into
 `products/polaris/site/supabase/migrations/`, and applies them with
-`supabase db push`. The build is credential-free — the prose cache is committed
+`supabase db push`. The build is credential-free. The prose cache is committed
 and `build` makes no LLM calls. Regenerating reproduces the seed byte-for-byte
 (see [`data/synthetic/SEED.sha256`](data/synthetic/README.md)).
 
