@@ -25,9 +25,11 @@ rule governs the one place the set is stated to be complete.
 Nothing enforces that these three lists agree with the set the workspaces
 actually depend on. The enumeration has drifted twice:
 
-- **PR #97** corrected `CLAUDE.md` to add the omitted `libutil`.
-- **PR #184** (in flight on `fix/doc-root-orientation-2026-07-11`) corrects the
-  same `libutil` omission in `README.md` and `MONOREPO.md`.
+- [**PR #97**](https://github.com/forwardimpact/bionova-apps/pull/97) corrected
+  `CLAUDE.md` to add the omitted `libutil`.
+- [**PR #184**](https://github.com/forwardimpact/bionova-apps/pull/184) (in flight
+  on `fix/doc-root-orientation-2026-07-11`) corrects the same `libutil` omission
+  in `README.md` and `MONOREPO.md`.
 
 As of this spec on `main`, `README.md` and `MONOREPO.md` still list five libs
 and omit `libutil`, while `CLAUDE.md` lists six. Each correction has been a
@@ -127,8 +129,14 @@ The module must not land on `main` before PR #184 merges. `check-context.yml`
 runs `bun run coaligned` on every push and pull request, so a module that fails
 against the current `main` (where `README.md`/`MONOREPO.md` still omit `libutil`)
 would red-bar CI for every unrelated PR until the docs are corrected. This is a
-hard sequencing constraint, not a preference: land #184 first, or land the doc
-correction inside the same change that adds the module.
+hard sequencing constraint, not a preference: **land #184 first, then land this
+module.**
+
+§ Scope governs the boundary: correcting the `README.md`/`MONOREPO.md` drift is
+strictly #184's, so this module waits on #184 and does **not** fold the doc
+correction into its own change. Bundling a mechanical doc fix into a structural
+tooling PR would blur its classification and make it two changes reviewed as one.
+If #184 stalls, escalate it to unblock this module — do not absorb its work here.
 
 ## Success criteria
 
@@ -138,9 +146,10 @@ PR #184 branch today and on `main` once #184 merges (see § Constraint).
 | # | Criterion | Verification |
 | --- | --- | --- |
 | SC1 | The enumeration rule module for this spec exists in `.coaligned/invariants/`. | The rule's `*.rules.mjs` file is present in `.coaligned/invariants/` |
-| SC2 | `npx coaligned invariants` discovers and runs the module (no "no modules found" error). | `npx coaligned invariants` exits without the discovery error |
-| SC3 | With the three docs agreeing with the canonical set, the check passes. | On a tree where all three docs list the canonical set, `npx coaligned invariants` reports the rule passing |
-| SC4 | When a doc omits a consumed library, the check fails and names the file and the missing library. | Removing `libutil` from `CLAUDE.md` makes `npx coaligned invariants` fail with output naming `CLAUDE.md` and `libutil` |
-| SC5 | When a doc names a library no workspace consumes, the check fails and names the file and the stray library. | Adding a fictional `libbogus` to `README.md` makes the check fail naming `README.md` and `libbogus` |
-| SC6 | The expected set tracks the product workspace manifests, so a newly-consumed library must appear in the docs without any edit to the rule. | Adding an `@forwardimpact/lib*` prod dep to a product workspace manifest, with no change to the rule module, makes the (now-lagging) docs fail the check |
-| SC7 | The full `bun run coaligned` suite runs the module, so CI enforces it with no workflow change. | `bun run coaligned` exercises the rule; `.github/workflows/check-context.yml` is unmodified |
+| SC2 | With the three docs agreeing with the canonical set, the check passes. | On a tree where all three docs list the canonical set, `npx coaligned invariants` discovers the module (no "no modules found" error) and reports the rule passing |
+| SC3 | When a doc omits a consumed library, the check fails and names the file and the missing library. | Removing `libutil` from `CLAUDE.md` makes `npx coaligned invariants` fail with output naming `CLAUDE.md` and `libutil` |
+| SC4 | When a doc names a library no workspace consumes, the check fails and names the file and the stray library. | Adding a fictional `libbogus` to `README.md` makes the check fail naming `README.md` and `libbogus` |
+| SC5 | Prefix-agnostic identity: the check passes on `MONOREPO.md`'s mixed form, where the first entry is scoped (`@forwardimpact/libcli`) and the rest are bare (`libui`, `libformat`, …). A rule that compared the scoped manifest keys against these members without normalizing prefixes would false-fail here. | On a tree where all three docs list the canonical set and `MONOREPO.md` retains its mixed scoped/bare form, the rule reports passing; rewriting that one entry to bare `libcli` does not change the result |
+| SC6 | File-scoped enumeration: an incidental `lib*` mention outside the backticked enumeration is not read as a set member. | With the docs agreeing with the canonical set, `README.md`'s prose mention of `libterrain` (the "libterrain release … on npm" sentence, not part of the enumeration) is not read as a member and the check still passes; a rule that over-read every `lib*` token would fail here by treating `libterrain` as a stray |
+| SC7 | The expected set tracks the product workspace manifests, so a newly-consumed library must appear in the docs without any edit to the rule. | Adding an `@forwardimpact/lib*` prod dep to a product workspace manifest, with no change to the rule module, makes the (now-lagging) docs fail the check |
+| SC8 | The full `bun run coaligned` suite runs the module, so CI enforces it with no workflow change. | `bun run coaligned` exercises the rule; `.github/workflows/check-context.yml` is unmodified |
