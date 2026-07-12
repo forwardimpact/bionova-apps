@@ -1,4 +1,4 @@
-# Spec 180 — A durable home for design/plan-input staging notes
+# Spec 190 — A durable home for design/plan-input staging notes
 
 **Classification:** Internal (agent-memory infrastructure).
 It is constraint-lifting: the product-vs-internal axis is per the work-definition
