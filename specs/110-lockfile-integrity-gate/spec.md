@@ -13,20 +13,24 @@ workspace `package.json` manifests, and nothing in CI catches or prevents the
 drift. The audited and installed dependency tree can silently diverge from what
 the lockfile records.
 
-Evidence is from the dependency-hygiene audit in issue #103. It is measured
-against the committed lockfile on `main`. A bare `bun install` in a working tree
-regenerates the lock locally, which masks the drift. The drift is therefore
-visible only against the committed file, not a post-install tree.
+Evidence is from the dependency-hygiene audit in issue #103. It is the
+git-history before-state at commit `a702515`, the last commit where the lock
+drifted from the manifests. Commit `0424959` (#147, spec 30) reconciled the lock
+on 2026-07-08, so `bun install --frozen-lockfile` now exits 0 on `main`. The
+observation below records that historical before-state, not a current failure. A
+bare `bun install` in a working tree regenerated the lock locally and masked the
+drift, so the drift was visible only against the committed file at `a702515`, not
+a post-install tree.
 
 | Observation | Evidence |
 | --- | --- |
-| The committed lock does not match the manifests | `bun install --frozen-lockfile` against the committed lock on `main` fails with `lockfile had changes, but lockfile is frozen`. Six packages are pinned in the lock behind their manifests. Five are first-party and one release behind: `@forwardimpact/libcli`, `libformat`, `librepl`, `libtemplate`, `libui`. The sixth, `eslint-config-prettier`, is a full major behind: version 9 in the lock, 10 in the manifest |
+| The committed lock did not match the manifests at `a702515` | At commit `a702515`, `bun install --frozen-lockfile` against the committed lock failed with `lockfile had changes, but lockfile is frozen`. Commit `0424959` (#147) has since reconciled the lock, so the same command exits 0 on `main` today. Six packages were pinned in the lock behind their manifests. Five were first-party and one release behind: `@forwardimpact/libcli`, `libformat`, `librepl`, `libtemplate`, `libui`. The sixth, `eslint-config-prettier`, was a full major behind: version 9 in the lock, 10 in the manifest |
 | The manifests moved without the lock | The drift traces to merged Dependabot PRs #52 and #53, which changed `package.json` files only. Dependabot's npm ecosystem does not manage the Bun lockfile |
 | CI never enforces the lock | Seven CI install steps run a bare `bun install`, across `check-audit.yml`, `check-test.yml`, `check-e2e.yml`, `check-seed.yml`, `check-quality.yml` (two steps), and `check-context.yml`. The remaining `check-*` workflows run no `bun install`. A bare install resolves the manifests fresh and regenerates the lock in the runner, so drift never fails a build |
 | No policy states the requirement | `CONTRIBUTING.md` § Dependency audit gates covers advisory gating but says nothing about lockfile integrity or a committed-lockfile requirement |
 
-The current drift is benign in content. It is five first-party bumps plus one
-devDependency major, all matching versions the manifests already request, with
+The observed drift was benign in content. It was five first-party bumps plus one
+devDependency major, all matching versions the manifests already requested, with
 no unknown or typosquatted package introduced. The problem is systemic, not this
 particular drift. Because the committed lock is not authoritative, a compromised,
 yanked, or unexpectedly-bumped transitive dependency can enter the resolved tree
