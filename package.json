@@ -20,7 +20,7 @@
     "test": "bun run test:js && bun run test:scripts && bun run test:site && bun run test:deno"
   },
   "devDependencies": {
-    "typescript": "5.9.3",
+    "typescript": "6.0.3",
     "@eslint/js": "9.39.4",
     "@forwardimpact/libcoaligned": "^0.1.16",
     "eslint": "9.39.4",
