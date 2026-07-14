@@ -1,1 +1,18 @@
+# Default owner for everything in the repo.
 * @forwardimpact/agent-team
+
+# Shared human anchor (last-match wins). These paths require review from the
+# individual human @dickolsson, overriding the agent-team wildcard above so the
+# bot cannot satisfy the review on the security-sensitive surfaces. This anchor
+# is the in-tree precondition for the #196(b) branch-protection teeth
+# (enforce_admins + require code-owner review) and is consumed by three specs:
+#   - spec 100: credential-allowlist tamper guard (.gitleaks.toml/.gitleaksignore)
+#   - spec 196(b): spec-axis admin-merge breach class (whole /specs/, so an
+#     admin-merged design-a.md/plan-a.md cannot slip past the spec.md gate)
+#   - spec 160 G2: reads this line as the trusted-membership source (who @dickolsson is)
+# /.github/CODEOWNERS is self-owned so a single diff cannot delete the anchor
+# and defeat all three consumers.
+/.gitleaks.toml @dickolsson
+/.gitleaksignore @dickolsson
+/specs/ @dickolsson
+/.github/CODEOWNERS @dickolsson
