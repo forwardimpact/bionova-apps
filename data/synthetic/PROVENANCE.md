@@ -21,14 +21,17 @@ monorepo and re-vendored.
   (`--output-root`) and B (clinical prose → SQL).
 - Renderer SHA: `ec2c7f87cbeca18efd3dc6e169e9ca4ecddaaf75` (monorepo `main` +
   prereq A `0c7cf238b` + prereq B `ec2c7f87c`). At vendor time these two commits
-  were not yet on `main` or npm, so the seed is rendered with a local checkout.
-- Once the libterrain release carrying A+B publishes, `bunx fit-terrain` resolves
-  it and `FIT_TERRAIN` no longer needs to point at a local checkout.
+  were not yet on `main` or npm, so the seed was rendered with a local checkout.
+- A+B now ship in `fit-terrain@0.1.41` on npm. It is pinned as a devDependency,
+  so `bun install` drops its bin at `node_modules/.bin/fit-terrain` and
+  `build-seed.sh` runs that bin by default. `FIT_TERRAIN` only needs to point at
+  a local checkout to render with an unreleased build.
 
 ## Render command
 
 ```sh
-# Until A+B are on npm, point FIT_TERRAIN at a local monorepo checkout:
+# build-seed.sh runs the pinned fit-terrain devDependency by default. Override
+# FIT_TERRAIN only to render with an unreleased local checkout:
 export FIT_TERRAIN="node /path/to/monorepo/libraries/libterrain/bin/fit-terrain.js"
 bash scripts/build-seed.sh
 # which runs, in effect:

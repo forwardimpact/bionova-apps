@@ -19,9 +19,10 @@ docker compose up -d --wait
 `data/synthetic/seed_embeddings.jsonl`; mounting a missing path makes Docker
 create a directory there.
 
-`build-seed.sh` needs `FIT_TERRAIN` pointed at a local `fit-terrain` checkout
-until the libterrain release carrying its prerequisites reaches npm; otherwise
-the render fails on an unknown `--output-root` option. See
+`build-seed.sh` runs the `fit-terrain` bin that `bun install` drops at
+`node_modules/.bin/fit-terrain` from the pinned `fit-terrain` devDependency, so
+no extra setup is needed. Set `FIT_TERRAIN` to a local `fit-terrain` path only
+to render with an unreleased build. See
 [data/synthetic/PROVENANCE.md](../data/synthetic/PROVENANCE.md).
 
 If `docker compose up` stalls with `tei` unhealthy and its logs show
