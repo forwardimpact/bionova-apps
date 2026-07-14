@@ -24,8 +24,9 @@ docker compose up -d --wait
 > The seed must be rendered **before** `docker compose up`: the
 > `polaris-functions` service bind-mounts `data/synthetic/seed_embeddings.jsonl`,
 > so that file has to exist on the host first. `just boot` runs the three steps
-> in order. Until the libterrain release carrying prerequisites A+B is on npm,
-> set `FIT_TERRAIN` to a local checkout (see
+> in order. The seed render uses the pinned `fit-terrain` devDependency by
+> default; set `FIT_TERRAIN` to a local checkout only to render with an
+> unreleased build (see
 > [data/synthetic/PROVENANCE.md](data/synthetic/PROVENANCE.md)).
 
 Visit <http://localhost:3001/> — or from the CLI:

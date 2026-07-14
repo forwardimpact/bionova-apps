@@ -125,7 +125,8 @@ this.
 <read_do_checklist goal="Load the constraints before changing the domain or seed">
 
 - [ ] Confirm the change belongs in `story.dsl` upstream, not in app code.
-- [ ] Confirm `FIT_TERRAIN` points at a `fit-terrain` with `--output-root`.
+- [ ] Render with a `fit-terrain` that has `--output-root`; the pinned
+      devDependency does, so override `FIT_TERRAIN` only for an unreleased build.
 - [ ] Re-vendor `story.dsl` + `prose-cache.json` and update `PROVENANCE.md`.
 - [ ] Render the seed before bringing the stack up.
 

@@ -49,8 +49,9 @@ Common recipes (see [justfile](justfile)):
 - `just lint` / `just test` / `just smoke` — quality gates.
 - `just cli search --condition=diabetes` — drive the CLI.
 
-The seed render needs `FIT_TERRAIN` pointed at a local `fit-terrain` checkout
-until the libterrain release carrying its prerequisites reaches npm. See
+The seed render uses the pinned `fit-terrain` devDependency by default, so
+`just boot` needs no extra setup. Point `FIT_TERRAIN` at a local `fit-terrain`
+checkout only to render with an unreleased build. See
 [data/synthetic/PROVENANCE.md](data/synthetic/PROVENANCE.md).
 
 ## How to contribute
