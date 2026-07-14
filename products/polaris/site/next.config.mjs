@@ -24,9 +24,7 @@ const outputFileTracingRoot = fileURLToPath(new URL("../../../", import.meta.url
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: "standalone",
-  experimental: {
-    outputFileTracingRoot,
-  },
+  outputFileTracingRoot,
   transpilePackages: [
     "@bionova/polaris-handlers",
     "@forwardimpact/libui",

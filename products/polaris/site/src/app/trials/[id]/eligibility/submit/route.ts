@@ -28,8 +28,9 @@ function env() {
 // route and we redirect back to the parent screener page with the score.
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
+  const { id } = await params;
   const form = await request.formData();
   const custom_answers: Record<string, boolean> = {};
   for (const [key, value] of form.entries()) {
@@ -40,7 +41,7 @@ export async function POST(
 
   const ctx = freezeInvocationContext({
     data: createDataContext(env()),
-    args: { id: params.id },
+    args: { id },
     options: { custom_answers } as unknown as Record<string, string>,
   });
 
@@ -49,7 +50,7 @@ export async function POST(
 
   return NextResponse.redirect(
     new URL(
-      `/trials/${params.id}/eligibility?score=${encodeURIComponent(score)}`,
+      `/trials/${id}/eligibility?score=${encodeURIComponent(score)}`,
       request.url,
     ),
     303,

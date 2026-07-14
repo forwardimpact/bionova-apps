@@ -23,8 +23,8 @@ describe("EligibilityPage", () => {
     });
 
     const ui = await EligibilityPage({
-      params: { id: "diabetes-prevention" },
-      searchParams: {},
+      params: Promise.resolve({ id: "diabetes-prevention" }),
+      searchParams: Promise.resolve({}),
     });
     const { container } = render(ui);
 
@@ -48,8 +48,8 @@ describe("EligibilityPage", () => {
     });
 
     const ui = await EligibilityPage({
-      params: { id: "diabetes-prevention" },
-      searchParams: { score: "eligible" },
+      params: Promise.resolve({ id: "diabetes-prevention" }),
+      searchParams: Promise.resolve({ score: "eligible" }),
     });
     render(ui);
 

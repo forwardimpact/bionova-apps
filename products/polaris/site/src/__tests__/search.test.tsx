@@ -36,7 +36,9 @@ describe("SearchPage", () => {
       query: {},
     });
 
-    const ui = await SearchPage({ searchParams: { condition: "high blood sugar" } });
+    const ui = await SearchPage({
+      searchParams: Promise.resolve({ condition: "high blood sugar" }),
+    });
     render(ui);
 
     expect(screen.getByText("Diabetes Prevention Study")).toBeInTheDocument();

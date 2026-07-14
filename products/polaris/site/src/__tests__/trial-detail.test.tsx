@@ -24,7 +24,9 @@ describe("TrialPage", () => {
       consentSummary: "You may withdraw at any time.",
     });
 
-    const ui = await TrialPage({ params: { id: "diabetes-prevention" } });
+    const ui = await TrialPage({
+      params: Promise.resolve({ id: "diabetes-prevention" }),
+    });
     render(ui);
 
     expect(screen.getByText("Diabetes Prevention Study")).toBeInTheDocument();
