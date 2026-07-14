@@ -21,8 +21,11 @@ re-vendor (see [data/synthetic/README.md](../data/synthetic/README.md)).
 ## Scaling TEI
 
 The `tei` service is CPU-only by default (`text-embeddings-inference:cpu-1.5`).
-For higher throughput, switch to a GPU image and raise `MAX_BATCH_TOKENS` /
-`MAX_CLIENT_BATCH_SIZE` in `docker-compose.yml`. Embeddings are written once by
+For higher throughput, switch to a GPU image and raise the batch limits in
+`docker-compose.yml`. Set them on the `command:` line, which passes
+`--max-batch-tokens` and `--max-client-batch-size`. Those flags override the
+matching `MAX_BATCH_TOKENS` / `MAX_CLIENT_BATCH_SIZE` environment variables, so
+raising only the environment block has no effect. Embeddings are written once by
 `embed-seed`; re-run it after scaling: `curl -X POST .../functions/v1/embed-seed`.
 
 ## Loading the TEI model from a local copy
