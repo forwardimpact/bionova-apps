@@ -8,6 +8,14 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    # TypeScript 7.x GA breaks our build (@/* alias resolution, PR #206). We
+    # have deliberately deferred the 5.9->7 upgrade (issue #209). Without this,
+    # every 7.0.x / 7.1 bump re-opens a closed Dependabot PR. 5.x patch/minor
+    # still flow; this only holds back the 7 major line. Covers both the root
+    # and products/polaris/site manifests via the declared bun workspaces.
+    ignore:
+      - dependency-name: "typescript"
+        versions: ["7.x"]
     groups:
       npm-development:
         dependency-type: "development"
