@@ -10,12 +10,13 @@ BUILD="$SYN/.build"                                      # gitignored, disposabl
 OUT="$BUILD/products/polaris/site/supabase/migrations"   # terrain writes here
 MIG="$ROOT/products/polaris/site/supabase/migrations"
 
-# fit-terrain resolution. The --output-root + prose→SQL features (spec 1160
-# prerequisites A and B) are not yet on npm, so until the @forwardimpact/libterrain
-# release that carries them ships, set FIT_TERRAIN to a local checkout, e.g.:
+# fit-terrain resolution. fit-terrain@0.1.41 carries --output-root (prereq A) and
+# prose→SQL (prereq B), and is a devDependency, so `bun install` drops its bin at
+# node_modules/.bin/fit-terrain. Default to that local bin: no live `bunx` fetch,
+# which the CI runner's TLS-inspecting proxy blocks. Override FIT_TERRAIN to a
+# local monorepo checkout if you need an unreleased build, e.g.:
 #   export FIT_TERRAIN="node /path/to/monorepo/libraries/libterrain/bin/fit-terrain.js"
-# Once published, the default `bunx fit-terrain` resolves the npm package.
-FIT_TERRAIN="${FIT_TERRAIN:-bunx fit-terrain}"
+FIT_TERRAIN="${FIT_TERRAIN:-$ROOT/node_modules/.bin/fit-terrain}"
 
 # Guard: never let terrain's rm -rf hit the repo root (would delete products/).
 case "$BUILD" in "$ROOT") echo "FATAL: output root is repo root"; exit 1;; esac
