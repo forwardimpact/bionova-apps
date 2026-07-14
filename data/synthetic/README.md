@@ -35,7 +35,7 @@ bash scripts/build-seed.sh           # renders + stages the seed
 ```
 
 See [PROVENANCE.md](PROVENANCE.md) for the `FIT_TERRAIN` note (the
-`--output-root` + prose→SQL features are not yet on npm).
+`--output-root` + prose→SQL features ship in `fit-terrain@0.1.41`).
 
 ## Refreshing the domain
 
