@@ -25,6 +25,7 @@
     "@forwardimpact/libcoaligned": "^0.1.16",
     "eslint": "9.39.4",
     "eslint-config-prettier": "10.1.8",
+    "fit-terrain": "0.1.41",
     "prettier": "3.9.4"
   },
   "overrides": {

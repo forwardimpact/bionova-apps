@@ -16,14 +16,10 @@ jobs:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
       - run: bun install
-      # The libterrain release carrying prerequisites A+B is not yet on npm;
-      # CI installs it from the pinned tarball / local checkout via FIT_TERRAIN.
-      # Until then this job documents the determinism gate it will enforce.
+      # fit-terrain@0.1.41 (prereqs A+B) is a devDependency, so `bun install`
+      # above drops its bin locally and build-seed.sh resolves it without a live
+      # `bunx` fetch. The determinism gate runs for real on every push.
       - run: |
-          if ! (bunx fit-terrain --help 2>/dev/null | grep -q output-root); then
-            echo "::warning::libterrain with --output-root (prereq A) not resolvable from npm yet; skipping seed-build determinism gate"
-            exit 0
-          fi
           bash scripts/build-seed.sh
           MIG=products/polaris/site/supabase/migrations
           test "$(ls $MIG/20250101*_seed_*.sql | wc -l)" -ge 15
