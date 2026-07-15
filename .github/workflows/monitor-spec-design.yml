@@ -1,0 +1,69 @@
+name: "Monitor: specs-awaiting-design"
+
+# Scheduled shift monitor for the specs_awaiting_design gauge (issue #23, PR #28).
+# scripts/spec-design-watcher.js computes the count off merged main and, with
+# --record, appends one XmR point to wiki/metrics/staff-engineer/2026.csv. A gauge
+# that never runs produces no series, so this records the point on a fixed daily
+# cadence. One point per day, evenly spaced — the interval XmR moving-range limits
+# assume. It fires at 05:00 UTC (07:00 Europe/Paris), before the 06:00 storyboard,
+# so the day's storyboard reads a fresh same-day point.
+
+on:
+  schedule:
+    - cron: "0 5 * * *"
+  workflow_dispatch:
+
+# One recorder at a time; a mid-run trigger must not cancel an append to main.
+concurrency:
+  group: monitor-spec-design
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  record:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Kata killswitch
+        shell: bash
+        env:
+          KATA_KILLSWITCH: ${{ vars.KATA_KILLSWITCH }}
+        run: |
+          case "$(printf '%s' "${KATA_KILLSWITCH:-}" | tr '[:upper:]' '[:lower:]')" in
+            ""|0|false|no|off) ;;
+            *) echo "::error::KATA_KILLSWITCH engaged (value: ${KATA_KILLSWITCH})." >&2; exit 1 ;;
+          esac
+      - name: Generate token
+        id: ci-app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ secrets.KATA_APP_ID }}
+          private-key: ${{ secrets.KATA_APP_PRIVATE_KEY }}
+      # fetch-depth: 0 — the watcher reads each spec's merge date from git log for
+      # the two-day flag, which a shallow clone would not carry.
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+          token: ${{ steps.ci-app.outputs.token }}
+      # --record shells out to fit-xmr, which the harness runs off PATH; bootstrap
+      # installs it. This job runs no harness, only the recorder.
+      - uses: forwardimpact/bootstrap@01112fad2fa58c513a9f0a7bbb68412056e4b2e2 # v1.0.13
+        with:
+          token: ${{ steps.ci-app.outputs.token }}
+          app-id: ${{ secrets.KATA_APP_ID }}
+          clis: fit-xmr
+          bun-version: "1.3.11"
+      # --ref=HEAD: the checkout is main at HEAD, which is the merged state the
+      # gauge measures, and HEAD always resolves (no remote-tracking-ref race).
+      - name: Record specs_awaiting_design
+        run: node scripts/spec-design-watcher.js --record --ref=HEAD
+      # The recorder does not push; commit the appended point to main with a fresh
+      # token. Union merge on wiki/metrics/**/*.csv keeps concurrent appends.
+      - name: Push wiki changes
+        if: always()
+        uses: forwardimpact/wiki@f88ea81402d4d3411baf9ca0a38cafb11dfa7f60 # v1.0.1
+        with:
+          command: push
+          app-id: ${{ secrets.KATA_APP_ID }}
+          app-private-key: ${{ secrets.KATA_APP_PRIVATE_KEY }}
