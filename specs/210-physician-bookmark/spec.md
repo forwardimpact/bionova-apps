@@ -61,6 +61,17 @@ surface-local storage, or a server-stored collection addressed by an unguessable
 id — is a design decision. This spec fixes the invariants the mechanism must satisfy
 (below and in success criteria); the design chooses among them.
 
+Because there is no account, **"the same physician" is operationalized as "the
+same reference or the same surface,"** not a stored identity. This determines
+what "a later invocation" means for each mechanism family: when the add returns
+a reference (a token or a link), the later invocation is any surface presenting
+that reference, and a physician holding no reference sees an empty collection —
+this is the isolation boundary. When the add returns **no** reference,
+persistence is **surface-local**: the same surface (same device/CLI home) retains
+the collection and the later invocation is on that same surface. A design must
+pick one family; it may not claim account-free persistence with neither a
+returned reference nor surface-local retention.
+
 **A bookmark stores references, never domain content.** A saved collection holds
 only trial identifiers that resolve against the seeded trial catalog (whose
 source of record is `data/synthetic/story.dsl`) at read time. It never copies or
@@ -103,11 +114,11 @@ decisions.
 
 | # | Claim | Verified by |
 | --- | --- | --- |
-| C1 | Adding `oncora-phase3` to an empty collection, then viewing the collection, returns a set containing that trial, identified by its trial name. | A test that adds the trial, reads the collection back, and asserts the saved trial is present and shows its name. |
-| C2 | The collection persists across separate invocations with no sign-in: a second read — given whatever reference the add step returned to the physician (nothing, a token, or a link), after the session that added the trial has ended — returns the same saved set. | A test (or scripted CLI/site sequence) that adds in one invocation and reads in a distinct later one using only the add step's returned reference, asserting the set is unchanged and no authentication step was required. |
+| C1 | Adding the trial `oncora-phase3` from the surface where it is shown (not by retyping its id) to an empty collection, then viewing the collection, returns a set containing that trial, identified by its display name (`ONCORA-301`). | A test that invokes add from the trial-shown surface, reads the collection back, and asserts the saved trial is present and its display name string `ONCORA-301` (not the id) is shown. |
+| C2 | The collection persists across separate invocations with no sign-in: a second read returns the same saved set after the session that added the trial has ended, using only what the add step left the physician — the returned reference (a token or a link) for a reference-carrying mechanism, or the same surface for a surface-local mechanism that returns no reference. | A test that adds in one invocation and reads in a distinct later one — carrying only the add step's returned reference, or run on the same surface when the add returns none — asserting the set is unchanged and no authentication step was required. |
 | C3 | Removing `oncora-phase3` from a collection that contains it leaves a collection that does not contain it, and reports the removal. | A test that adds then removes the trial and asserts it is absent from the subsequent collection read. |
 | C4 | Adding `oncora-phase3` twice yields a collection containing it exactly once, and the second add reports saved rather than erroring. | A test that adds the same trial twice and asserts a single entry and a success (not error) response on the second add. |
-| C5 | The stored collection contains only trial identifiers — no trial name, prose, criteria, or other domain field is written into it; displayed fields are resolved from the seeded trial catalog (source of record `data/synthetic/story.dsl`) at read time. | A test asserting the persisted collection payload holds only id-shaped references, plus `rg` over the collection's stored form finding none of `oncora-phase3`'s name, consent, FAQ, or `custom[]` strings. |
+| C5 | The stored collection contains only trial identifiers — no trial name, prose, criteria, or other domain field is written into it; displayed fields are resolved from the seeded trial catalog (source of record `data/synthetic/story.dsl`) at read time. | A test asserting the collection's **decoded, canonical** stored form (the payload after any token/link encoding is reversed, not the opaque token as transmitted) holds only id-shaped references, and that none of `oncora-phase3`'s name, consent, FAQ, or `custom[]` strings appear in that decoded form. |
 | C6 | A collection holding an id absent from the current seed reports that trial as unavailable and still renders the remaining valid trials. | A test seeding a collection with one valid id and one absent id, asserting the valid trial renders and the absent one is reported unavailable without failing the view. |
 
 — Product Manager 🌱
