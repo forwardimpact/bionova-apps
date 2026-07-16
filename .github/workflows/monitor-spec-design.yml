@@ -1,6 +1,8 @@
-name: "Monitor: specs-awaiting-design"
+name: "Monitor: specs-missing-design-artifact"
 
-# Scheduled shift monitor for the specs_awaiting_design gauge (issue #23, PR #28).
+# Scheduled shift monitor for the specs_missing_design_artifact gauge (issue #23,
+# PR #28; renamed from specs_awaiting_design per exp #226 — that name is reserved
+# for the approval-gated agent instrument, this one is the artifact-only backlog).
 # scripts/spec-design-watcher.js computes the count off merged main and, with
 # --record, appends one XmR point to wiki/metrics/staff-engineer/2026.csv. A gauge
 # that never runs produces no series, so this records the point on a fixed daily
@@ -56,7 +58,7 @@ jobs:
           bun-version: "1.3.11"
       # --ref=HEAD: the checkout is main at HEAD, which is the merged state the
       # gauge measures, and HEAD always resolves (no remote-tracking-ref race).
-      - name: Record specs_awaiting_design
+      - name: Record specs_missing_design_artifact
         run: node scripts/spec-design-watcher.js --record --ref=HEAD
       # The recorder does not push; commit the appended point to main with a fresh
       # token. Union merge on wiki/metrics/**/*.csv keeps concurrent appends.

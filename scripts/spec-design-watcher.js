@@ -1,15 +1,26 @@
 #!/usr/bin/env node
-// spec-design-watcher.js — compute specs_awaiting_design and (with --record)
-// append it to wiki/metrics/staff-engineer/2026.csv as an earned XmR point.
+// spec-design-watcher.js — compute the artifact-only design backlog and (with
+// --record) append it to wiki/metrics/staff-engineer/2026.csv as an earned XmR
+// point under the metric `specs_missing_design_artifact`.
 //
-// A spec is "awaiting design" when all three hold:
+// This is the ARTIFACT-ONLY backlog: every merged spec.md lacking a merged
+// design-a.md, ungated by ledger approval state. It is DISTINCT from the
+// approval-gated `specs_awaiting_design` instrument (specs at ledger `spec
+// approved` lacking a design — the design-ELIGIBLE set), which the storyboard
+// records by hand and which owns item-1's design-leg clock. Two names, two
+// questions; do not co-mingle them under one series (facilitator ruling on
+// exp #226 / obstacle #225 — fit-xmr keys series by name across event_types,
+// so only a distinct name unmixes the pipeline).
+//
+// A spec is "missing its design artifact" when all three hold:
 //   1. its spec.md is merged (present on the source ref/root),
 //   2. no design-a.md is merged for it, and
 //   3. its wiki/STATUS.md row has not reached `design approved` or beyond
 //      (plan draft/approved/implemented), and is not `cancelled`.
-// A spec with no STATUS row at all still counts if 1 and 2 hold — an approved
-// spec that merged without a design is exactly the backlog this gauge exists to
-// surface. exp:{issue} rows are ignored: they are not specs.
+// A spec with no STATUS row at all still counts if 1 and 2 hold — a spec that
+// merged without a design is exactly the backlog this gauge exists to surface.
+// A `spec draft` spec counts too: it is ungated by approval (that is what makes
+// this the artifact-only basis). exp:{issue} rows are ignored: not specs.
 //
 // The count is the falsifiable metric (see issue #23). Specs whose merge date is
 // older than the two-day spec→design clock are also collected into `flagged` as
@@ -84,7 +95,7 @@ function pastDesign(row) {
 
 // source shape: { specIds:string[], hasDesign(id):bool, statusText:string,
 //                 mergedAt(id):Date|null }
-export function computeSpecsAwaitingDesign(source, now = new Date()) {
+export function computeSpecsMissingDesignArtifact(source, now = new Date()) {
   const index = statusIndex(parseStatusRows(source.statusText));
   const awaiting = [];
   const flagged = [];
@@ -95,7 +106,7 @@ export function computeSpecsAwaitingDesign(source, now = new Date()) {
     const merged = source.mergedAt ? source.mergedAt(id) : null;
     if (merged && now.getTime() - merged.getTime() > TWO_DAYS_MS) flagged.push(id);
   }
-  return { specsAwaitingDesign: awaiting.length, awaiting, flagged };
+  return { specsMissingDesignArtifact: awaiting.length, awaiting, flagged };
 }
 
 // --- Sources ---------------------------------------------------------------
@@ -210,7 +221,7 @@ function main() {
   const opts = parseArgs(process.argv.slice(2));
   const source = opts.root ? fsSource(opts.root) : gitSource(opts.ref);
   const now = opts.now ?? new Date();
-  const result = computeSpecsAwaitingDesign(source, now);
+  const result = computeSpecsMissingDesignArtifact(source, now);
 
   if (opts.json) {
     process.stdout.write(JSON.stringify(result, null, 2) + "\n");
@@ -218,7 +229,7 @@ function main() {
   }
 
   const scope = opts.root ? `root ${opts.root}` : `ref ${opts.ref}`;
-  console.log(`specs_awaiting_design = ${result.specsAwaitingDesign} (${scope})`);
+  console.log(`specs_missing_design_artifact = ${result.specsMissingDesignArtifact} (${scope})`);
   if (result.awaiting.length) console.log(`  awaiting: ${result.awaiting.join(", ")}`);
   if (result.flagged.length)
     console.log(`  past 2-day clock: ${result.flagged.join(", ")}`);
@@ -233,10 +244,10 @@ function main() {
         "fit-xmr",
         "record",
         "--skill=staff-engineer",
-        "--metric=specs_awaiting_design",
-        `--value=${result.specsAwaitingDesign}`,
+        "--metric=specs_missing_design_artifact",
+        `--value=${result.specsMissingDesignArtifact}`,
         "--unit=count",
-        `--note=spec→design watcher @ ${opts.ref}${flagNote}`,
+        `--note=spec→design artifact watcher @ ${opts.ref}${flagNote}`,
       ],
       { stdio: "inherit" },
     );
