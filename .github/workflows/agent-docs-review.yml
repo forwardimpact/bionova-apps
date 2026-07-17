@@ -63,6 +63,15 @@ concurrency:
 jobs:
   docs-review:
     runs-on: ubuntu-latest
+    # Interim guard for the apm resolve TOCTOU ([Errno 17] File exists:
+    # '/home/runner/.apm'): force apm's resolver onto its sequential path so the
+    # kata-skills/coaligned-skills resolve cannot race on creating ~/.apm. This job
+    # runs `apm install` through the bootstrap action, not scripts/bootstrap.sh
+    # (where #90 already sets this), so the workflow must carry the guard itself.
+    # Job-level env reaches the composite action's steps; step-level does not. Drop
+    # when the durable fix (upstream bootstrap#7: apm 0.12.4 -> v0.23.1) is pinned.
+    env:
+      APM_RESOLVE_PARALLEL: "1"
     steps:
       # Mirror agent-dispatch.yml: gate the whole job on the killswitch before
       # any token mint. kata-agent runs its own killswitch too; this covers the
