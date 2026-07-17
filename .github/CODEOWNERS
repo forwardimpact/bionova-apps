@@ -7,12 +7,14 @@
 # is the in-tree precondition for the #196(b) branch-protection teeth
 # (enforce_admins + require code-owner review) and is consumed by three specs:
 #   - spec 100: credential-allowlist tamper guard (.gitleaks.toml/.gitleaksignore)
-#   - spec 196(b): spec-axis admin-merge breach class (whole /specs/, so an
-#     admin-merged design-a.md/plan-a.md cannot slip past the spec.md gate)
+#   - spec 196(b): spec-axis admin-merge breach class, scoped to exactly the
+#     artifacts @dickolsson approves — spec.md + design-*.md. plan-*.md and impl
+#     are agent-approvable (kata-plan), so they stay on the agent-team wildcard.
 #   - spec 160 G2: reads this line as the trusted-membership source (who @dickolsson is)
 # /.github/CODEOWNERS is self-owned so a single diff cannot delete the anchor
 # and defeat all three consumers.
 /.gitleaks.toml @dickolsson
 /.gitleaksignore @dickolsson
-/specs/ @dickolsson
+/specs/**/spec.md @dickolsson
+/specs/**/design-*.md @dickolsson
 /.github/CODEOWNERS @dickolsson
