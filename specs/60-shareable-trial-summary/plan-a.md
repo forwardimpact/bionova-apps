@@ -1,8 +1,14 @@
-> **⚠️ PRE-FLIGHT — blocked on `design approved`, DO NOT MERGE.**
+> **⚠️ PRE-FLIGHT — DO NOT MERGE. Blocked on the full approval chain below.**
 > Staged under experiment [#233](https://github.com/forwardimpact/bionova-apps/issues/233)
 > against the already-merged [`design-a.md`](./design-a.md). Carries **no** ledger
-> write and must not land until a trusted human writes `design approved` for spec
-> 60. Held as a **draft PR**; the `kata-release-merge` gate cannot merge a draft.
+> write. It must not land until the gate's full precondition chain completes, in
+> order: `60 spec draft → spec approved` (human) → `design draft → design
+> approved` (human) → `plan draft → plan approved` (staff, after a clean
+> `kata-plan` panel) → plan-a lands through `kata-release-merge`.
+> Kept as a **branch with no PR** — the gate owner's strictly-safer default for
+> pure pre-flight, because an open draft PR is the exact surface where an
+> off-gate admin-merge (#64/#68) slipped past a well-meaning human. If a draft PR
+> is ever opened for CI/visibility, this banner MUST travel on its body.
 >
 > **⚠️ DOUBLY SPECULATIVE LEG.** Spec 60's row sits at `spec draft` — not even
 > `spec approved` — and its `design-a.md` was **admin-merged** (PR #172), not
