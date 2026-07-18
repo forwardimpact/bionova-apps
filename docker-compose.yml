@@ -83,7 +83,9 @@ services:
       - "3000:3000"
     environment:
       PGRST_DB_URI: postgres://authenticator:${POSTGRES_PASSWORD}@pgbouncer:6432/postgres
-      PGRST_DB_SCHEMAS: public,storage
+      # `substrate` is the operator-only Substrate Contract schema (service_role
+      # grants only); the fit-terrain substrate verbs bind to it over the API.
+      PGRST_DB_SCHEMAS: public,storage,substrate
       PGRST_DB_ANON_ROLE: anon
       PGRST_JWT_SECRET: ${JWT_SECRET}
       PGRST_DB_USE_LEGACY_GUCS: "false"

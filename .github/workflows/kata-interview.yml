@@ -1,0 +1,76 @@
+name: "Kata: Interview"
+
+on:
+  workflow_dispatch:
+    inputs:
+      product:
+        description: "Product to interview about (leave empty for supervisor to choose)"
+        required: false
+        type: string
+      job:
+        description: "Specific JTBD job goal to test (leave empty for supervisor to choose)"
+        required: false
+        type: string
+      task-amend:
+        description: "Additional text appended to the task prompt for steering"
+        required: false
+        type: string
+      website-url:
+        description: "Public entry point handed to the persona agent"
+        required: false
+        type: string
+        default: "https://polaris.bionova.example"
+      persona-mode:
+        description: "patient = anonymous, persona from the vendored story; staff = provisioned identity from the substrate"
+        required: false
+        type: choice
+        options:
+          - patient
+          - staff
+        default: patient
+
+concurrency:
+  group: kata-interview
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  interview:
+    runs-on: ubuntu-latest
+    # A composite action cannot declare concurrency or a job timeout — both
+    # stay here. Keep timeout-minutes strictly under 60 so a stalled run cannot
+    # outlive its 1-hour App token.
+    timeout-minutes: 50
+    steps:
+      # Thin wrapper over the reusable action. The Polaris-specific knowledge
+      # lives here: the substrate is `polaris` and comes up as the repo's own
+      # docker-compose stack (not the Supabase CLI), driven by ./setup.sh; a
+      # persona identity is provisioned only for a staff interview. The action
+      # gates every substrate step on `substrate-setup-command != ''`, so an
+      # empty command runs a file-only interview and skips bring-up, persona
+      # selection, and the log scan. `fit-terrain` is on PATH via the action's
+      # bootstrap step.
+      - uses: forwardimpact/kata-interview@1e8d9c876da6851fa890d30fd6abbbf4b74692bb # v1.0.0
+        with:
+          app-id: ${{ secrets.KATA_APP_ID }}
+          app-private-key: ${{ secrets.KATA_APP_PRIVATE_KEY }}
+          anthropic-api-key: ${{ secrets.ANTHROPIC_API_KEY }}
+          website-url: ${{ inputs.website-url }}
+          product: ${{ inputs.product }}
+          job: ${{ inputs.job }}
+          task-amend: ${{ inputs.task-amend }}
+          # Bring Polaris' own Supabase stack up, render + apply the seed, then
+          # emit the API URL/anon key for later steps and gate on the Substrate
+          # Contract. SUPABASE_URL must land in $GITHUB_ENV so the persona-select
+          # command (staff path) can reach the stack from the harness step.
+          substrate-setup-command: ${{ contains(fromJSON('["polaris"]'), inputs.product) && 'cp .env.example .env && docker compose up -d --wait && ./setup.sh && export SUPABASE_URL=http://localhost:8000 && export SUPABASE_ANON_KEY="$(grep -E ''^ANON_KEY='' .env | cut -d= -f2-)" && printf ''SUPABASE_URL=%s\nSUPABASE_ANON_KEY=%s\n'' "$SUPABASE_URL" "$SUPABASE_ANON_KEY" >> "$GITHUB_ENV" && fit-terrain substrate check && fit-terrain substrate provision' || '' }}
+          # Staff interviews only: pick a qualifying persona and issue its
+          # credential set under Polaris' own token name. Patient interviews
+          # leave this empty — the persona is built from the vendored story and
+          # visits the site anonymously.
+          persona-select-command: ${{ (contains(fromJSON('["polaris"]'), inputs.product) && inputs.persona-mode == 'staff') && 'persona=$(fit-terrain substrate pick --format json --memory "wiki/kata-interview/picks.csv") && email=$(printf ''%s'' "$persona" | jq -r ''.personas[0].email'') && fit-terrain substrate issue --email "$email" --cwd "$AGENT_CWD" --token-env PRODUCT_POLARIS_TOKEN --stash "$RUNNER_TEMP/.persona-jwt"' || '' }}
+          jwt-secret: ${{ secrets.SUPABASE_JWT_SECRET }}
+          service-role-key: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          killswitch: ${{ vars.KATA_KILLSWITCH }}
