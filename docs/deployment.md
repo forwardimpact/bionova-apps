@@ -14,7 +14,8 @@ docker compose up -d --wait
 ./scripts/smoke.sh         # verifies SC1–SC7
 ```
 
-`just boot` runs the first three in order. The seed must exist before
+`just boot` renders the seed, brings the stack up, and runs `setup.sh`, in that
+order. It does not copy `.env` or run the smoke check. The seed must exist before
 `docker compose up` because the `polaris-functions` service bind-mounts
 `data/synthetic/seed_embeddings.jsonl`; mounting a missing path makes Docker
 create a directory there.
