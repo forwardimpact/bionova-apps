@@ -18,7 +18,7 @@ railway link
 ## Per-service config
 
 Each service carries a `railway.toml` declaring its `watchPaths`, builder
-(Dockerfile or image), and healthcheck path. See:
+(Dockerfile or Nixpacks), and healthcheck path. See:
 
 - `infrastructure/{postgres,kong,pgbouncer,postgrest,gotrue,storage,tei}/railway.toml`
 - `products/polaris/site/railway.toml`
