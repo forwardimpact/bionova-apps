@@ -59,7 +59,7 @@ jobs:
           token: ${{ steps.ci-app.outputs.token }}
       # --record shells out to fit-xmr, which the harness runs off PATH; bootstrap
       # installs it. This job runs no harness, only the recorder.
-      - uses: forwardimpact/bootstrap@01112fad2fa58c513a9f0a7bbb68412056e4b2e2 # v1.0.13
+      - uses: forwardimpact/bootstrap@a5d9098c2a1e68277f02fad39583a34ee003d9c9 # v1.0.18
         with:
           token: ${{ steps.ci-app.outputs.token }}
           app-id: ${{ secrets.KATA_APP_ID }}
