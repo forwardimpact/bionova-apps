@@ -58,7 +58,7 @@ are empty, `0`, `false`, `no`, and `off`; any other value engages it.
 
 The agent team's memory lives in the repository wiki. Enable it under
 **Settings → General → Features → Wikis**, then let a session or a workflow run
-`fit-wiki init` to scaffold the ledgers. The `Stop` hook in
+`gemba-wiki init` to scaffold the ledgers. The `Stop` hook in
 `.claude/settings.json` and the `wiki` step in `agent-dispatch` push memory back
 after each run.
 

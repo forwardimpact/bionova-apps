@@ -9,7 +9,7 @@ permissions:
   contents: read
 
 jobs:
-  coaligned:
+  jidoka:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -17,7 +17,7 @@ jobs:
         with:
           bun-version-file: .tool-versions
       - run: bun install
-      # Enforce the Co-Aligned instruction layers, jobs, and invariants. The
-      # coaligned bin ships with the pinned @forwardimpact/libcoaligned
+      # Enforce the Jidoka instruction layers, jobs, and invariants. The
+      # jidoka bin ships with the pinned @forwardimpact/jidoka
       # devDependency, so the check resolves reproducibly on a clean runner.
-      - run: bun run coaligned
+      - run: bun run jidoka

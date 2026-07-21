@@ -6,7 +6,7 @@
       "name": "bionova-apps",
       "devDependencies": {
         "@eslint/js": "9.39.4",
-        "@forwardimpact/libcoaligned": "^0.1.16",
+        "@forwardimpact/jidoka": "^0.2.0",
         "eslint": "9.39.4",
         "eslint-config-prettier": "10.1.8",
         "fit-terrain": "0.1.41",
@@ -26,7 +26,7 @@
         "@forwardimpact/libformat": "0.1.21",
         "@forwardimpact/librepl": "0.1.16",
         "@forwardimpact/libtemplate": "0.2.14",
-        "@forwardimpact/libutil": "0.1.99",
+        "@forwardimpact/libutil": "0.1.100",
       },
     },
     "products/polaris/handlers": {
@@ -238,9 +238,9 @@
 
     "@exodus/bytes": ["@exodus/bytes@1.15.1", "", { "peerDependencies": { "@noble/hashes": "^1.8.0 || ^2.0.0" }, "optionalPeers": ["@noble/hashes"] }, "sha512-S6mL0yNB/Abt9Ei4tq8gDhcczc4S3+vQ4ra7vxnAf+YHC02srtqxKKZghx2Dq6p0e66THKwR6r8N6P95wEty7Q=="],
 
-    "@forwardimpact/libcli": ["@forwardimpact/libcli@0.1.17", "", {}, "sha512-2Ap5/YZPEagkcBCzeGsKKmm2iU7In2/N8iJm80CFcrppLVDDtKlU60fWSN2ak/C0EQ2QmLECmlNMsVxWPL56kg=="],
+    "@forwardimpact/jidoka": ["@forwardimpact/jidoka@0.2.0", "", { "dependencies": { "@forwardimpact/libcli": "^0.1.17", "@forwardimpact/libinvariant": "^0.2.0", "@forwardimpact/libpreflight": "^0.1.4", "@forwardimpact/libutil": "^0.1.100" }, "bin": { "jidoka": "bin/jidoka.js" } }, "sha512-3vNBo97iR+58axUrYq7G7gYxgl1KPVO6Djy7+H3mBArSxnSX2UI9EPEnuvO/9tLgcTYhe45odlUuvPEZ+wQGrA=="],
 
-    "@forwardimpact/libcoaligned": ["@forwardimpact/libcoaligned@0.1.17", "", { "dependencies": { "@forwardimpact/libcli": "^0.1.9", "@forwardimpact/libpreflight": "^0.1.0", "@forwardimpact/libutil": "*", "acorn": "^8.17.0", "prettier": "^3.8.4", "yaml": "^2.9.0" }, "bin": { "coaligned": "bin/coaligned.js" } }, "sha512-Ynyo/6L1nLT2mh2V8tVJ2LBoxKf6/61iB5xbaHdZIE6YMnR+CIsU4EqzzB/Hy2t3XIhWn25lBRUPofGmQmYqhg=="],
+    "@forwardimpact/libcli": ["@forwardimpact/libcli@0.1.17", "", {}, "sha512-2Ap5/YZPEagkcBCzeGsKKmm2iU7In2/N8iJm80CFcrppLVDDtKlU60fWSN2ak/C0EQ2QmLECmlNMsVxWPL56kg=="],
 
     "@forwardimpact/libconfig": ["@forwardimpact/libconfig@0.1.84", "", { "dependencies": { "@forwardimpact/libsecret": "^0.1.15", "@forwardimpact/libstorage": "^0.1.53", "@forwardimpact/libutil": "^0.1.60" } }, "sha512-+QvSZICkBMKYHHfnlP27VoSC5CIHRiE2TbcvNwx/KYIJoKH5XWK1qUx1eE3+wPIiT4l7mxkMDuJ5YO3Z6PiAFQ=="],
 
@@ -248,7 +248,9 @@
 
     "@forwardimpact/libindex": ["@forwardimpact/libindex@0.1.44", "", { "dependencies": { "@forwardimpact/libtype": "^0.1.63", "@forwardimpact/libutil": "^0.1.84" } }, "sha512-Z1x3wQXGM1fE2iUr71W50Lk1H8ZxlmlMkTTr/GPD+JVY3W/x/beC9PMl/VqH+XoCmwaCgwDM1UJvk83hYwtvKg=="],
 
-    "@forwardimpact/libpreflight": ["@forwardimpact/libpreflight@0.1.3", "", {}, "sha512-GqfyXnGAhaQB0feHPsS2uRJBiQZGnWYS/WTopbFalabkhECd35ibc9/okGDOwuXT3lfwgAGJPptVTVyPEcQvIQ=="],
+    "@forwardimpact/libinvariant": ["@forwardimpact/libinvariant@0.2.0", "", { "dependencies": { "@forwardimpact/libcli": "^0.1.9", "@forwardimpact/libutil": "*", "acorn": "^8.17.0", "prettier": "^3.8.4", "yaml": "^2.9.0" } }, "sha512-Av2rZt9qsXvwZxe64DvRzcdYMAt6usehEqXkd55Q9ekCScxXJZUvMFoUbpxNCIuUikxEBCl2e6Zo8mtlHsFJjw=="],
+
+    "@forwardimpact/libpreflight": ["@forwardimpact/libpreflight@0.1.4", "", {}, "sha512-jdyxyNs3jmAhggs/qMNi2A7Dgm8y3M3IUE61HzUtEmmMnls+fzHTwyiYbJB9YiIQmN58FLD+jGvdq6Gm5UqfeA=="],
 
     "@forwardimpact/libprompt": ["@forwardimpact/libprompt@0.1.13", "", { "dependencies": { "@forwardimpact/libutil": "^0.1.84", "mustache": "^4.2.0" } }, "sha512-o/m/B0mvdQfdh5rrOHlVrqt+GbIdux9SHdCgIZLHw2j1KohnC8wfidk1it+rj2Yf/bTCaxXdrBdaruDGqhTI0g=="],
 
@@ -276,7 +278,7 @@
 
     "@forwardimpact/libui": ["@forwardimpact/libui@1.4.1", "", {}, "sha512-bXDoBlNi1CtWntyhhbFgVpycooZ6fe2cU6L+O9aN1N5y6wHrnxACZr9zZctrCDElsIaOEN0Odt5+QMAmd+UVJw=="],
 
-    "@forwardimpact/libutil": ["@forwardimpact/libutil@0.1.99", "", { "dependencies": { "@forwardimpact/libcli": "^0.1.0", "@forwardimpact/libconfig": "^0.1.79", "@forwardimpact/libpreflight": "^0.1.0", "@forwardimpact/libstorage": "^0.1.78", "@forwardimpact/libtelemetry": "^0.1.22" }, "bin": { "fit-download-bundle": "bin/fit-download-bundle.js", "fit-tiktoken": "bin/fit-tiktoken.js" } }, "sha512-jHqrTceamCIi7kL8fBwE+TfXzAonZAzHi2kCezLY9jpEesQ7eqXxue2pFmop1zUseimj6GO5cpL1a5kPVsIpwQ=="],
+    "@forwardimpact/libutil": ["@forwardimpact/libutil@0.1.100", "", { "dependencies": { "@forwardimpact/libcli": "^0.1.0", "@forwardimpact/libconfig": "^0.1.79", "@forwardimpact/libpreflight": "^0.1.0", "@forwardimpact/libstorage": "^0.1.78", "@forwardimpact/libtelemetry": "^0.1.22" }, "bin": { "fit-tiktoken": "bin/fit-tiktoken.js" } }, "sha512-dx7QHnffaeTnCl9mH9gwaCEbRHFrXH3TCvxwJc5q4WZJhBse6QnEfo82ri3zh+v064pqosDIGYImSVdz9OnCQw=="],
 
     "@humanfs/core": ["@humanfs/core@0.19.2", "", { "dependencies": { "@humanfs/types": "^0.15.0" } }, "sha512-UhXNm+CFMWcbChXywFwkmhqjs3PRCmcSa/hfBgLIb7oQ5HNb1wS0icWsGtSAUNgefHeI+eBrA8I1fxmbHsGdvA=="],
 
@@ -1030,29 +1032,41 @@
 
     "@eslint-community/eslint-utils/eslint-visitor-keys": ["eslint-visitor-keys@3.4.3", "", {}, "sha512-wpc+LXeiyiisxPlEkUzU6svyS1frIO3Mgxj1fdy7Pm8Ygzguax2N3Fa/D/ag1WqbOprdI+uY6wMUl8/a2G+iag=="],
 
-    "@forwardimpact/libcoaligned/@forwardimpact/libcli": ["@forwardimpact/libcli@0.1.16", "", {}, "sha512-Nw1E0jTyzpoimohMFC8bG/RfaiuQlj5GzwBw7TRGNoDger7zxUvujLFXnRiRKYXCCHR3eyOMtVK9cbivMtECug=="],
-
-    "@forwardimpact/libcoaligned/prettier": ["prettier@3.9.4", "", { "bin": { "prettier": "bin/prettier.cjs" } }, "sha512-yWG/o/4oJfo036EKAfK6ACAoDOfHeRHx4tuxkfBZiauURiaSmYwlpOr5LQqKtIkRD2z1PLteme2WoxEnj4tHTg=="],
-
     "@forwardimpact/libconfig/@forwardimpact/libutil": ["@forwardimpact/libutil@0.1.98", "", { "dependencies": { "@forwardimpact/libcli": "^0.1.0", "@forwardimpact/libconfig": "^0.1.79", "@forwardimpact/libpreflight": "^0.1.0", "@forwardimpact/libstorage": "^0.1.78", "@forwardimpact/libtelemetry": "^0.1.22" }, "bin": { "fit-download-bundle": "bin/fit-download-bundle.js", "fit-tiktoken": "bin/fit-tiktoken.js" } }, "sha512-wdMUwmzAbyqwy3/k8u8uXJXZyLQuP3tkPai/amCVctgAw3v6/XLMYxAq6mSyrxXeFjxzHwPVo2AHSdbwJz2Upg=="],
 
     "@forwardimpact/libindex/@forwardimpact/libutil": ["@forwardimpact/libutil@0.1.98", "", { "dependencies": { "@forwardimpact/libcli": "^0.1.0", "@forwardimpact/libconfig": "^0.1.79", "@forwardimpact/libpreflight": "^0.1.0", "@forwardimpact/libstorage": "^0.1.78", "@forwardimpact/libtelemetry": "^0.1.22" }, "bin": { "fit-download-bundle": "bin/fit-download-bundle.js", "fit-tiktoken": "bin/fit-tiktoken.js" } }, "sha512-wdMUwmzAbyqwy3/k8u8uXJXZyLQuP3tkPai/amCVctgAw3v6/XLMYxAq6mSyrxXeFjxzHwPVo2AHSdbwJz2Upg=="],
+
+    "@forwardimpact/libprompt/@forwardimpact/libutil": ["@forwardimpact/libutil@0.1.99", "", { "dependencies": { "@forwardimpact/libcli": "^0.1.0", "@forwardimpact/libconfig": "^0.1.79", "@forwardimpact/libpreflight": "^0.1.0", "@forwardimpact/libstorage": "^0.1.78", "@forwardimpact/libtelemetry": "^0.1.22" }, "bin": { "fit-download-bundle": "bin/fit-download-bundle.js", "fit-tiktoken": "bin/fit-tiktoken.js" } }, "sha512-jHqrTceamCIi7kL8fBwE+TfXzAonZAzHi2kCezLY9jpEesQ7eqXxue2pFmop1zUseimj6GO5cpL1a5kPVsIpwQ=="],
 
     "@forwardimpact/libsecret/@forwardimpact/libutil": ["@forwardimpact/libutil@0.1.98", "", { "dependencies": { "@forwardimpact/libcli": "^0.1.0", "@forwardimpact/libconfig": "^0.1.79", "@forwardimpact/libpreflight": "^0.1.0", "@forwardimpact/libstorage": "^0.1.78", "@forwardimpact/libtelemetry": "^0.1.22" }, "bin": { "fit-download-bundle": "bin/fit-download-bundle.js", "fit-tiktoken": "bin/fit-tiktoken.js" } }, "sha512-wdMUwmzAbyqwy3/k8u8uXJXZyLQuP3tkPai/amCVctgAw3v6/XLMYxAq6mSyrxXeFjxzHwPVo2AHSdbwJz2Upg=="],
 
     "@forwardimpact/libstorage/@forwardimpact/libcli": ["@forwardimpact/libcli@0.1.16", "", {}, "sha512-Nw1E0jTyzpoimohMFC8bG/RfaiuQlj5GzwBw7TRGNoDger7zxUvujLFXnRiRKYXCCHR3eyOMtVK9cbivMtECug=="],
 
+    "@forwardimpact/libstorage/@forwardimpact/libpreflight": ["@forwardimpact/libpreflight@0.1.3", "", {}, "sha512-GqfyXnGAhaQB0feHPsS2uRJBiQZGnWYS/WTopbFalabkhECd35ibc9/okGDOwuXT3lfwgAGJPptVTVyPEcQvIQ=="],
+
     "@forwardimpact/libstorage/@forwardimpact/libutil": ["@forwardimpact/libutil@0.1.98", "", { "dependencies": { "@forwardimpact/libcli": "^0.1.0", "@forwardimpact/libconfig": "^0.1.79", "@forwardimpact/libpreflight": "^0.1.0", "@forwardimpact/libstorage": "^0.1.78", "@forwardimpact/libtelemetry": "^0.1.22" }, "bin": { "fit-download-bundle": "bin/fit-download-bundle.js", "fit-tiktoken": "bin/fit-tiktoken.js" } }, "sha512-wdMUwmzAbyqwy3/k8u8uXJXZyLQuP3tkPai/amCVctgAw3v6/XLMYxAq6mSyrxXeFjxzHwPVo2AHSdbwJz2Upg=="],
 
+    "@forwardimpact/libsyntheticgen/@forwardimpact/libutil": ["@forwardimpact/libutil@0.1.99", "", { "dependencies": { "@forwardimpact/libcli": "^0.1.0", "@forwardimpact/libconfig": "^0.1.79", "@forwardimpact/libpreflight": "^0.1.0", "@forwardimpact/libstorage": "^0.1.78", "@forwardimpact/libtelemetry": "^0.1.22" }, "bin": { "fit-download-bundle": "bin/fit-download-bundle.js", "fit-tiktoken": "bin/fit-tiktoken.js" } }, "sha512-jHqrTceamCIi7kL8fBwE+TfXzAonZAzHi2kCezLY9jpEesQ7eqXxue2pFmop1zUseimj6GO5cpL1a5kPVsIpwQ=="],
+
+    "@forwardimpact/libsyntheticprose/@forwardimpact/libutil": ["@forwardimpact/libutil@0.1.99", "", { "dependencies": { "@forwardimpact/libcli": "^0.1.0", "@forwardimpact/libconfig": "^0.1.79", "@forwardimpact/libpreflight": "^0.1.0", "@forwardimpact/libstorage": "^0.1.78", "@forwardimpact/libtelemetry": "^0.1.22" }, "bin": { "fit-download-bundle": "bin/fit-download-bundle.js", "fit-tiktoken": "bin/fit-tiktoken.js" } }, "sha512-jHqrTceamCIi7kL8fBwE+TfXzAonZAzHi2kCezLY9jpEesQ7eqXxue2pFmop1zUseimj6GO5cpL1a5kPVsIpwQ=="],
+
+    "@forwardimpact/libsyntheticrender/@forwardimpact/libutil": ["@forwardimpact/libutil@0.1.99", "", { "dependencies": { "@forwardimpact/libcli": "^0.1.0", "@forwardimpact/libconfig": "^0.1.79", "@forwardimpact/libpreflight": "^0.1.0", "@forwardimpact/libstorage": "^0.1.78", "@forwardimpact/libtelemetry": "^0.1.22" }, "bin": { "fit-download-bundle": "bin/fit-download-bundle.js", "fit-tiktoken": "bin/fit-tiktoken.js" } }, "sha512-jHqrTceamCIi7kL8fBwE+TfXzAonZAzHi2kCezLY9jpEesQ7eqXxue2pFmop1zUseimj6GO5cpL1a5kPVsIpwQ=="],
+
     "@forwardimpact/libtelemetry/@forwardimpact/libcli": ["@forwardimpact/libcli@0.1.16", "", {}, "sha512-Nw1E0jTyzpoimohMFC8bG/RfaiuQlj5GzwBw7TRGNoDger7zxUvujLFXnRiRKYXCCHR3eyOMtVK9cbivMtECug=="],
+
+    "@forwardimpact/libtelemetry/@forwardimpact/libpreflight": ["@forwardimpact/libpreflight@0.1.3", "", {}, "sha512-GqfyXnGAhaQB0feHPsS2uRJBiQZGnWYS/WTopbFalabkhECd35ibc9/okGDOwuXT3lfwgAGJPptVTVyPEcQvIQ=="],
 
     "@forwardimpact/libtelemetry/@forwardimpact/librepl": ["@forwardimpact/librepl@0.1.15", "", { "dependencies": { "@forwardimpact/libformat": "^0.1.0" } }, "sha512-WLEIe7WC1SgM1KJGBWvxTac0o+N72KBMdJaqvFLydKsKxaFb6kavqsoIonw0J2nZWAyzXR4sUpJfsACw1uGvuQ=="],
 
     "@forwardimpact/libtelemetry/@forwardimpact/libutil": ["@forwardimpact/libutil@0.1.98", "", { "dependencies": { "@forwardimpact/libcli": "^0.1.0", "@forwardimpact/libconfig": "^0.1.79", "@forwardimpact/libpreflight": "^0.1.0", "@forwardimpact/libstorage": "^0.1.78", "@forwardimpact/libtelemetry": "^0.1.22" }, "bin": { "fit-download-bundle": "bin/fit-download-bundle.js", "fit-tiktoken": "bin/fit-tiktoken.js" } }, "sha512-wdMUwmzAbyqwy3/k8u8uXJXZyLQuP3tkPai/amCVctgAw3v6/XLMYxAq6mSyrxXeFjxzHwPVo2AHSdbwJz2Upg=="],
 
-    "@forwardimpact/libtype/@forwardimpact/libutil": ["@forwardimpact/libutil@0.1.98", "", { "dependencies": { "@forwardimpact/libcli": "^0.1.0", "@forwardimpact/libconfig": "^0.1.79", "@forwardimpact/libpreflight": "^0.1.0", "@forwardimpact/libstorage": "^0.1.78", "@forwardimpact/libtelemetry": "^0.1.22" }, "bin": { "fit-download-bundle": "bin/fit-download-bundle.js", "fit-tiktoken": "bin/fit-tiktoken.js" } }, "sha512-wdMUwmzAbyqwy3/k8u8uXJXZyLQuP3tkPai/amCVctgAw3v6/XLMYxAq6mSyrxXeFjxzHwPVo2AHSdbwJz2Upg=="],
+    "@forwardimpact/libtemplate/@forwardimpact/libutil": ["@forwardimpact/libutil@0.1.99", "", { "dependencies": { "@forwardimpact/libcli": "^0.1.0", "@forwardimpact/libconfig": "^0.1.79", "@forwardimpact/libpreflight": "^0.1.0", "@forwardimpact/libstorage": "^0.1.78", "@forwardimpact/libtelemetry": "^0.1.22" }, "bin": { "fit-download-bundle": "bin/fit-download-bundle.js", "fit-tiktoken": "bin/fit-tiktoken.js" } }, "sha512-jHqrTceamCIi7kL8fBwE+TfXzAonZAzHi2kCezLY9jpEesQ7eqXxue2pFmop1zUseimj6GO5cpL1a5kPVsIpwQ=="],
 
-    "@forwardimpact/libutil/@forwardimpact/libcli": ["@forwardimpact/libcli@0.1.16", "", {}, "sha512-Nw1E0jTyzpoimohMFC8bG/RfaiuQlj5GzwBw7TRGNoDger7zxUvujLFXnRiRKYXCCHR3eyOMtVK9cbivMtECug=="],
+    "@forwardimpact/libterrain/@forwardimpact/libpreflight": ["@forwardimpact/libpreflight@0.1.3", "", {}, "sha512-GqfyXnGAhaQB0feHPsS2uRJBiQZGnWYS/WTopbFalabkhECd35ibc9/okGDOwuXT3lfwgAGJPptVTVyPEcQvIQ=="],
+
+    "@forwardimpact/libterrain/@forwardimpact/libutil": ["@forwardimpact/libutil@0.1.99", "", { "dependencies": { "@forwardimpact/libcli": "^0.1.0", "@forwardimpact/libconfig": "^0.1.79", "@forwardimpact/libpreflight": "^0.1.0", "@forwardimpact/libstorage": "^0.1.78", "@forwardimpact/libtelemetry": "^0.1.22" }, "bin": { "fit-download-bundle": "bin/fit-download-bundle.js", "fit-tiktoken": "bin/fit-tiktoken.js" } }, "sha512-jHqrTceamCIi7kL8fBwE+TfXzAonZAzHi2kCezLY9jpEesQ7eqXxue2pFmop1zUseimj6GO5cpL1a5kPVsIpwQ=="],
+
+    "@forwardimpact/libtype/@forwardimpact/libutil": ["@forwardimpact/libutil@0.1.98", "", { "dependencies": { "@forwardimpact/libcli": "^0.1.0", "@forwardimpact/libconfig": "^0.1.79", "@forwardimpact/libpreflight": "^0.1.0", "@forwardimpact/libstorage": "^0.1.78", "@forwardimpact/libtelemetry": "^0.1.22" }, "bin": { "fit-download-bundle": "bin/fit-download-bundle.js", "fit-tiktoken": "bin/fit-tiktoken.js" } }, "sha512-wdMUwmzAbyqwy3/k8u8uXJXZyLQuP3tkPai/amCVctgAw3v6/XLMYxAq6mSyrxXeFjxzHwPVo2AHSdbwJz2Upg=="],
 
     "@testing-library/dom/aria-query": ["aria-query@5.3.0", "", { "dependencies": { "dequal": "^2.0.3" } }, "sha512-b0P0sZPKtyu8HkeRAfCq0IfURZK+SuwMjY1UXGBU27wpAiTwQAIlq56IbIO+ytk/JjS1fMR14ee5WBBfKi5J6A=="],
 
@@ -1088,13 +1102,43 @@
 
     "@forwardimpact/libconfig/@forwardimpact/libutil/@forwardimpact/libcli": ["@forwardimpact/libcli@0.1.16", "", {}, "sha512-Nw1E0jTyzpoimohMFC8bG/RfaiuQlj5GzwBw7TRGNoDger7zxUvujLFXnRiRKYXCCHR3eyOMtVK9cbivMtECug=="],
 
+    "@forwardimpact/libconfig/@forwardimpact/libutil/@forwardimpact/libpreflight": ["@forwardimpact/libpreflight@0.1.3", "", {}, "sha512-GqfyXnGAhaQB0feHPsS2uRJBiQZGnWYS/WTopbFalabkhECd35ibc9/okGDOwuXT3lfwgAGJPptVTVyPEcQvIQ=="],
+
     "@forwardimpact/libindex/@forwardimpact/libutil/@forwardimpact/libcli": ["@forwardimpact/libcli@0.1.16", "", {}, "sha512-Nw1E0jTyzpoimohMFC8bG/RfaiuQlj5GzwBw7TRGNoDger7zxUvujLFXnRiRKYXCCHR3eyOMtVK9cbivMtECug=="],
+
+    "@forwardimpact/libindex/@forwardimpact/libutil/@forwardimpact/libpreflight": ["@forwardimpact/libpreflight@0.1.3", "", {}, "sha512-GqfyXnGAhaQB0feHPsS2uRJBiQZGnWYS/WTopbFalabkhECd35ibc9/okGDOwuXT3lfwgAGJPptVTVyPEcQvIQ=="],
+
+    "@forwardimpact/libprompt/@forwardimpact/libutil/@forwardimpact/libcli": ["@forwardimpact/libcli@0.1.16", "", {}, "sha512-Nw1E0jTyzpoimohMFC8bG/RfaiuQlj5GzwBw7TRGNoDger7zxUvujLFXnRiRKYXCCHR3eyOMtVK9cbivMtECug=="],
+
+    "@forwardimpact/libprompt/@forwardimpact/libutil/@forwardimpact/libpreflight": ["@forwardimpact/libpreflight@0.1.3", "", {}, "sha512-GqfyXnGAhaQB0feHPsS2uRJBiQZGnWYS/WTopbFalabkhECd35ibc9/okGDOwuXT3lfwgAGJPptVTVyPEcQvIQ=="],
 
     "@forwardimpact/libsecret/@forwardimpact/libutil/@forwardimpact/libcli": ["@forwardimpact/libcli@0.1.16", "", {}, "sha512-Nw1E0jTyzpoimohMFC8bG/RfaiuQlj5GzwBw7TRGNoDger7zxUvujLFXnRiRKYXCCHR3eyOMtVK9cbivMtECug=="],
 
+    "@forwardimpact/libsecret/@forwardimpact/libutil/@forwardimpact/libpreflight": ["@forwardimpact/libpreflight@0.1.3", "", {}, "sha512-GqfyXnGAhaQB0feHPsS2uRJBiQZGnWYS/WTopbFalabkhECd35ibc9/okGDOwuXT3lfwgAGJPptVTVyPEcQvIQ=="],
+
+    "@forwardimpact/libsyntheticgen/@forwardimpact/libutil/@forwardimpact/libcli": ["@forwardimpact/libcli@0.1.16", "", {}, "sha512-Nw1E0jTyzpoimohMFC8bG/RfaiuQlj5GzwBw7TRGNoDger7zxUvujLFXnRiRKYXCCHR3eyOMtVK9cbivMtECug=="],
+
+    "@forwardimpact/libsyntheticgen/@forwardimpact/libutil/@forwardimpact/libpreflight": ["@forwardimpact/libpreflight@0.1.3", "", {}, "sha512-GqfyXnGAhaQB0feHPsS2uRJBiQZGnWYS/WTopbFalabkhECd35ibc9/okGDOwuXT3lfwgAGJPptVTVyPEcQvIQ=="],
+
+    "@forwardimpact/libsyntheticprose/@forwardimpact/libutil/@forwardimpact/libcli": ["@forwardimpact/libcli@0.1.16", "", {}, "sha512-Nw1E0jTyzpoimohMFC8bG/RfaiuQlj5GzwBw7TRGNoDger7zxUvujLFXnRiRKYXCCHR3eyOMtVK9cbivMtECug=="],
+
+    "@forwardimpact/libsyntheticprose/@forwardimpact/libutil/@forwardimpact/libpreflight": ["@forwardimpact/libpreflight@0.1.3", "", {}, "sha512-GqfyXnGAhaQB0feHPsS2uRJBiQZGnWYS/WTopbFalabkhECd35ibc9/okGDOwuXT3lfwgAGJPptVTVyPEcQvIQ=="],
+
+    "@forwardimpact/libsyntheticrender/@forwardimpact/libutil/@forwardimpact/libcli": ["@forwardimpact/libcli@0.1.16", "", {}, "sha512-Nw1E0jTyzpoimohMFC8bG/RfaiuQlj5GzwBw7TRGNoDger7zxUvujLFXnRiRKYXCCHR3eyOMtVK9cbivMtECug=="],
+
+    "@forwardimpact/libsyntheticrender/@forwardimpact/libutil/@forwardimpact/libpreflight": ["@forwardimpact/libpreflight@0.1.3", "", {}, "sha512-GqfyXnGAhaQB0feHPsS2uRJBiQZGnWYS/WTopbFalabkhECd35ibc9/okGDOwuXT3lfwgAGJPptVTVyPEcQvIQ=="],
+
     "@forwardimpact/libtelemetry/@forwardimpact/librepl/@forwardimpact/libformat": ["@forwardimpact/libformat@0.1.20", "", { "dependencies": { "marked": "^18.0.5", "marked-terminal": "^7.3.0", "sanitize-html": "^2.17.5" } }, "sha512-QGOKXRVPc4KlGmVmpZXgGhjSGOVfFoFo6an5Cxpj//IPtiP2izlSIcx8ivqiTk+aQ17BoFs4fUX1F76tNLlUhg=="],
 
+    "@forwardimpact/libtemplate/@forwardimpact/libutil/@forwardimpact/libcli": ["@forwardimpact/libcli@0.1.16", "", {}, "sha512-Nw1E0jTyzpoimohMFC8bG/RfaiuQlj5GzwBw7TRGNoDger7zxUvujLFXnRiRKYXCCHR3eyOMtVK9cbivMtECug=="],
+
+    "@forwardimpact/libtemplate/@forwardimpact/libutil/@forwardimpact/libpreflight": ["@forwardimpact/libpreflight@0.1.3", "", {}, "sha512-GqfyXnGAhaQB0feHPsS2uRJBiQZGnWYS/WTopbFalabkhECd35ibc9/okGDOwuXT3lfwgAGJPptVTVyPEcQvIQ=="],
+
+    "@forwardimpact/libterrain/@forwardimpact/libutil/@forwardimpact/libcli": ["@forwardimpact/libcli@0.1.16", "", {}, "sha512-Nw1E0jTyzpoimohMFC8bG/RfaiuQlj5GzwBw7TRGNoDger7zxUvujLFXnRiRKYXCCHR3eyOMtVK9cbivMtECug=="],
+
     "@forwardimpact/libtype/@forwardimpact/libutil/@forwardimpact/libcli": ["@forwardimpact/libcli@0.1.16", "", {}, "sha512-Nw1E0jTyzpoimohMFC8bG/RfaiuQlj5GzwBw7TRGNoDger7zxUvujLFXnRiRKYXCCHR3eyOMtVK9cbivMtECug=="],
+
+    "@forwardimpact/libtype/@forwardimpact/libutil/@forwardimpact/libpreflight": ["@forwardimpact/libpreflight@0.1.3", "", {}, "sha512-GqfyXnGAhaQB0feHPsS2uRJBiQZGnWYS/WTopbFalabkhECd35ibc9/okGDOwuXT3lfwgAGJPptVTVyPEcQvIQ=="],
 
     "protobufjs/@types/node/undici-types": ["undici-types@8.3.0", "", {}, "sha512-j375ScV60dom+YkPFIfTLcOiPxkN/buHz5GobjLhixFuANaNs3C9l4GmrWqejgXWJ7BbJcFYpTEUkS1Ge8bpZQ=="],
   }

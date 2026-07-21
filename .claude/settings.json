@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "curl -fsSL https://github.com/forwardimpact/monorepo/releases/download/gear@v0.1.13/fit-install.sh | bash"
+            "command": "curl -fsSL https://github.com/forwardimpact/monorepo/releases/download/gear@v0.3.2/fit-install.sh | bash"
           },
           { "type": "command", "command": "bash scripts/bootstrap.sh" }
         ]
@@ -13,7 +13,7 @@
     ],
     "Stop": [
       {
-        "hooks": [{ "type": "command", "command": "npx fit-wiki push" }]
+        "hooks": [{ "type": "command", "command": "npx gemba-wiki push" }]
       }
     ]
   }

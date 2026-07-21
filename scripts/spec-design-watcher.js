@@ -9,7 +9,7 @@
 // approved` lacking a design — the design-ELIGIBLE set), which the storyboard
 // records by hand and which owns item-1's design-leg clock. Two names, two
 // questions; do not co-mingle them under one series (facilitator ruling on
-// exp #226 / obstacle #225 — fit-xmr keys series by name across event_types,
+// exp #226 / obstacle #225 — gemba-xmr keys series by name across event_types,
 // so only a distinct name unmixes the pipeline).
 //
 // A spec is "missing its design artifact" when all three hold:
@@ -31,7 +31,7 @@
 //                  (used by the fixture test; no git, deterministic).
 //   default        read specs/ and design-a.md from a git ref (--ref, default
 //                  origin/main) — only merged artifacts count — but read
-//                  STATUS.md from the working-tree wiki/ checkout, which fit-wiki
+//                  STATUS.md from the working-tree wiki/ checkout, which gemba-wiki
 //                  hydrates from the nested wiki repo (bionova-apps.wiki). That
 //                  wiki-repo copy is the single authoritative ledger the merge
 //                  gate also reads; the app-repo blob at origin/main:wiki/STATUS.md
@@ -40,7 +40,7 @@
 // Modes:
 //   --json         print the full result object and exit; never records.
 //   --record       append the count to the staff-engineer metrics CSV via
-//                  fit-xmr. Without it the script only prints a summary.
+//                  gemba-xmr. Without it the script only prints a summary.
 //   --now=<iso>    override "now" for the two-day flag (default: today).
 //
 // Usage:
@@ -139,7 +139,7 @@ export function fsSource(root) {
 // and design-a.md from the tree and reads merge dates from git — those are
 // app-repo artifacts, so "merged into <ref>" is the right gate. STATUS.md is the
 // approval ledger; its authoritative copy lives in the nested wiki repo, checked
-// out by fit-wiki into the working tree, so it is read from disk, not from <ref>
+// out by gemba-wiki into the working tree, so it is read from disk, not from <ref>
 // (issue #105). An optional statusPath overrides the working-tree location (test).
 export function gitSource(ref, statusPath) {
   const git = (args) =>
@@ -165,7 +165,7 @@ export function gitSource(ref, statusPath) {
       .filter(Boolean)
       .map((m) => m[1]),
   );
-  // Read STATUS.md from the working-tree wiki/ checkout (fit-wiki-hydrated from
+  // Read STATUS.md from the working-tree wiki/ checkout (gemba-wiki-hydrated from
   // the wiki repo), not from `${ref}:wiki/STATUS.md`. Resolve it relative to the
   // git top-level so cwd does not matter; caller may override for tests.
   let statusText = "";
@@ -241,7 +241,7 @@ function main() {
     execFileSync(
       "npx",
       [
-        "fit-xmr",
+        "gemba-xmr",
         "record",
         "--skill=staff-engineer",
         "--metric=specs_missing_design_artifact",
