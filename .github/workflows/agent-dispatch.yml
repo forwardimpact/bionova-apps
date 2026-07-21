@@ -93,7 +93,7 @@ jobs:
           bun-version: "1.3.11"
       - name: Assess and Act
         id: assess
-        uses: forwardimpact/harness@b7409ad9a1df4ff75eca8fe68041b5384f75bd7e # v1.0.3
+        uses: forwardimpact/harness@f1943c61188049a86436913af157852b70331813 # v1.0.4
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           GH_TOKEN: ${{ steps.ci-app.outputs.token }}
