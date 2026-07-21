@@ -292,7 +292,7 @@ jobs:
       # its own review; this is a safety flush).
       - name: Push wiki changes
         if: always()
-        uses: forwardimpact/wiki@f88ea81402d4d3411baf9ca0a38cafb11dfa7f60 # v1.0.1
+        uses: forwardimpact/wiki@ad0042953508240d061ecfb288ce6990247cbd9d # v1.0.2
         with:
           command: push
           app-id: ${{ secrets.KATA_APP_ID }}
