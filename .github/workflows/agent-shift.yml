@@ -30,6 +30,16 @@ jobs:
           - { name: technical-writer }
           - { name: release-engineer }
           - { name: improvement-coach }
+    # Interim guard for the apm resolve TOCTOU ([Errno 17] File exists:
+    # '/home/runner/.apm'): force apm's resolver onto its sequential path so the
+    # kata-skills/jidoka-skills resolve cannot race on creating ~/.apm. kata-agent
+    # v1.0.8 runs `apm install` through its bundled forwardimpact/bootstrap@v1.0.18,
+    # which still pins apm 0.12.4 (< the 0.15.0 fix), so this path is exposed and
+    # must carry the guard itself. Job-level env reaches the composite action's
+    # steps (each matrix cell); step-level does not. Drop when the durable fix
+    # (upstream bootstrap#7: apm 0.12.4 -> v0.23.1) is pinned.
+    env:
+      APM_RESOLVE_PARALLEL: "1"
     steps:
       # kata-agent runs the killswitch first and reports run cost last.
       - uses: forwardimpact/kata-agent@ffa13d0213523e310605cd4301e364cd70f8393d # v1.0.8
