@@ -23,6 +23,17 @@ jobs:
   kata:
     runs-on: ubuntu-latest
     steps:
+      # TEMPORARY SHIM. kata-agent v1.0.7 / kata-interview v1.0.0 pin an old
+      # internal bootstrap that installs the fit-* gear binaries, but their
+      # wiki steps track the floating forwardimpact/wiki@v1, which since the
+      # Gemba release invokes gemba-wiki. Put gemba-wiki on PATH so those
+      # steps resolve it. Remove once a gemba-aware release of the action is
+      # published and the pin above is bumped.
+      - name: Install gemba-wiki (action version skew shim)
+        run: |
+          curl -fsSL https://github.com/forwardimpact/monorepo/releases/download/gear@v0.3.2/fit-install.sh \
+            | bash -s -- --only gemba-wiki
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
       # kata-agent runs the killswitch first and reports run cost last.
       - uses: forwardimpact/kata-agent@4363b5ad249cebe6375671ee855988e201a03377 # v1.0.7
         id: agent
