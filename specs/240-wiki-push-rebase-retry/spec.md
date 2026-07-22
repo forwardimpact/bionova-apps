@@ -81,12 +81,12 @@ successful push.
 | Recover from a benign remote advance | When the remote advanced after boot and the session's own edit drops nothing, the push path recovers and lands the write instead of failing red. |
 | Re-apply only the session-authored edits | Recovery re-applies only what this session wrote — its log, claim, and section edits (the journal) — onto the current remote. It never re-applies the whole dirty working tree, so a reduction the session never authored is never re-landed. This rests on the session's edits being scopeable to its own files (the #84 dependency, see § Dependency and ordering). |
 | Re-run the conservation guard at full strength every attempt | Staleness-recovery and line-conservation are independent properties: being behind the remote permits recovery; dropping remote lines still refuses. After each recovery attempt the unweakened guard decides the push. A retry succeeding a push the first attempt refused, without the tree genuinely gaining the remote's lines, must be structurally impossible — not merely discouraged. |
-| Preserve every incoming remote line | Recovery keeps every line the remote gained; it never resolves a conflict in the local copy's favour over incoming remote lines. A local-favouring resolution *is* the launder. |
+| Preserve every incoming remote line | Recovery keeps every line present on the **remote tip at push time**; it never resolves a conflict in the local copy's favour over incoming remote lines. A local-favouring resolution *is* the launder. Keying on the remote tip (not a boot-time snapshot) means a line another writer *deliberately deleted* on the remote stays deleted — recovery preserves it as-deleted and never re-adds it. |
 | The deliberate-removal override is never auto-supplied | The guard's "declare the removal if it is deliberate" escape hatch is a human, deliberate-deletion signal. Recovery must never supply it. Wiring it into auto-retry is the laundering path. |
 | Bounded, fail-closed RED, never rewrite remote history | Attempts are bounded. On exhaustion the push fails RED (refuses), surfacing the failure. There is no fall-back that rewrites the remote branch's history and no silent success. |
 | Discriminate structurally, not on the refusal signal | The refusal message is overloaded: it fires identically for benign staleness and for an un-authored clobber. Recovery keys on the structural discriminator — re-apply only the session's own edits, then re-run the guard — never on "the guard fired." |
 | Coverage: both uncovered paths | Recovery covers both gaps the window evidence exposed — boot-side `MEMORY.md` churn already dirty in the tree, and the automated harness end-of-shift push path — not only a writer's own single staged file. |
-| Conservation extended to `STATUS.md` | Today the guard protects `MEMORY.md` only; `STATUS.md` falls through it. A shift job that booted before an approval, worked, then pushed a pre-approval `STATUS.md` snapshot silently reverts the row. Recovery must cover `STATUS.md` — extend conservation to it — or the stale-tree clobber of the merge-gate surface persists even with retry. |
+| Conservation extended to `STATUS.md` | Today the guard protects `MEMORY.md` only; `STATUS.md` falls through it. A shift job that booted before an approval, worked, then pushed a pre-approval `STATUS.md` snapshot silently reverts the row. Recovery must cover `STATUS.md` — extend conservation to it — or the stale-tree clobber of the merge-gate surface persists even with retry. **Design obligation (directional predicate):** `STATUS.md` rows legitimately mutate — a `spec draft → spec approved` transition is a line dropped *and* a line added. The conservation predicate extended to `STATUS.md` must therefore be directional / regression-aware, not naive line-preservation: a forward transition written by the authoritative writer must PASS, while a stale-tree regression of an already-advanced row (`approved → draft`) must REFUSE. A predicate that refuses any line drop false-positives on every legitimate forward transition; one that only checks additions misses the clobber this clause exists to stop. The discriminating predicate is left to design — this row flags it as the one place the WHAT constrains the design hard enough that the design must answer it. |
 
 **Out of scope**
 
@@ -96,6 +96,7 @@ successful push.
 | #84's commit-scoping fix | The durable dependency this retry rests on — the ability to scope a commit to the session's own files, which is what makes re-applying only the session's edits possible. Co-tracked upstream, not re-scoped here. | #84, upstream (`forwardimpact/kata-skills` + `forwardimpact/wiki`). |
 | The human interactive git-layer interim | Still valid for a human writer scoping their own file; unchanged by this spec. | #84 / `MEMORY.md` row 10. |
 | Retuning the conservation guard's ruleset | This spec adds recovery around the guard; it does not change what the guard considers a drop. | A future guard-semantics change. |
+| Rescuing a local `fit-wiki rotate` line drop | A local-side `fit-wiki rotate` legitimately drops lines and will still trip the full-strength guard (the false-positive noted in `MEMORY.md` row 10). Retry does not — and should not — rescue it: a rotate is a session-authored reduction, not a benign remote advance, so the guard is right to refuse and guard-retuning stays out of scope. The human interim remains the path for a rotation. | #84 / `MEMORY.md` row 10. |
 | Rewriting `agent-dispatch`'s per-target isolation | The dispatch group is correct as it stands; the fix is recovery in the push path, not reshaping the event lane. | Not a defect. |
 
 **Compatibility stance:** No clean break. Recovery is additive — a genuine
@@ -173,6 +174,25 @@ The review's disposition — a spec, not a mechanical push, because it reshapes 
 control plane that writes the merge-gate surface — is the reason this is written
 as a spec.
 
+Security-engineer's spec-quality (security-lens) review on
+[PR #260 comment 5044037272](https://github.com/forwardimpact/bionova-apps/pull/260#issuecomment-5044037272)
+graded the spec **strong** and raised three non-blocking items, folded here:
+
+- **MEDIUM — directional `STATUS.md` predicate.** Folded as an explicit design
+  obligation on the In-scope "conservation extended to `STATUS.md`" row and
+  sharpened into SC 9: a forward transition by the authoritative writer must
+  pass, a stale-tree regression must refuse; the discriminating predicate is
+  left to design.
+- **LOW — remote-line boundary.** "Preserve every incoming remote line"
+  (In-scope) and SC 5 are pinned to the **remote tip at push time**, so a line
+  deliberately deleted on the remote stays deleted. A new Out-of-scope row notes
+  a local `fit-wiki rotate` line drop is not rescued by retry (`MEMORY.md` row
+  10); guard-retuning stays out of scope and the human interim remains the path.
+- **LOW (reinforcement) — SC 3 stays structural.** Held for the plan, not a spec
+  change: the #84 ordering gate is enforced by SC 3 as a failing test (a tree
+  with an un-authored change must not re-land it), and the plan must never weaken
+  it into "re-apply the working tree." No spec edit; carried into design/plan.
+
 ## Dependency and ordering
 
 The durable retry rests on #84's commit-scoping fix — the ability to re-apply
@@ -193,11 +213,11 @@ Order: #84 commit-scoping upstream → conservation-safe retry covering
 | 2 | A session-unauthored reduction stays refused | a working tree carrying a reduction the session never authored ends RED after bounded attempts — the reduction never lands on the remote, and no attempt turns the first refusal into a successful push without the pushed result gaining the remote's lines |
 | 3 | Recovery re-applies only the session's own edits | given a tree that also holds an unrelated change the session did not author, the pushed result contains this session's edits and the remote's advance but not the un-authored change |
 | 4 | The guard evaluates the tree that is actually pushed, on every attempt | in a case where a second remote advance lands between attempts, the final pushed result reflects that second advance — a stale evaluation from an earlier attempt cannot carry a push through |
-| 5 | Every incoming remote line survives recovery | after a recovered push, every line the remote held before the push is present in the pushed result; a case that would drop a remote line ends RED, not merged |
+| 5 | Every incoming remote line survives recovery | after a recovered push, every line present on the remote tip at push time is present in the pushed result; a case that would drop such a line ends RED, not merged. A line another writer deliberately deleted on the remote is absent from that tip, so recovery preserves it as-deleted and does not re-add it |
 | 6 | The deliberate-removal override is never auto-supplied | a tree whose only diff is a removal (no session-authored addition) is not silently accepted by recovery — it ends RED and requires a human to declare the removal deliberate |
 | 7 | Bounded, fail-closed, remote history never rewritten | attempts are capped and exhaustion yields a RED refusal; across the whole recovery the remote branch's tip only ever advances by fast-forward — no run rewrites or resets it |
 | 8 | Coverage includes both uncovered paths | recovery fires on boot-side `MEMORY.md` churn already dirty in the tree and on the automated end-of-shift harness push, not only a single staged file |
-| 9 | Conservation covers `STATUS.md` | a stale-tree push carrying a pre-approval `STATUS.md` snapshot does not silently revert an approval row — it is caught by the same conservation predicate now extended to `STATUS.md` |
+| 9 | Conservation covers `STATUS.md`, directionally | a stale-tree push carrying a pre-approval `STATUS.md` snapshot does not silently revert an approval row — it is caught by the conservation predicate now extended to `STATUS.md`; *and* a forward transition by the authoritative writer (`spec draft → spec approved`, a line dropped and a line added) still passes — the predicate discriminates forward-from-backward and does not false-positive on legitimate status writes |
 | 10 | Per-target dispatch isolation is preserved | two dispatch events on different targets (distinct issues/PRs) arriving close together each produce their own run and each write reaches the remote — neither is silently cancelled by the fix. (The fix ships as recovery in the push path, so this isolation is untouched.) |
 
 — Release Engineer 🚀
