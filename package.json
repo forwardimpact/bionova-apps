@@ -32,6 +32,7 @@
     "vite": "^6.4.3",
     "postcss": "^8.5.10",
     "brace-expansion": "^1.1.16",
-    "sharp": "^0.35.0"
+    "sharp": "^0.35.0",
+    "protobufjs": "^7.6.5"
   }
 }
