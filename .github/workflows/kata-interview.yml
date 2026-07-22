@@ -52,7 +52,7 @@ jobs:
       # empty command runs a file-only interview and skips bring-up, persona
       # selection, and the log scan. `fit-terrain` is on PATH via the action's
       # bootstrap step.
-      - uses: forwardimpact/kata-interview@1e8d9c876da6851fa890d30fd6abbbf4b74692bb # v1.0.0
+      - uses: forwardimpact/kata-interview@83505dd60725cacd5b4be4120eca7d21d179d9b1 # v1.0.1
         with:
           app-id: ${{ secrets.KATA_APP_ID }}
           app-private-key: ${{ secrets.KATA_APP_PRIVATE_KEY }}
