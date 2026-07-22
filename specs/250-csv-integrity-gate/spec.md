@@ -71,12 +71,15 @@ any leg:
   timestamp, **and** column 3, `value`, parses as a number. These are the
   column-1 and column-3 typed anchors.
 
-The typed anchors sit at positions **1 / 3 / 7**, so any count-preserving field
-shift disturbs at least one anchor and fails leg B or C — closing the
+The typed anchors sit at positions **1 / 3 / 7**, so any shift that displaces the
+row body disturbs at least one anchor and fails leg B or C — closing the
 width-preserving hole that A∧B alone would miss (a real machine name slid into
-slot 7 with garbage displaced into the tail). Column 8, `host_run`, stays
-**unconstrained** — it is legitimately empty-or-numeric, so it carries no anchor
-and needs none. The date anchor must be the **format-tolerant superset**
+slot 7 with garbage displaced into the tail). One narrow residual survives all
+three legs — a shift confined to the untyped columns after `value` that leaves a
+registry name in slot 7 by luck — and is analysed, with its tooth-1 closure, in
+Constraints. Column 8, `host_run`, stays **unconstrained** — it is legitimately
+empty / `-` / a run id / occasionally free text, so it carries no anchor and
+needs none. The date anchor must be the **format-tolerant superset**
 (calendar **or** ISO), never a brittle single-format pin. The exact column
 contract and the canonical name set are the **technical-writer schema half** (see
 Scope), which must land as a single machine-readable source of record — not
@@ -112,7 +115,7 @@ Two teeth, one spec — the **writer-prevents / reader-detects** split.
 | Component | What it does |
 |---|---|
 | Reader-detects gate (tooth 2 — this repo's deliverable) | A CI check that reads the owned metrics CSV set (the wiki repo's `metrics/*/2026.csv`, reachable from a main-repo scheduled/dispatch surface) with a **real CSV reader** and fails **closed / RED** on any invalid row, **naming the offending file and line**. Turns a seeded ragged or unknown-`event_type` row into a red build. |
-| Conjunction check (three legs, per row) | The validity test is `(A) width == 8 + header-order` **AND** `(B) event_type ∈ registry` **AND** `(C) date parses (calendar or ISO) + value numeric`; the gate **FAILS** when any leg is violated: `¬A ∨ ¬B ∨ ¬C`. All three legs are required — the typed anchors at columns 1/3/7 close each other's blind spot (see Constraints). |
+| Conjunction check (three legs, per row) | The validity test is `(A) width == 8 + header-order` **AND** `(B) event_type ∈ registry` **AND** `(C) date parses (calendar or ISO) + value numeric`; the gate **FAILS** when any leg is violated: `¬A ∨ ¬B ∨ ¬C`. All three legs are required — the typed anchors at columns 1/3/7 close each other's blind spot for every shift that displaces a typed column, leaving one doubly-compounded residual that tooth 1 closes at the source (see Constraints). |
 | Authoritative-source consumption | The gate reads the header contract and the event-name registry from **one authoritative source**, never a duplicated allowlist. |
 | Header/registry schema (technical-writer half — spec-input) | Fixes the canonical 8-column header contract, the canonical `event_type` registry, the RFC-4180 note-quoting rule, and the valid-row definition — delivered as a **single machine-readable source of record** the gate reads (not prose in COUNTING.md). Owned by technical-writer. |
 | Writer-prevents fix (tooth 1 — upstream, not this repo) | `gemba-xmr` / `fit-xmr` (and `gemba-wiki` at write time) fail **closed** (nonzero exit, name the offending line) on a ragged or unknown-`event_type` row, and quote notes per RFC-4180 at write time — never silent-drop + under-count `n`. The **durable / primary** lever. **Not repo-local**: routes to the shared-instrument maintainer (improvement-coach), obstacle #257. Named for completeness; not delivered by this spec's diff. |
@@ -151,6 +154,22 @@ Two teeth, one spec — the **writer-prevents / reader-detects** split.
   acceptance corpus must exercise **all three**. The date anchor must be the
   format-tolerant superset (calendar **or** ISO-8601), never a single-format pin,
   or legitimate rows false-RED.
+- **The one residual, and why it is acceptable.** The typed anchors are at cols
+  1 / 3 / 7, so a width-preserving corruption confined to the untyped columns
+  **after `value`** (cols 4–8: `unit`, `run`, `note`, `event_type`, `host_run`)
+  leaves `date` and `value` intact and passes all three legs **iff** slot 7 still
+  holds a literal registry name. Two mechanisms reach it: a note fragment
+  shifting **right** into slot 7 (the real `event_type` sliding into `host_run`),
+  or a `host_run` value shifting **left** into slot 7 (a dropped field in cols
+  4–6 compensated by a trailing split). Both are doubly compounded — each needs
+  an additive split *and* a compensating drop (a single #257 comma changes width
+  and the width leg catches it), *and* needs the token landing in slot 7 to equal
+  a machine name by luck. No untyped field anywhere in the live tree currently
+  equals a registry name (0 hits, 2026-07-22 sweep), so no live row triggers
+  either variant. The durable closure is **tooth 1**: the writer emitting
+  RFC-4180-correct quoting prevents the split at the source. This gate claims to
+  catch every shift that displaces a typed column — the reachable class from the
+  #257 defect — not a stray token that is byte-for-byte a valid `event_type`.
 - **Fail-closed LOUD, and name the line.** A bad row produces a nonzero exit and
   an error identifying the file and line. The gate must **never** silently drop,
   silently keep, or self-heal (auto-requote and continue) — a self-healing check
@@ -208,10 +227,16 @@ recorded state, keyed by `(directory, date/line)`, not from a SHA or the current
 repaired file. Fixtures 4 and 5 are **synthetic** — the registry leg and the
 shape leg respectively — because all three real defects were width-leg. Each
 non-width leg needs its own seeded row so the conjunction is proven, not assumed.
-The shape-leg row is synthetic for a second reason: a sweep of all 14
-`wiki/metrics/*/2026.csv` found column 1 a calendar day and column 3 numeric
-everywhere (the `T`-split lives in the quoted `run` field, never in `date`), so
-there is **zero false-RED** and no real shape defect to reconstruct.
+The shape-leg row is synthetic for a second reason: a sweep of the 13 live
+`wiki/metrics/*/2026.csv` found column 1 a calendar day and column 3 numeric in
+every row, so there is **zero false-RED** and no real shape defect to
+reconstruct. The date anchor must nonetheless admit the ISO-8601 form: the
+schema reserves an ISO timestamp in column 1 (`check-counting.sh` splits column
+1 on `T`, its header comment noting some dirs may timestamp), even though no
+live row uses one today. Because no live row exercises that branch, the corpus
+needs a **synthetic ISO-timestamp date row that PASSES** — otherwise a
+calendar-day-only implementation would satisfy every test yet false-RED a future
+timestamp row.
 
 | # | Fixture | Defect | Leg / direction | Source |
 |---|---|---|---|---|
@@ -219,7 +244,7 @@ there is **zero false-RED** and no real shape defect to reconstruct.
 | 2 | `metrics/product-manager/2026.csv` line 30 | tail corruption → 10 fields, `event_type` slot still a valid name (`kata-shift`) → a **name-only** check would keep it; only the width leg rejects it | **width** leg over name-only; mis-count / over-read | product-manager, line 30, repaired 2026-07-22 |
 | 3 | `metrics/kata-spec/2026.csv` line 4 | 2 unquoted note commas → 10 fields, row dropped → `specs_drafted` under-counted (`n` 16→17 after repair) | **width** leg on a Family-2 count metric; under-count | kata-spec, line 4, repaired 2026-07-22 |
 | 4 | synthetic | 8 fields (valid width) with an out-of-registry `event_type` (the drifted phantom `kata-storyboard`) | **registry** leg | seeded (mirrors the real drift class the single-source constraint guards) |
-| 5 | synthetic | 8 fields (valid width) with a valid `event_type` but a non-parsing `date` (col 1) or non-numeric `value` (col 3) — a count-preserving shift that A∧B alone would admit | **shape** leg | seeded (mirrors the width-preserving hole; no real defect — col-1/col-3 clean across all 14 CSVs) |
+| 5 | synthetic | 8 fields (valid width) with a valid `event_type` but a non-parsing `date` (col 1) or non-numeric `value` (col 3) — a count-preserving shift that A∧B alone would admit | **shape** leg | seeded (mirrors the width-preserving hole; no real defect — col-1/col-3 clean across all 13 live CSVs) |
 
 ## Notes for design
 
@@ -238,6 +263,8 @@ there is **zero false-RED** and no real shape defect to reconstruct.
   that shape for SC6, sharing a design idiom where practical.
 - **Fixtures seed corrupt rows.** The live CSVs are repaired; the acceptance tests
   reconstruct each corrupt row from its recorded provenance (fixtures 1–3) or seed
-  it synthetically (fixture 4), not from the current clean file.
+  it synthetically (fixtures 4–5), not from the current clean file. Add the
+  passing synthetic ISO-timestamp date row alongside so the date anchor's
+  ISO branch is regression-guarded, not just its calendar-day branch.
 
 — Security Engineer 🔒
