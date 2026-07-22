@@ -30,7 +30,8 @@ row vanishes from the series. The failure is **bidirectional**:
   2026-07-22: `product_share` read `n=13` of **16** true distinct-day points
   because three rows carried unquoted note commas — the difference between
   `insufficient_data` and clearing the `n≥15` XmR limits gate. After re-quoting
-  the three notes (values unchanged, wiki `41ac07b`), `n=16` and real limits
+  the three notes (values unchanged; product-mix rows dated 07-07, 07-08,
+  07-11), `n=16` and real limits
   computed. Any `insufficient_data` reading anywhere in the fleet may be masking
   real points the same way.
 - **Silent over-read / mis-count.** A row whose corruption leaves a *valid*
@@ -103,7 +104,7 @@ Two teeth, one spec — the **writer-prevents / reader-detects** split.
 | Vendoring / mirroring the metrics CSVs into the main repo | `.gitignore` forbids the app repo tracking `wiki/` at all; a mirror is a drift copy. | Deliberately declined. |
 | Retuning what counts as a valid `event_type` | This gate enforces the registry; it does not expand or curate it. | The technical-writer schema half / a future schema change. |
 | The `--event-type='*'` over-read (obstacle #236) | A filter-semantics defect (prepends the pre-kata-shift era), not a parse-validity defect. | Obstacle #236 (improvement-coach). |
-| Family-aware `(date, metric)` uniqueness / de-dup | A same-day-dup counting concern (COUNTING.md families), not a parse-validity concern. Note: wiki `41ac07b` bundled such a dedup with the fixture-1 requoting; the fixture-1 acceptance test isolates **only** the three requoted ragged rows, not the dedup. | The upstream `fit-xmr validate` path named in COUNTING.md § Enforcement ceiling. |
+| Family-aware `(date, metric)` uniqueness / de-dup | A same-day-dup counting concern (COUNTING.md families), not a parse-validity concern. Note: the 2026-07-22 product-mix repair bundled such a dedup with the fixture-1 requoting; the fixture-1 acceptance test isolates **only** the three requoted ragged rows, not the dedup. | The upstream `gemba-xmr validate` path named in COUNTING.md § Enforcement ceiling. |
 | A recording convention alone ("quote every note comma") | Unenforceable and will regress; the stopgap, not the fix. | Interim guidance only. |
 
 ## Constraints
@@ -172,17 +173,21 @@ Two teeth, one spec — the **writer-prevents / reader-detects** split.
 ### Regression fixtures (the acceptance corpus)
 
 Fixtures 1–3 are real defects found and repaired on the wiki repo 2026-07-22;
-each corrupt state is captured by provenance SHA (the live CSVs are now repaired,
-so the tests seed the corrupt row from the recorded state, not from the current
-file). Fixture 4 is a **synthetic** registry-leg case, drawn from the real drift
-evidence, because all three real defects were width-leg — the registry leg needs
-its own seeded row so the conjunction's second leg is proven, not assumed.
+each corrupt state is reconstructed inline from the recorded row. The wiki
+substrate squashes every write to one `wiki: update from session` commit and
+retains no per-repair signal (#175), so the pre-repair rows are **not**
+addressable by any wiki commit SHA — the tests seed the corrupt row from its
+recorded state, keyed by `(directory, date/line)`, not from a SHA or the current
+repaired file. Fixture 4 is a **synthetic** registry-leg case, drawn from the
+real drift evidence, because all three real defects were width-leg — the
+registry leg needs its own seeded row so the conjunction's second leg is proven,
+not assumed.
 
 | # | Fixture | Defect | Leg / direction | Source |
 |---|---|---|---|---|
-| 1 | `metrics/product-mix/2026.csv` | 3 rows, unquoted note commas → extra fields; rows silently dropped → under-count (`n` 13→16 after repair) | **width** leg; under-count | wiki `41ac07b` (isolate the 3 requoted rows only; not the same-day dedup that commit also carried) |
-| 2 | `metrics/product-manager/2026.csv` line 30 | tail corruption → 10 fields, `event_type` slot still a valid name (`kata-shift`) → a **name-only** check would keep it; only the width leg rejects it | **width** leg over name-only; mis-count / over-read | wiki `b159b88` |
-| 3 | `metrics/kata-spec/2026.csv` line 4 | 2 unquoted note commas → 10 fields, row dropped → `specs_drafted` under-counted (`n` 16→17 after repair) | **width** leg on a Family-2 count metric; under-count | wiki `79878d2` |
+| 1 | `metrics/product-mix/2026.csv` | 3 rows, unquoted note commas → extra fields; rows silently dropped → under-count (`n` 13→16 after repair) | **width** leg; under-count | product-mix, rows 07-07/07-08/07-11, repaired 2026-07-22 (isolate the 3 requoted rows only; not the same-day dedup the repair also carried) |
+| 2 | `metrics/product-manager/2026.csv` line 30 | tail corruption → 10 fields, `event_type` slot still a valid name (`kata-shift`) → a **name-only** check would keep it; only the width leg rejects it | **width** leg over name-only; mis-count / over-read | product-manager, line 30, repaired 2026-07-22 |
+| 3 | `metrics/kata-spec/2026.csv` line 4 | 2 unquoted note commas → 10 fields, row dropped → `specs_drafted` under-counted (`n` 16→17 after repair) | **width** leg on a Family-2 count metric; under-count | kata-spec, line 4, repaired 2026-07-22 |
 | 4 | synthetic | 8 fields (valid width) with an out-of-registry `event_type` (the drifted phantom `kata-storyboard`) | **registry** leg | seeded (mirrors the real drift class the single-source constraint guards) |
 
 ## Notes for design
