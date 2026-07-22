@@ -134,10 +134,15 @@ fleet-wide. This spec **rejects** it as the fix, for three grounded reasons:
    control-plane change that *increases* gate latency is worth naming as a
    bypass-pressure vector, not adopting.
 
-Serialization is therefore recorded as considered-and-rejected. If any
-serialization is ever wanted for an unrelated reason, it must be a keyed or
-per-target group with explicit accounting for the drop semantics above — never
-one global group.
+Serialization is therefore recorded as considered-and-rejected *as the fix*. If
+any serialization interim is ever wanted for an unrelated reason, it must be a
+keyed or per-target group with explicit accounting for the drop semantics above
+— never one global group. Even then it is **necessary-but-insufficient**: it
+removes simultaneous pushes but leaves the stale-tree `STATUS.md` clobber
+(reason 2) open, because `STATUS.md` has no conservation guard (the #84 gap).
+That residual is closed only by this conservation-safe retry, and only once the
+retry covers `STATUS.md`. A serialization interim landing first must never be
+read as closing the `STATUS.md` race — this spec is what closes it.
 
 ## Security review consumed
 
