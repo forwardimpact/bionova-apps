@@ -30,6 +30,17 @@ if [ -f apm.yml ] || [ -f apm.lock.yaml ]; then
   APM_RESOLVE_PARALLEL=1 apm install --parallel-downloads 0
 fi
 
+# Temporary. kata-skills still ships the shared agent references under their
+# pre-rename names (memory-protocol.md, ...) while jidoka-skills now deploys
+# the same references as x-*.md. The stale duplicates breach the jidoka layer
+# caps and fail `bun run jidoka`. Prune them until kata-skills republishes
+# with the flattened x-* layout, then remove this block.
+for ref in approval-signals auth-anomaly carry-forward-clearance \
+  citation-integrity coordination-protocol memory-protocol \
+  self-improvement work-definition work-trackers; do
+  rm -f ".claude/agents/${ref}.md" ".github/agents/${ref}.agent.md"
+done
+
 # Non-fatal so a missing or empty wiki never blocks a run.
-npx fit-wiki init || echo "bootstrap: wiki init skipped" >&2
-npx fit-wiki pull || echo "bootstrap: wiki pull skipped" >&2
+npx gemba-wiki init || echo "bootstrap: wiki init skipped" >&2
+npx gemba-wiki pull || echo "bootstrap: wiki pull skipped" >&2

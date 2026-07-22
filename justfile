@@ -37,9 +37,9 @@ dev-site:
 lint:
     bun run lint
 
-# Enforce the Co-Aligned instruction layers, jobs, and invariants
-coaligned:
-    npx coaligned
+# Enforce the Jidoka instruction layers, jobs, and invariants
+jidoka:
+    npx jidoka
 
 # Test everything (JS + Deno)
 test:

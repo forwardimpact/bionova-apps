@@ -1,63 +1,65 @@
 lockfile_version: '1'
-generated_at: '2026-06-30T14:36:42.558950+00:00'
+generated_at: '2026-07-21T21:13:59.450747+00:00'
 apm_version: 0.12.4
 dependencies:
-- repo_url: forwardimpact/coaligned-skills
+- repo_url: forwardimpact/jidoka-skills
   host: github.com
-  resolved_commit: 5eb41a558f8666ddbb3e6a1283bde83920597715
+  resolved_commit: 4b8268a289f7e6f4bc041e838e646386677c0194
+  resolved_ref: 4b8268a289f7e6f4bc041e838e646386677c0194
   package_type: apm_package
   deployed_files:
-  - .agents/skills/coaligned-audit
-  - .agents/skills/coaligned-invariant
-  - .agents/skills/coaligned-jtbd
-  - .agents/skills/coaligned-layer
-  - .agents/skills/coaligned-setup
-  - .claude/agents/approval-signals.md
-  - .claude/agents/auth-anomaly.md
-  - .claude/agents/carry-forward-clearance.md
-  - .claude/agents/citation-integrity.md
-  - .claude/agents/coordination-protocol.md
-  - .claude/agents/memory-protocol.md
-  - .claude/agents/self-improvement.md
-  - .claude/agents/work-definition.md
-  - .claude/agents/work-trackers.md
-  - .claude/skills/coaligned-audit
-  - .claude/skills/coaligned-invariant
-  - .claude/skills/coaligned-jtbd
-  - .claude/skills/coaligned-layer
-  - .claude/skills/coaligned-setup
-  - .github/agents/approval-signals.agent.md
-  - .github/agents/auth-anomaly.agent.md
-  - .github/agents/carry-forward-clearance.agent.md
-  - .github/agents/citation-integrity.agent.md
-  - .github/agents/coordination-protocol.agent.md
-  - .github/agents/memory-protocol.agent.md
-  - .github/agents/self-improvement.agent.md
-  - .github/agents/work-definition.agent.md
-  - .github/agents/work-trackers.agent.md
+  - .agents/skills/jidoka-audit
+  - .agents/skills/jidoka-invariant
+  - .agents/skills/jidoka-jtbd
+  - .agents/skills/jidoka-layer
+  - .agents/skills/jidoka-setup
+  - .claude/agents/x-approval-signals.md
+  - .claude/agents/x-auth-anomaly.md
+  - .claude/agents/x-carry-forward-clearance.md
+  - .claude/agents/x-citation-integrity.md
+  - .claude/agents/x-coordination-protocol.md
+  - .claude/agents/x-memory-protocol.md
+  - .claude/agents/x-self-improvement.md
+  - .claude/agents/x-work-definition.md
+  - .claude/agents/x-work-trackers.md
+  - .claude/skills/jidoka-audit
+  - .claude/skills/jidoka-invariant
+  - .claude/skills/jidoka-jtbd
+  - .claude/skills/jidoka-layer
+  - .claude/skills/jidoka-setup
+  - .github/agents/x-approval-signals.agent.md
+  - .github/agents/x-auth-anomaly.agent.md
+  - .github/agents/x-carry-forward-clearance.agent.md
+  - .github/agents/x-citation-integrity.agent.md
+  - .github/agents/x-coordination-protocol.agent.md
+  - .github/agents/x-memory-protocol.agent.md
+  - .github/agents/x-self-improvement.agent.md
+  - .github/agents/x-work-definition.agent.md
+  - .github/agents/x-work-trackers.agent.md
   deployed_file_hashes:
-    .claude/agents/approval-signals.md: sha256:b5261abcc9dd97be136c421700c21bead88d67a6f14f36ad0bbc4ef3300fe87a
-    .claude/agents/auth-anomaly.md: sha256:56b5078b08166bff948b68489dda72f067131752772622b4d93fb89903cfc425
-    .claude/agents/carry-forward-clearance.md: sha256:18e3eaf63d000d1a9bc8729bf50a1fe9c8a2f818b2a4154a0f66efc14ac82373
-    .claude/agents/citation-integrity.md: sha256:a204d68be5b6d9fb23b9fc52dc25967165072947499c71e0db1ee07646525042
-    .claude/agents/coordination-protocol.md: sha256:13e1ac774f6262bd4c8a6f8782e898a4ee32c08990ed5487cbddd2d305a67816
-    .claude/agents/memory-protocol.md: sha256:67c489790cd42586a5e2d5c7b87fc88c57a80768ecfe067bab71b036a9aa8c60
-    .claude/agents/self-improvement.md: sha256:7313e00e1f557ab41daef20aee2396a3a764be2726baf912bf2456cdf1159333
-    .claude/agents/work-definition.md: sha256:44fa2bf2515b6659312b51554c04601119771b0781c49cfeafb5b6d2247de118
-    .claude/agents/work-trackers.md: sha256:ff7d023b984deb3544643646a0e0a4f641a538d22fb9a79a3a138f8d2b0add5e
-    .github/agents/approval-signals.agent.md: sha256:b5261abcc9dd97be136c421700c21bead88d67a6f14f36ad0bbc4ef3300fe87a
-    .github/agents/auth-anomaly.agent.md: sha256:56b5078b08166bff948b68489dda72f067131752772622b4d93fb89903cfc425
-    .github/agents/carry-forward-clearance.agent.md: sha256:18e3eaf63d000d1a9bc8729bf50a1fe9c8a2f818b2a4154a0f66efc14ac82373
-    .github/agents/citation-integrity.agent.md: sha256:a204d68be5b6d9fb23b9fc52dc25967165072947499c71e0db1ee07646525042
-    .github/agents/coordination-protocol.agent.md: sha256:13e1ac774f6262bd4c8a6f8782e898a4ee32c08990ed5487cbddd2d305a67816
-    .github/agents/memory-protocol.agent.md: sha256:67c489790cd42586a5e2d5c7b87fc88c57a80768ecfe067bab71b036a9aa8c60
-    .github/agents/self-improvement.agent.md: sha256:7313e00e1f557ab41daef20aee2396a3a764be2726baf912bf2456cdf1159333
-    .github/agents/work-definition.agent.md: sha256:44fa2bf2515b6659312b51554c04601119771b0781c49cfeafb5b6d2247de118
-    .github/agents/work-trackers.agent.md: sha256:ff7d023b984deb3544643646a0e0a4f641a538d22fb9a79a3a138f8d2b0add5e
-  content_hash: sha256:e87f9d63c938c49842060b4c78ea986b8e28c2204d5dc6a08da86a4e9d858092
+    .claude/agents/x-approval-signals.md: sha256:09ebab398c6f10b4adaa5087bffda2b27462ed9e7ad8d86e0d6ddb8be07ed8a3
+    .claude/agents/x-auth-anomaly.md: sha256:56b5078b08166bff948b68489dda72f067131752772622b4d93fb89903cfc425
+    .claude/agents/x-carry-forward-clearance.md: sha256:876e2649fc70df4e67955ac7bac43a16e33d21e6ca5a56b022efcb4c3e40a986
+    .claude/agents/x-citation-integrity.md: sha256:a204d68be5b6d9fb23b9fc52dc25967165072947499c71e0db1ee07646525042
+    .claude/agents/x-coordination-protocol.md: sha256:a960a50e818cb11c06cfdaccbad85d9358b9b337cc2efb203876e039713db1a1
+    .claude/agents/x-memory-protocol.md: sha256:156b0e00266b6d4e66266e7f7d1d78a8d46423ace6eb3ec5428124192ec5fb2d
+    .claude/agents/x-self-improvement.md: sha256:44347ac35fdccd6616ea16fa972ad74d631d97fa661a28f54033c0174bc02dff
+    .claude/agents/x-work-definition.md: sha256:f318022ff1705a2f778a4454f9ca88957699f0d0dc6e88e51f5368e7dee949aa
+    .claude/agents/x-work-trackers.md: sha256:b71a77113519646a581a06fdc42d223da310d08e5371bc741854479d707698e0
+    .github/agents/x-approval-signals.agent.md: sha256:09ebab398c6f10b4adaa5087bffda2b27462ed9e7ad8d86e0d6ddb8be07ed8a3
+    .github/agents/x-auth-anomaly.agent.md: sha256:56b5078b08166bff948b68489dda72f067131752772622b4d93fb89903cfc425
+    .github/agents/x-carry-forward-clearance.agent.md: sha256:876e2649fc70df4e67955ac7bac43a16e33d21e6ca5a56b022efcb4c3e40a986
+    .github/agents/x-citation-integrity.agent.md: sha256:a204d68be5b6d9fb23b9fc52dc25967165072947499c71e0db1ee07646525042
+    .github/agents/x-coordination-protocol.agent.md: sha256:a960a50e818cb11c06cfdaccbad85d9358b9b337cc2efb203876e039713db1a1
+    .github/agents/x-memory-protocol.agent.md: sha256:156b0e00266b6d4e66266e7f7d1d78a8d46423ace6eb3ec5428124192ec5fb2d
+    .github/agents/x-self-improvement.agent.md: sha256:44347ac35fdccd6616ea16fa972ad74d631d97fa661a28f54033c0174bc02dff
+    .github/agents/x-work-definition.agent.md: sha256:f318022ff1705a2f778a4454f9ca88957699f0d0dc6e88e51f5368e7dee949aa
+    .github/agents/x-work-trackers.agent.md: sha256:b71a77113519646a581a06fdc42d223da310d08e5371bc741854479d707698e0
+  content_hash: sha256:929a15e7c5bb0fe38b3324b088e4615fbfec1da93c07767719770be5aa0f56e5
 - repo_url: forwardimpact/kata-skills
   host: github.com
-  resolved_commit: bfd71a1605185b649cb74feeb76bee3a7fa546fe
+  resolved_commit: 063d53afe23f46ec9d608230884827f17f8bb764
+  resolved_ref: 063d53afe23f46ec9d608230884827f17f8bb764
   package_type: apm_package
   deployed_files:
   - .agents/skills/kata-backlog-synthesis

@@ -3,7 +3,7 @@
 #
 # Runs once per release-engineer shift. Counts non-success CI conclusions on the
 # latest completed runs for the current tip of main, then appends the count to
-# wiki/metrics/release-engineer/2026.csv via fit-xmr. Turns the "zero red-days"
+# wiki/metrics/release-engineer/2026.csv via gemba-xmr. Turns the "zero red-days"
 # target from a hand-sampled assumption into an earned, accruing series.
 #
 # Exits non-zero when main is red, so a shift can gate on it.
@@ -27,7 +27,7 @@ failing=$(gh run list --branch main --limit 40 \
          | select(.conclusion == \"failure\" or .conclusion == \"timed_out\" or .conclusion == \"startup_failure\")]
         | length")
 
-npx fit-xmr record \
+npx gemba-xmr record \
   --skill=release-engineer \
   --metric=main_ci_failing_checks \
   --value="$failing" \

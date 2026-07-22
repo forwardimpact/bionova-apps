@@ -4,8 +4,8 @@ description: APM project for bionova-apps
 author: D. Olsson
 dependencies:
   apm:
-  - forwardimpact/kata-skills#bfd71a1605185b649cb74feeb76bee3a7fa546fe
-  - forwardimpact/coaligned-skills#5eb41a558f8666ddbb3e6a1283bde83920597715
+  - forwardimpact/kata-skills#063d53afe23f46ec9d608230884827f17f8bb764
+  - forwardimpact/jidoka-skills#4b8268a289f7e6f4bc041e838e646386677c0194
   mcp: []
 includes: auto
 scripts: {}
