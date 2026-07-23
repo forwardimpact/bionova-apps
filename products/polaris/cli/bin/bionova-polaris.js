@@ -34,5 +34,16 @@ main()
   .then((code) => process.exit(code ?? 0))
   .catch((err) => {
     process.stderr.write(`bionova-polaris: error: ${err.message}\n`);
+    // Surface the transport-layer reason. undici nests it: the wrapped client
+    // error carries the "fetch failed" TypeError as `cause`, which in turn
+    // carries the real reason (e.g. ECONNREFUSED) as its own `cause`.
+    for (let cause = err.cause; cause; cause = cause.cause) {
+      process.stderr.write(`  caused by: ${cause.message ?? cause}\n`);
+    }
+    if (err.code === "STACK_UNREACHABLE") {
+      process.stderr.write(
+        "  the local stack looks down. bring it up with: just boot\n",
+      );
+    }
     process.exit(1);
   });

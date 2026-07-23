@@ -25,6 +25,30 @@ const STUB_FETCH = () =>
   );
 
 /**
+ * Run a network fetch and, on a transport-layer rejection (stack down, DNS
+ * failure, refused connection, TLS error), rethrow with the target URL named
+ * and the original error preserved as `cause`. HTTP error *responses* (4xx and
+ * 5xx) are not caught here. Those flow through the `!res.ok` branches, which
+ * already carry the status and body.
+ *
+ * The rethrown error carries `code: "STACK_UNREACHABLE"` so a calling surface
+ * can attach a remediation hint without matching against the message text.
+ *
+ * @param {FetchImpl} fetchImpl
+ * @param {string} url
+ * @param {object} [init]
+ */
+async function fetchOrThrow(fetchImpl, url, init) {
+  try {
+    return await fetchImpl(url, init);
+  } catch (cause) {
+    const err = new Error(`could not reach ${url}`, { cause });
+    err.code = "STACK_UNREACHABLE";
+    throw err;
+  }
+}
+
+/**
  * Build a PostgREST client bound to a Supabase URL and anon key.
  *
  * @param {object} cfg
@@ -62,7 +86,7 @@ function createPostgrest({ baseUrl, anonKey, fetchImpl, token: defaultToken }) {
      * @param {{ token?: string }} [opts]
      */
     async get(pathAndQuery, { token } = {}) {
-      const res = await fetchImpl(`${rest}/${pathAndQuery}`, {
+      const res = await fetchOrThrow(fetchImpl, `${rest}/${pathAndQuery}`, {
         method: "GET",
         headers: headers(token),
       });
@@ -78,7 +102,7 @@ function createPostgrest({ baseUrl, anonKey, fetchImpl, token: defaultToken }) {
     async patch(pathAndQuery, body, { token, prefer } = {}) {
       const h = headers(token);
       if (prefer) h.Prefer = prefer;
-      const res = await fetchImpl(`${rest}/${pathAndQuery}`, {
+      const res = await fetchOrThrow(fetchImpl, `${rest}/${pathAndQuery}`, {
         method: "PATCH",
         headers: h,
         body: JSON.stringify(body),
@@ -98,7 +122,7 @@ function createPostgrest({ baseUrl, anonKey, fetchImpl, token: defaultToken }) {
     async post(pathAndQuery, body, { token, prefer } = {}) {
       const h = headers(token);
       if (prefer) h.Prefer = prefer;
-      const res = await fetchImpl(`${rest}/${pathAndQuery}`, {
+      const res = await fetchOrThrow(fetchImpl, `${rest}/${pathAndQuery}`, {
         method: "POST",
         headers: h,
         body: JSON.stringify(body),
@@ -113,7 +137,7 @@ function createPostgrest({ baseUrl, anonKey, fetchImpl, token: defaultToken }) {
      * @param {{ token?: string }} [opts]
      */
     async rpc(name, args, { token } = {}) {
-      const res = await fetchImpl(`${rest}/rpc/${name}`, {
+      const res = await fetchOrThrow(fetchImpl, `${rest}/rpc/${name}`, {
         method: "POST",
         headers: headers(token),
         body: JSON.stringify(args),
@@ -136,7 +160,7 @@ function createEmbeddings({ teiUrl, fetchImpl }) {
      * @param {string} text
      */
     async embed(text) {
-      const res = await fetchImpl(`${teiUrl}/embed`, {
+      const res = await fetchOrThrow(fetchImpl, `${teiUrl}/embed`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ inputs: [text] }),
@@ -167,7 +191,7 @@ function createEdgeFunctions({ baseUrl, anonKey, fetchImpl }) {
      * @param {{ token?: string }} [opts]
      */
     async invoke(name, body, { token } = {}) {
-      const res = await fetchImpl(`${baseUrl}/functions/v1/${name}`, {
+      const res = await fetchOrThrow(fetchImpl, `${baseUrl}/functions/v1/${name}`, {
         method: "POST",
         headers: {
           apikey: anonKey,
