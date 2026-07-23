@@ -34,9 +34,9 @@ Grounding (all resolve on `main`):
   `check-context`, and `check-e2e` each run `bun install` with no
   engines-vs-runtime check. No workflow anywhere in `.github/workflows/` runs
   `--engine-strict` or reconciles `engines` against the runtime pin.
-- **Runtime source of truth.** `.tool-versions` pins `nodejs 20.19.0`;
-  `package.json` declares `engines.node ">=20.19.0"`; `deploy.yml` sets
-  `node-version: '20'`. These are three separate declarations of "the Node we
+- **Runtime source of truth.** `.tool-versions` pins `nodejs 22.23.1`;
+  `package.json` declares `engines.node ">=22.23.1"`; `deploy.yml` sets
+  `node-version: '22'`. These are three separate declarations of "the Node we
   support," kept in agreement only by manual discipline.
 
 **Why this outlives its trigger (#207).** #207 bumped eslint 9.39.4 → 10.7.0;
@@ -44,11 +44,17 @@ eslint 10 declares `engines.node: ^20.19.0 || ^22.13.0 || >=24`, above the then
 pinned 20.11.1. It was caught only by a human reading the dependency's `engines`,
 and closed. #213 then remediated that specific instance — it raised
 `.tool-versions nodejs` to 20.19.0 and aligned `engines.node` to `>=20.19.0`, so
-the acute mismatch is gone. But #213 was a manual pin bump, not a detector: the
-systemic gap is unchanged. The **next** engine-floored bump — a dependency
-requiring `^22`, `>=24`, or any floor above the pin — still installs and checks
-green, undetected until a human happens to read its `engines`. The class is the
-defect, not the eslint instance.
+that acute mismatch was gone. The runtime has since moved again: #262
+(`a925d62`) and #268 (`e9229bd`, 2026-07-22/23) raised all three declarations
+20→22 (now `nodejs 22.23.1` / `engines.node ">=22.23.1"` / `node-version: '22'`).
+That reconciliation is itself the argument: three files were moved into agreement
+**by hand**, in lockstep, with no detector watching — exactly the manual
+discipline this gate replaces. Neither #213 nor #262/#268 was a detector; the
+systemic gap is unchanged across all three. The **next** engine-floored bump — a
+dependency requiring a floor above the pin (`>=24`, or any range the current
+`22.23.1` does not satisfy) — still installs and checks green, undetected until a
+human happens to read its `engines`. The class is the defect, not the eslint
+instance.
 
 This is the same latent-trap class as the in-flight lockfile-integrity gate
 (Spec 110, PR #122): a bun-native workflow silently tolerating a condition an
@@ -74,10 +80,13 @@ and it carries no security urgency.
   their currency is Spec 20 / Spec 40. This gate covers the npm/bun workspace only.
 - **Global CLI tool installs** — e.g. the Railway CLI installed via `npm install
   -g` in `deploy.yml` is not a workspace dependency.
-- **`deploy.yml`'s `node-version: '20'`** — a coarser CI-runner pin, intentionally
+- **`deploy.yml`'s `node-version: '22'`** — a coarser CI-runner pin, intentionally
   not part of the SC2 reconciliation. The workspace floor of record is
   `.tool-versions` `nodejs` plus `package.json` `engines.node`; the deploy runner
-  pin is a separate, looser declaration this gate does not reconcile.
+  pin is a separate, looser declaration this gate does not reconcile. It is kept
+  in sync manually — #262/#268 moved it '20'→'22' in the same lockstep as the
+  reconciled pair — but it sits intentionally outside the detector's
+  reconciliation set.
 - **The lockfile-integrity gate (Spec 110).** Sibling detector; not re-authored
   here.
 - **The eslint 9 → 10 migration (issue #120 — not to be confused with the
