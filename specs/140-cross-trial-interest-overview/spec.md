@@ -86,9 +86,9 @@ In scope:
   signals and never criteria.
 - **Not patient-facing.** Interest signals stay staff-only. The overview has no
   anonymous or patient surface.
-- **Not the stackless read path.** Spec 120 offlines the four demand-side read
-  commands only; this staff read stays behind the live stack, consistent with
-  spec 120's stated non-goal.
+- **Not the stackless read path.** Spec 200 offlines the seven demand-side read
+  commands and the interactive `repl` only; this staff read stays behind the
+  live stack, consistent with spec 200's read-only non-goal.
 
 ## Why
 
