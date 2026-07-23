@@ -13,7 +13,7 @@
     "@forwardimpact/libui": "1.4.1",
     "@forwardimpact/libformat": "0.1.21",
     "@bionova/polaris-handlers": "workspace:*",
-    "next": "15.5.18",
+    "next": "15.5.21",
     "react": "18.3.1",
     "react-dom": "18.3.1"
   },
