@@ -44,13 +44,18 @@ eslint 10 declares `engines.node: ^20.19.0 || ^22.13.0 || >=24`, above the then
 pinned 20.11.1. It was caught only by a human reading the dependency's `engines`,
 and closed. #213 then remediated that specific instance — it raised
 `.tool-versions nodejs` to 20.19.0 and aligned `engines.node` to `>=20.19.0`, so
-that acute mismatch was gone. The runtime has since moved again: #262
-(`a925d62`) and #268 (`e9229bd`, 2026-07-22/23) raised all three declarations
-20→22 (now `nodejs 22.23.1` / `engines.node ">=22.23.1"` / `node-version: '22'`).
-That reconciliation is itself the argument: three files were moved into agreement
-**by hand**, in lockstep, with no detector watching — exactly the manual
-discipline this gate replaces. Neither #213 nor #262/#268 was a detector; the
-systemic gap is unchanged across all three. The **next** engine-floored bump — a
+that acute mismatch was gone. The runtime has since moved again, and it took two
+hand-cut passes. #262 (`a925d62`, 2026-07-22) raised the three declarations
+20→22 in lockstep (now `nodejs 22.23.1` / `engines.node ">=22.23.1"` /
+`node-version: '22'`). #268 (`e9229bd`, 2026-07-23) then reconciled a *fourth*
+Node pin the first pass had orphaned — `.nvmrc`, left at `20` and silent because
+CI reads `.tool-versions`, not `.nvmrc` — a pin outside this gate's
+reconciliation set that needed its own follow-up PR to catch. That two-pass
+reconciliation is itself the argument: files moved into agreement **by hand**,
+one of them missed entirely on the first pass and reconciled only later, with no
+detector watching — exactly the manual discipline this gate replaces. Neither
+#213 nor #262/#268 was a detector; the systemic gap is unchanged across all
+three. The **next** engine-floored bump — a
 dependency requiring a floor above the pin (`>=24`, or any range the current
 `22.23.1` does not satisfy) — still installs and checks green, undetected until a
 human happens to read its `engines`. The class is the defect, not the eslint
@@ -84,9 +89,12 @@ and it carries no security urgency.
   not part of the SC2 reconciliation. The workspace floor of record is
   `.tool-versions` `nodejs` plus `package.json` `engines.node`; the deploy runner
   pin is a separate, looser declaration this gate does not reconcile. It is kept
-  in sync manually — #262/#268 moved it '20'→'22' in the same lockstep as the
+  in sync manually — #262 (`a925d62`) moved it '20'→'22' alongside the
   reconciled pair — but it sits intentionally outside the detector's
-  reconciliation set.
+  reconciliation set. **Accepted residual risk:** a regression that drops
+  `deploy.yml`'s `node-version` below the workspace floor (e.g. back to '20')
+  stays invisible to this gate; it is caught, if at all, only by the manual
+  discipline this gate otherwise replaces.
 - **The lockfile-integrity gate (Spec 110).** Sibling detector; not re-authored
   here.
 - **The eslint 9 → 10 migration (issue #120 — not to be confused with the
@@ -114,10 +122,10 @@ and it carries no security urgency.
 | # | Criterion | Verified by |
 |---|---|---|
 | 1 | A CI check fails when an installed workspace dependency declares an `engines.node` range not satisfiable by the Node version pinned in `.tool-versions` | a throwaway PR adding or pinning a dependency whose `engines.node` floor exceeds the pin turns the check red |
-| 2 | The check fails when `package.json` `engines.node` and `.tool-versions` `nodejs` disagree, so the runtime the detector compares against stays reconciled | a throwaway PR editing one without the other turns the check red |
+| 2 | The check fails when `package.json` `engines.node` and `.tool-versions` `nodejs` disagree, so the runtime the detector compares against stays reconciled. They agree when the exact `.tool-versions` pin is the lower bound of the `engines.node` range (today both express `22.23.1`); this is the intended range-vs-exact semantics, the comparison algorithm is design's | a throwaway PR editing one without the other turns the check red |
 | 3 | The check runs on `pull_request` and on `push` to `main` | the check's trigger config in `.github/workflows/` |
 | 4 | A green result means the `engines` were evaluated; the check cannot pass by silently skipping (absent tool, zero dependencies resolved, or a bare install standing in for the evaluation all fail closed) | a throwaway change that disables the evaluation turns the check red, not green |
-| 5 | Scope is the npm/bun workspace only — the Deno edge functions and global CLI installs are excluded | the check configuration and this spec's scope |
+| 5 | Scope is the npm/bun workspace only — the Deno edge functions and global CLI installs are excluded | the check configuration — the paths it evaluates exclude the Deno functions tree and any global `-g` install |
 | 6 | No pre-existing gate changes behaviour — `check-quality`, `check-audit`, and the other bun checks stay green on an in-range `main` | CI on `main` after the gate lands |
 | 7 | The SC1, SC2, and SC4 fail cases stay verifiable on `main` after the demonstrating PRs close — the gate carries a committed regression check that CI exercises, as the Spec 20 audit gate does with `audit-gate.test.js` | the committed regression check runs in CI on `main` |
 
