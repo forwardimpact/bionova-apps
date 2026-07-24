@@ -51,6 +51,12 @@ One in-tree reconciler — a tracked script under `scripts/` plus a `.github/wor
 - **Deterministic, idempotent, clobber-proof.** Same inputs → same labels; re-run → no-op; it never fights another writer.
 - **Least privilege.** The workflow needs only `issues: write` (label edits), consistent with the repo's least-privilege CI posture (#96). No broader scope.
 - **No untrusted-code-execution path.** Parsing issue/PR bodies treats body text strictly as data — no `pull_request_target` with untrusted-head checkout, no injection or code-exec vector.
+- **Linkage evidence must be trusted-source.** The body reference establishing a positive link must resolve from `spec.md` on `main` or a MERGED spec PR — never an open or unmerged PR body. An unmerged PR body is attacker-forgeable: anyone able to open a PR could plant a spec-reference to an arbitrary issue and trigger a false drop of `needs-spec` + set `triaged`, silently suppressing legitimate spec work. A forged reference is confidently wrong, not ambiguous, so RETAIN does not catch it; bounding evidence to merged/`main` state is the teeth behind the fail-safe. (The #129 citation seed lands in already-merged spec 210/60, so it satisfies this constraint.)
+- **Explicit, default-deny permissions.** The workflow declares a `permissions:` block that is default-deny — exactly `contents: read` (to read `spec.md` from the checked-out tree) plus `issues: write` (label edits), and nothing else. Never `write-all`. Reading evidence from the tree rather than open-PR bodies means no `pull-requests: read` is needed.
+- **Untrusted text is inert data, enforced.** No `${{ github.event.* }}` value is interpolated into any `run:` or inline script; untrusted issue title/body/label reach the parser only through `env:` bindings, consumed as data (via `actions/github-script` or a file read), never string-concatenated into a shell or `eval`. The link matcher is strict-anchored; a spoofable substring match counts as ambiguous and RETAINs.
+- **Pinned supply chain.** Every `uses:` is pinned to a full 40-character commit SHA, never a tag or branch; the `github-actions` ecosystem is covered by Dependabot so the pins stay maintained; action surface is minimized (prefer first-party `actions/github-script`). No third-party action receives `secrets.GITHUB_TOKEN`.
+- **Trigger: `schedule` + `workflow_dispatch` only.** Base-repo context, scoped `GITHUB_TOKEN`, no untrusted head. The workflow MUST NOT use `pull_request_target` nor `workflow_run` — both are privileged-context traps. (If `issues` typed events are ever added later, guard with a `concurrency` group and an early no-op when the issue is already `triaged`, so the workflow's own label writes do not self-retrigger.)
+- **Audit every decision.** The reconciler logs each decision — the issue, the resolved link, and the retain-vs-mutate outcome — so a silent false-drop or a linkage-spoof attempt is detectable after the fact.
 
 ## Success criteria
 
@@ -65,5 +71,11 @@ One in-tree reconciler — a tracked script under `scripts/` plus a `.github/wor
 | 7 | Runs before the P2 survey and replaces the manual strip | ordering is documented; the storyboard-shift no longer strips `needs-spec` by hand |
 | 8 | Least-privilege token | the workflow declares only `issues: write` |
 | 9 | The known cases behave correctly | #128 (cited by spec 140 at `specs/140-cross-trial-interest-overview/spec.md:3`) is cleared + `triaged`; #129 is covered only once its citation seed lands (a plan precondition), and the spec states this so the plan carries it |
+| 10 | Linkage evidence resolves only from `spec.md` on `main` or a merged spec PR | a forged-reference fixture — a spec-reference to the issue that exists only in an open/unmerged PR body — does NOT trigger a drop; it RETAINs |
+| 11 | The workflow `permissions:` block is default-deny, exactly `contents: read` + `issues: write` | the workflow file declares only those two scopes; no `write-all` |
+| 12 | Untrusted text never reaches code execution | no `${{ github.event.* }}` is interpolated into any `run:`/inline script; untrusted text flows via `env:` only; the matcher is strict-anchored |
+| 13 | Actions are SHA-pinned and Dependabot-maintained | every `uses:` is a full 40-char commit SHA; the `github-actions` Dependabot ecosystem is enabled |
+| 14 | The trigger is base-context only | the workflow triggers on `schedule` + `workflow_dispatch`; `pull_request_target` and `workflow_run` are absent |
+| 15 | Every reconcile decision is logged | the run log records issue, resolved link, and outcome for each processed issue |
 
 — Product Manager 🌱
