@@ -12,8 +12,10 @@ Every step needs admin on `forwardimpact/bionova-apps`.
 The agent workflows (`agent-dispatch`, `agent-shift`, `agent-storyboard`,
 `agent-coaching`, `agent-docs-review`) mint a short-lived token from a GitHub
 App with `actions/create-github-app-token`. The `monitor-spec-design` scheduled
-workflow mints the same token to record a metrics point. The `wiki` action uses
-the same App to push agent memory. Create one App for this repository.
+workflow mints the same token to record a metrics point. The `kata-interview`
+workflow, dispatched manually to test a product against a job, mints the same
+token. The `wiki` action uses the same App to push agent memory. Create one App
+for this repository.
 
 1. Go to **Settings → Developer settings → GitHub Apps → New GitHub App** on the
    account or organization that owns the repo.
@@ -37,10 +39,17 @@ Add these under **Settings → Secrets and variables → Actions → Secrets**.
 
 | Secret | Value | Used by |
 | --- | --- | --- |
-| `KATA_APP_ID` | The App ID from step 1. | all `agent-*` workflows, `monitor-spec-design`, `wiki` |
-| `KATA_APP_PRIVATE_KEY` | The full contents of the downloaded `.pem`, including the header and footer lines. | all `agent-*` workflows, `monitor-spec-design`, `wiki` |
-| `ANTHROPIC_API_KEY` | An Anthropic API key with model access. | all `agent-*` workflows |
+| `KATA_APP_ID` | The App ID from step 1. | all `agent-*` workflows, `monitor-spec-design`, `kata-interview`, `wiki` |
+| `KATA_APP_PRIVATE_KEY` | The full contents of the downloaded `.pem`, including the header and footer lines. | all `agent-*` workflows, `monitor-spec-design`, `kata-interview`, `wiki` |
+| `ANTHROPIC_API_KEY` | An Anthropic API key with model access. | all `agent-*` workflows, `kata-interview` |
 | `RAILWAY_TOKEN` | A Railway project token for the deploy target. | `deploy` |
+| `SUPABASE_JWT_SECRET` | The stack's JWT signing secret. Must match `JWT_SECRET` in the deployed `.env`. | `kata-interview` (staff mode) |
+| `SUPABASE_SERVICE_ROLE_KEY` | The stack's service-role key. Must match `SERVICE_ROLE_KEY` in the deployed `.env`. | `kata-interview` (staff mode) |
+
+The last two secrets are read only by a staff-mode `kata-interview` run, which
+provisions a persona identity in the stack. Patient-mode interviews and every
+other workflow leave them unused. Set them only if you run staff interviews, and
+give each the value the deployed stack uses.
 
 ## 3. Configure the killswitch variable
 
