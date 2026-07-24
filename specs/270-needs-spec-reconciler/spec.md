@@ -26,7 +26,7 @@ One in-tree reconciler — a tracked script under `scripts/` plus a `.github/wor
 | --- | --- |
 | A tracked reconciler | A script under `scripts/` (model: `scripts/audit-gate.js`) plus a `.github/workflows/` trigger — lives entirely in tracked files, never in an agent profile. |
 | Runs before the P2 survey | Ordering only. This is documentation ordering, not code coupling into any profile step. |
-| Positive-link detection by body reference | Linkage is established by a spec-PR / `spec.md` **body reference** to the issue, never by issue-number match (`#NN` ≠ spec `NN`; e.g. #60 ≠ spec 60). |
+| Positive-link detection by body reference | Linkage is established by an in-tree `spec.md` **body reference** to the issue, never by issue-number match (`#NN` ≠ spec `NN`; e.g. #60 ≠ spec 60). |
 | Remove `needs-spec` AND set `triaged` | For a positively-linked issue, one deterministic pass does both — the `triaged` terminal marker moves the issue out of BOTH the P2 (`needs-spec`) and P3 (untriaged) buckets. |
 | Replaces the manual strip | Once live, this reconciler is the single remover of `needs-spec`; the ad-hoc storyboard-shift strip retires. |
 | Fail-safe = RETAIN on ambiguity | If a positive link is not established, labels are left untouched. A false drop silently loses spec work — worse than a duplicate. |
@@ -46,7 +46,7 @@ One in-tree reconciler — a tracked script under `scripts/` plus a `.github/wor
 
 - **One artifact, in-tree.** Tracked script + workflow only; never a profile step. "Before P2" is documentation ordering, not code coupling to a profile.
 - **Fail-safe RETAIN.** Ambiguity → no label change. A false drop is worse than a duplicate.
-- **Linkage by body reference, never number.** The detector reads spec-PR / `spec.md` body text for a positive reference to the issue; it never equates issue `#NN` with spec `NN`. A non-binding "likely composing" mention is a soft signal that RETAIN distrusts, not a positive link.
+- **Linkage by body reference, never number.** The detector reads in-tree `spec.md` body text for a positive reference to the issue; it never equates issue `#NN` with spec `NN`. A non-binding "likely composing" mention is a soft signal that RETAIN distrusts, not a positive link.
 - **Replaces, not augments, the manual strip.** Once live, the reconciler is the sole remover; the ad-hoc shift strip is retired to avoid two writers on one label.
 - **Deterministic, idempotent, clobber-proof.** Same inputs → same labels; re-run → no-op; it never fights another writer.
 - **Least privilege.** The workflow runs under the default-deny `permissions:` block above — `contents: read` + `issues: write`, nothing more — consistent with the repo's least-privilege CI posture (#96). An `issues: write`-only grant is explicitly NOT sufficient: under default-deny it sets `contents: none`, which breaks the `actions/checkout` step that reads `spec.md` from the tree.
