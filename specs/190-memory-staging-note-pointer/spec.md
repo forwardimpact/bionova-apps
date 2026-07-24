@@ -49,14 +49,11 @@ visibility. It is the single surface every agent reads on boot to learn what is
 in flight and who owns it. Accretion past the cap degrades that read for every
 agent, and the degradation compounds daily.
 
-**Non-goal: this spec does not relieve the acute breach on a bounded timeline.**
-The convention does not re-trim the table. The one safe curation pass already
-shipped (17 → 15 rows), and this spec adds no schedule for draining the roughly
-eight staging notes seated today. Those clear only as each owning spec's
-design or plan step consumes its note. So the row count can stay over the
-10-row cap for weeks after the convention is adopted. What changes is that new
-notes stop re-accreting the overage. The success criteria below verify the
-convention's properties, not a rows-over-cap trajectory, by design.
+**This spec does not relieve the acute breach on a bounded timeline** — it is a
+durable rule, not a re-trim. The count can stay over the 10-row cap for weeks
+after adoption; what changes is that new notes stop re-accreting the overage.
+The full statement, and why the criteria verify the convention's properties
+rather than a rows-over-cap trajectory, is the non-goal under Scope.
 
 ## Scope
 
@@ -73,10 +70,10 @@ convention's properties, not a rows-over-cap trajectory, by design.
 
 | Excluded | Home |
 |---|---|
-| The authoritative memory-protocol contract **text** change. `.claude/agents/memory-protocol.md` is gitignored (via the `.claude/agents/` entry in `.gitignore`) and apm-integrated from `forwardimpact/kata-skills`; a direct in-repo edit is overwritten on the next `apm install`. The text amendment lands **upstream** and propagates on a pin bump — the #107/#111 channel — where a bot PR is not possible (403) | Tracked upstream follow-up (see Notes for design). The in-repo convention above is the adoptable, non-blocking deliverable |
-| `fit-wiki inbox promote` writes a full row from a memo today; teaching it to emit a bounded note + park detail is upstream compiled-binary tooling | Tracked follow-up (see Notes for design); the convention is usable with manual discipline meanwhile |
-| Bulk backfill of the currently-seated staging notes | Not required — seated notes convert to the new schema opportunistically as each is touched or consumed; no re-trim of the shared table under this arc |
-| The genuinely cross-cutting infra/governance obstacles (the `fit-wiki` hazards, the APM race, exp governance) | Legitimately shared full rows, not staging notes; untouched |
+| The authoritative memory-protocol contract **text** change — writing the convention's rule into the canonical contract. The in-repo convention above is the adoptable, non-blocking deliverable | Upstream in `forwardimpact/kata-skills`; tracked at **#272**. Why it cannot land in-repo is in Notes for design |
+| `gemba-wiki inbox promote` writes a full row from a memo today; teaching it to emit a bounded note + park detail is upstream compiled-binary tooling | Upstream tooling; tracked at **#273**. The convention is usable with manual discipline meanwhile |
+| Bulk backfill of the currently-seated staging notes | Not required — a seated note converts to the new schema only when its owning agent next writes to that row for another reason, or when the note is consumed; no separate backfill pass and no re-trim of the shared table under this arc |
+| The genuinely cross-cutting infra/governance obstacles (the `gemba-wiki` hazards — STATUS.md corruption, push conservation — the APM race, exp governance) | Legitimately shared full rows, not staging notes; untouched |
 | `technical-writer.md` own-summary bloat — a distinct own-summary surface over its own word budget, unrelated to the shared table | A separate cycle |
 
 **Non-goals:**
@@ -93,7 +90,7 @@ convention's properties, not a rows-over-cap trajectory, by design.
 - **Cross-agent visibility must not regress** — the load-bearing criterion, SC1.
 - **No information loss** — a note's detail has a durable home before its
   shared-surface entry is compressed or moved.
-- **Wiki write discipline** — achievable without `fit-wiki fix` (the
+- **Wiki write discipline** — achievable without `gemba-wiki fix` (the
   STATUS.md-corruption hazard) and within the conservation-guard push rules
   already documented in MEMORY.md.
 - **Human-only approval; release-merge gate**, never an admin-merge.
@@ -102,13 +99,13 @@ convention's properties, not a rows-over-cap trajectory, by design.
 
 | # | Criterion | Verified by |
 |---|---|---|
-| 1 | **(Load-bearing.)** Any multi-contributor staging note — one with at least one contributor who is not its Owner — written per the convention stays visible to every contributing agent from a single boot read | seating a representative multi-contributor test note per the convention (e.g. one carrying inputs from both staff-engineer and security-engineer), then running one `fit-wiki boot` as each contributing agent — including a non-Owner contributor — surfaces the note, none of them having to open another agent's private surface |
+| 1 | **(Load-bearing.)** Any multi-contributor staging note — one with at least one contributor who is not its Owner — written per the convention stays visible to every contributing agent from a single boot read | seating a representative multi-contributor test note per the convention (e.g. one carrying inputs from staff-engineer and security-engineer, with staff-engineer as Owner), then running `gemba-wiki boot --agent <self>` as each contributing agent: the note appears in the **non-Owner** contributor's (security-engineer's) `cross_cutting[]` array — not only in the Owner's `owned_priorities[]` — and no agent opens another agent's private surface. A mechanism that surfaces the note only in the Owner's `owned_priorities[]` fails |
 | 2 | The convention states a quantified per-note maximum footprint for the shared surface | the convention document names a concrete per-note maximum — a specific line or word count — that a given entry can be checked against |
 | 3 | A staging note's full detail resolves from its shared-surface entry with no loss | the convention includes a worked example whose shared-surface entry names a stable, durable location a reader follows to the full detail; the concrete pointer form is the design's choice |
-| 4 | The convention defines the delete-on-consume lifecycle: a note is removed from the shared surface when its owning spec's design/plan step consumes it, distinct from curation's trim-when-settled | the convention document states the delete-on-consume trigger |
-| 5 | The lifecycle is net-zero on the shared surface: a note seated then consumed per the convention leaves no residual footprint | seating a test note, then following the pointer from its shared-surface entry to its full detail and confirming the detail resolves intact, then consuming the note per the convention returns the shared surface to its pre-seat footprint, measured in whatever unit the convention defines under SC2 |
+| 4 | The convention defines the delete-on-consume lifecycle: a note is removed from the shared surface when its owning spec's design/plan step consumes it, distinct from curation's trim-when-settled | the convention document contrasts the two lifecycles so a reader can separate them: it names the delete-on-consume trigger (the owning spec's design/plan step consumes the note) **and** distinguishes it from curation's trim-when-settled trigger, such that a reader handed a specific note can decide which lifecycle applies and who removes the entry |
+| 5 | The lifecycle is net-zero on the shared surface: a note seated then consumed per the convention leaves **no residual entry of any kind** — no stub pointer row, no blank table row, no orphan heading | seating a test note (its pointer resolving per SC3), then consuming it per the convention, and confirming the shared surface returns to its exact pre-seat state — verified by diffing the shared surface against its pre-seat snapshot and finding no residual stub pointer, blank row, or orphan heading. This is independent of the SC2 footprint unit: any structural residue fails, not only residue above the SC2 maximum |
 | 6 | Writer-facing guidance is updated so whoever seats a note follows the rule | the convention document shows the updated writer guidance |
-| 7 | The convention is usable today without any upstream tooling or contract-text change | seating and consuming a note per the convention succeeds over the current `fit-wiki` / curation flow, with no upstream dependency |
+| 7 | The convention is usable today without any upstream tooling or contract-text change | seating and consuming a note per the convention succeeds over the current `gemba-wiki` / curation flow with no upstream dependency. **Fails if** any step requires an upstream tooling change or a contract-text edit — e.g. a `gemba-wiki` command exits non-zero, the `gemba-wiki push` conservation guard rejects the write, or the seated pointer cannot be resolved without an unreleased tool |
 
 ## Notes for design
 
@@ -132,17 +129,24 @@ convention's properties, not a rows-over-cap trajectory, by design.
 
   Facilitator's recorded lean is A. If the concurrence round surfaces a B-variant
   that satisfies SC1, the design may take it.
-- **Authoritative source.** The contract text lives upstream in
-  `forwardimpact/kata-skills` (integrated to the gitignored
-  `.claude/agents/memory-protocol.md`). The in-repo convention is the deliverable
-  agents adopt now; the upstream text sync is a follow-up.
+- **Authoritative source, and why the contract text is out of scope.** The
+  contract text lives upstream in `forwardimpact/kata-skills`, integrated into the
+  gitignored `.claude/agents/memory-protocol.md` (via the `.claude/agents/` entry
+  in `.gitignore`). A direct in-repo edit is overwritten on the next
+  `apm install`, so the text amendment must land upstream and propagate on a pin
+  bump — the #107/#111 channel — where a bot PR is not possible (403). Tracked at
+  #272. The in-repo convention is the deliverable agents adopt now; the upstream
+  text sync is the follow-up.
 - **Concurrence round.** Route the pointer-schema to **staff-engineer**,
   **security-engineer**, **product-manager**, and **release-engineer** — the
   heaviest writers of staging rows — before the review panel closes. Approval
   stays human-only.
-- **Follow-ups to file:** (1) the upstream memory-protocol contract-text
-  amendment; (2) the `fit-wiki inbox promote` bounded-note behavior. Both are
-  upstream (no bot PR); reference them from the design.
+- **Follow-ups (filed):** (1) the upstream memory-protocol contract-text
+  amendment — **#272** (sibling of kata-skills#3, staff-engineer's; distinct
+  section of the same upstream repo, so tracked separately); (2) the
+  `gemba-wiki inbox promote` bounded-note behavior — **#273** (sibling of #84,
+  release-engineer's; same tool, distinct subcommand). Both land upstream (no bot
+  PR); reference them from the design.
 - **Do not re-trim the shared table** as part of this arc — the safe curation
   trim already shipped (17 → 15 rows), and no-re-trim is now a stated non-goal
   (see Scope). This spec is the durable rule that keeps the table from
