@@ -40,9 +40,9 @@ edge functions (direct): <http://localhost:8082>.
 
 1. Link the project once (`railway init --name bionova-apps && railway link`).
 2. Set the `RAILWAY_TOKEN` repo secret.
-3. Push to `main`. The `deploy.yml` workflow detects which services changed and
-   runs `railway up --service=<name>` for each (watch paths in each
-   `railway.toml`). See [infrastructure/railway/README.md](../infrastructure/railway/README.md).
+3. Push to `main`. The `deploy.yml` workflow diffs the push against a
+   directory-to-service map, then runs `railway up --service=<name>` for each
+   changed service. See [infrastructure/railway/README.md](../infrastructure/railway/README.md).
 
 ## Rolling back
 
