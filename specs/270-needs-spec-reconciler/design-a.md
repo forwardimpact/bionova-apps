@@ -112,6 +112,14 @@ set. The workflow's own writes therefore cannot cause a second mutation.
 - **Does not touch:** STATUS rows, `spec approved` (human-only), the apply-side
   guard (upstream `kata-skills#4`), or the `triaged` label definition (already
   provisioned this session).
+- **Abandoned-draft restore is apply-side, out of scope.** Because evidence is
+  merged `spec.md` on `main`, a draft-linked issue (e.g. #103/#127/#130, whose
+  specs are open PRs) correctly RETAINs `needs-spec` here — this durable is
+  tighter than the interim hand-clear that used draft-PR linkage. If a draft
+  spec PR later closes unmerged, re-applying `needs-spec` so the issue re-enters
+  the survey is an _apply_ of the label, so it belongs to the apply-side guard
+  (`kata-skills#4`), not this remove-side gate. Named so the gap is tracked, not
+  dropped between owners.
 - **#129 coverage** is gated on a plan precondition — a `Serves issue #129.`
   seed landing in already-merged spec 210 or 60 (in-tree, so it satisfies the
   trusted-evidence constraint). Until then #129 correctly RETAINs. The plan
