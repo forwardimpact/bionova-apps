@@ -66,8 +66,9 @@ the decision never depends on any PR body — open or merged.
 
 ## Linkage grammar (the load-bearing decision)
 
-A positive link is an **anchored** reference in an in-tree `spec.md` body. Bare
-mentions are soft and RETAIN.
+A positive link is an **anchored** reference in a `spec.md` body that is
+**in-tree on `main` — i.e. merged, never a PR body** (open or draft; see
+_Evidence source_ below). Bare mentions are soft and RETAIN.
 
 | Class            | Pattern (case-insensitive, anchored)                                                       | Action                        |
 | ---------------- | ------------------------------------------------------------------------------------------ | ----------------------------- |
