@@ -5,5 +5,14 @@
     "high"
   ],
   "baselined_on": "2026-07-04",
-  "advisories": {}
+  "advisories": {
+    "GHSA-mh99-v99m-4gvg": {
+      "package": "brace-expansion",
+      "severity": "high",
+      "reason": "DoS via unbounded brace-expansion length (OOM crash), published 2026-07-24, vulnerable <=5.0.7. The only patched version is 5.0.8, whose CommonJS build exports a named `exports.expand` instead of `module.exports = expand`. Our sole consumer is eslint's transitive minimatch@3.1.5, which does `require('brace-expansion')(pattern)` — under 5.0.8 that calls an object and breaks lint/CI. No maintenance-line backport (1.1.17/2.1.3/3.0.3) preserving the CJS API exists yet, so there is no compatible fix. Dev-only, transitive: brace-expansion is reached only through eslint glob matching, patterns come from eslint config/CLI, not attacker-controlled runtime input — no production surface.",
+      "accepted_on": "2026-07-25",
+      "review_spec": "#279",
+      "review_by": "2026-08-08"
+    }
+  }
 }
