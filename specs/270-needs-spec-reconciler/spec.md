@@ -66,7 +66,7 @@ One in-tree reconciler — a tracked script under `scripts/` plus a `.github/wor
 | 1 | The reconciler is a tracked script + workflow, not a profile step | files exist under `scripts/` and `.github/workflows/`; no agent profile is modified |
 | 2 | An open `needs-spec` issue positively linked to an existing spec (by body reference in `spec.md` merged to `main`) has `needs-spec` removed and `triaged` set in one run | a fixture issue transitions from `needs-spec` → `triaged`, `needs-spec` absent |
 | 3 | Linkage is body-reference only | a number-collision fixture — an issue whose number matches a spec number but is not referenced in that spec's body — is NOT cleared (#60 ≠ spec 60) |
-| 4 | Ambiguous / soft linkage → RETAIN | an issue whose only signal is a non-binding "likely composing" mention is left untouched |
+| 4 | Ambiguous / non-durable linkage → RETAIN. The terminal marker for "a spec exists" is a `spec.md` **merged to `main`**; an open or draft spec PR is mutable and abandonable, so it is non-durable and does NOT clear `needs-spec` | (a) an issue whose only signal is a non-binding "likely composing" mention is left untouched; (b) an issue linked only by an open or draft spec PR whose `spec.md` is not yet merged to `main` RETAINs — see criterion 16 for the live #130 → PR #171 case |
 | 5 | Deferred-no-spec issue passes untouched | #60 (deferred, no spec) retains its labels unchanged |
 | 6 | Idempotent | a second run on a reconciled issue makes no label change |
 | 7 | Runs before the P2 survey and replaces the manual strip | ordering is documented; the storyboard-shift no longer strips `needs-spec` by hand |
