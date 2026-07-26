@@ -15,7 +15,7 @@ apply-side guard is out of scope (upstream `kata-skills#4`).
 | `scripts/needs-spec-reconciler.js`           | Pure classifier + in-tree link index. Given the spec tree and a candidate-issue list, returns one `{issue, link, action, reason}` decision per issue. No network, no label writes.                                                                                                                                                                                                                                                                      | `spec-design-watcher.js` (pure fns + `gitSource`/`fsSource`) |
 | Link index                                   | Built from in-tree `spec.md` bodies: `issue# → [specIds]`, populated **only** by an anchored positive-reference match. Bare `#N` mentions do not populate it.                                                                                                                                                                                                                                                                                           | `statusIndex()` map-build                                    |
 | `scripts/needs-spec-reconciler.test.js`      | Fixture-driven unit tests over the pure surface — SC 2–6, 9, 10, 12, plus the SC 16 paired open/merged fixture (one synthetic issue #9xx against two `fsSource` trees on one run: `spec.md` ABSENT → RETAIN `reason:"no-link"` [SC 4b], then PRESENT with `Serves issue #9xx` → reconcile). Also: the SC 12 must/must-not-match literal corpus (incl. `Closes #N`-in-code-span), the `parse-error → RETAIN` fixture, the SC 6 `already-clear` idempotence fixture, and `labelOps`/`auditLine` (SC 15). The `fsSource(root)` seam makes every case testable with no git, no token. | `audit-gate.test.js`, `spec-design-watcher.test.js`          |
-| `.github/workflows/reconcile-needs-spec.yml` | `schedule` + `workflow_dispatch` trigger; carries the house `KATA_KILLSWITCH` first step and a `concurrency` group (single recorder, `cancel-in-progress: false`); default-deny `permissions`; every `uses:` SHA-pinned (the repo-wide `github-actions` Dependabot ecosystem, `.github/dependabot.yml`, maintains the new pins — SC 13); a single `actions/github-script` step that does all privileged I/O and emits one audit line per issue (SC 15). | `monitor-spec-design.yml`                                    |
+| `.github/workflows/reconcile-needs-spec.yml` | `schedule` + `workflow_dispatch`; `KATA_KILLSWITCH` first step; `concurrency` group (`cancel-in-progress: false`); default-deny `permissions` + **mint-scoped** App token; every `uses:` SHA-pinned (Dependabot `github-actions`, `.github/dependabot.yml` — SC 13). A **3-step trust-split**: token-scoped `list` → **token-free** `node` compute → thin `github-script` `apply`, one audit line per issue (SC 15). | `monitor-spec-design.yml`                                    |
 
 The workflow is the **only** privileged surface. The Node module is pure and
 side-effect-free, so every linkage and retain-vs-mutate decision is unit-tested
@@ -25,68 +25,69 @@ off a fixture with no token and no API.
 
 ```mermaid
 flowchart TD
-  cron[schedule / workflow_dispatch] --> tok[actions/create-github-app-token<br/>Kata App identity]
-  tok --> co[actions/checkout main<br/>contents: read]
-  co --> list
-  subgraph gs [github-script — Kata App token, mint-scoped contents:read + issues:write]
-    imp[await import ESM module<br/>ordered FIRST — import throw → 0 writes] --> list
-    tree[buildLinkIndex over in-tree specs/*/spec.md] --> classify
-    list[octokit: list OPEN issues<br/>labeled needs-spec] --> classify
-    classify{classifier<br/>per issue} -->|positive link| mutate[labelOps → octokit<br/>add triaged THEN remove needs-spec<br/>404-on-missing-label swallowed]
-    classify -->|no/soft link| retain[RETAIN — no change]
-    mutate --> log[auditLine → log]
-    retain --> log
+  cron[schedule / workflow_dispatch] --> tok[create-github-app-token<br/>mint-scoped: contents:read + issues:write]
+  tok --> co[checkout main] --> L
+  L["github-script (token): list OPEN needs-spec issues<br/>number + labels only → candidates.json"] --> C
+  C["run: node reconciler --candidates --json<br/><b>TOKEN-FREE</b> — all spec.md parse here<br/>build index + classify → decisions.json"] --> A
+  subgraph A [github-script consumer — token, issues:write]
+    v["JSON.parse + re-validate each decision<br/>action∈{reconcile,retain}, issue int; else skip = RETAIN"] --> ap
+    ap{action} -->|reconcile| mut["octokit: add triaged THEN remove needs-spec<br/>404-on-missing swallowed"] --> lg[log audit line]
+    ap -->|retain| lg
   end
 ```
 
-The module is ESM, so `github-script` (CommonJS) loads it with `await import()`,
-never `require` (`ERR_REQUIRE_ESM` — the break exp #283's plan pre-flight surfaced
-in this design's prior draft; fail-closed wiring in _Interfaces_ + sign-off §3).
+The reconciler's `spec.md` parse (the anchored-link regex) is the highest-risk
+code, so it runs in a **token-free `node` subprocess** — no `GITHUB_TOKEN` in its
+env — not the privileged `github-script` VM. This fixes the ESM crash the
+pre-flight surfaced (repo is `"type":"module"`; `github-script` runs CommonJS, so
+`require` → `ERR_REQUIRE_ESM`) and, unlike a single `await import()` step, keeps
+the attackable parse off the write-scoped surface (sign-off §3).
 
-Evidence flows one way: issue metadata (title/body/labels) is **data only**,
-reaching the classifier through `env:`/octokit objects, never interpolated into
-a `run:` block. The link index is built from the checked-out tree on `main`, so
-the decision never depends on any PR body — open or merged.
+Evidence is one-way data: number+labels via `candidates.json`, `spec.md` via the
+in-tree tree — never argv or `run:` interpolation; no decision depends on a PR body.
 
 ## Interfaces
 
-- **CLI** — `node scripts/needs-spec-reconciler.js [--json] [--ref=origin/main] [--root=<dir>]`.
-  `--json` emits the decision array; `--root` reads a fixture tree (test/dry-run,
-  no git); default reads `spec.md` bodies from `--ref`. No `--record`: this gate
-  ships no metric.
-- **Module exports** (ESM; `github-script` loads them with
-  `await import(\`${process.env.GITHUB_WORKSPACE}/scripts/needs-spec-reconciler.js\`)`,
-  never `require`):
+- **CLI** (the token-free compute step) —
+  `node scripts/needs-spec-reconciler.js --candidates=<file> --json [--ref=origin/main] [--root=<dir>]`.
+  Reads the candidate list (number+labels) from the `--candidates` JSON **file**
+  (never argv), builds the index from `spec.md` on `--ref` (or a `--root` fixture),
+  and emits the decision array to stdout. **Token-free: git + fs only, no octokit.**
+  Without `--candidates`, `--json` emits the link index alone (dry-run). No `--record`.
+- **Module exports** (ESM; consumed by the CLI above — the `github-script` consumer
+  imports nothing, it executes the emitted JSON):
   - `buildLinkIndex(specSource) → Map<issueNumber, specId[]>`
-  - `classify(issue, linkIndex) → {issue, link, action: "reconcile"|"retain", reason}`
-    where `reason ∈ {no-link, soft-mention, already-clear, parse-error}`.
+  - `classify(issue, linkIndex) → {issue, link, action: "reconcile"|"retain", reason}`,
+    `reason ∈ {no-link, soft-mention, already-clear, parse-error}`.
   - `parsePositiveLinks(specBody) → issueNumber[]`
-  - `labelOps(decision) → {remove: string[], add: string[]}` — pure map from a
-    decision to the label mutation (`{remove:["needs-spec"], add:["triaged"]}` on
-    `reconcile`, `{remove:[],add:[]}` otherwise). Unit-tested; keeps the
-    remove-and-add coupling out of `github-script`.
-  - `auditLine(decision) → string` — pure one-line audit record (issue, resolved
-    link, outcome). Unit-tested (SC 15).
+  - `labelOps(decision) → {add: string[], remove: string[]}` — pure decision→ops
+    map (`{add:["triaged"], remove:["needs-spec"]}` on `reconcile`, else empties);
+    emitted into each decision so the consumer names no label from a raw string.
+  - `auditLine(decision) → string` — pure one-line audit record (SC 15).
   - `gitSource(ref) / fsSource(root) → specSource` — enumerate `specs/*/spec.md`
-    and read each body, reusing `spec-design-watcher.js`'s `git ls-tree`/`git show`
-    shape (`fsSource` for fixtures). `specSource` is the only injection seam:
-    tests drive `buildLinkIndex` off `fsSource` with no git.
-- **Workflow → GitHub** — the `github-script` step is a **thin caller**, no
-  decision logic of its own: `await import()` the module (fail-closed, first),
-  `buildLinkIndex(gitSource("HEAD"))`, list `state:open,labels:needs-spec`
-  issues, then per issue `classify` → `labelOps` → octokit
-  `addLabels(["triaged"])` **then** `removeLabel("needs-spec")` →
-  `console.log(auditLine(...))`. Add-before-remove is deliberate: a partial-write
-  failure leaves the issue still carrying `needs-spec` (RETAIN-equivalent,
-  re-processed next run), never bare — the P3 re-stamp trap. A `removeLabel`
-  **404** (already absent) is swallowed, preserving idempotence. Every branch is
-  the unit-tested classifier's.
+    (`git ls-tree`) **and read each body** (`git show ${ref}:specs/<id>/spec.md`,
+    caught per-file → `parse-error`); the watcher reads paths only, so the body
+    read is new. `specSource` is the sole seam: tests drive it off `fsSource`, no git.
+- **Workflow → GitHub — 3 steps split at the trust boundary:**
+  1. **list** (`github-script`, minted token): list `state:open,labels:needs-spec`,
+     request **number+labels only**, write `candidates.json`
+     (`[{number, labels:string[]}]`, `labels` flattened from `labels[].name`).
+  2. **compute** (`run: node … --candidates=candidates.json --ref=HEAD --json > decisions.json`):
+     **token-free**; all `spec.md` parsing + `classify`/`labelOps`/`auditLine` here.
+     Default checkout depth suffices — `gitSource` reads only the HEAD tree, no
+     `git log` history.
+  3. **apply** (`github-script` consumer, `issues: write`): `JSON.parse` decisions,
+     **re-validate** each (`action ∈ {reconcile,retain}`, `issue` a positive int,
+     `ops` labels ∈ the two known labels; else skip = RETAIN), then for `reconcile`
+     octokit `addLabels(["triaged"])` **then** `removeLabel("needs-spec")` (404
+     swallowed), `console.log` the audit line. Add-before-remove is deliberate: a
+     partial-write failure leaves the issue still `needs-spec` (RETAIN-equivalent),
+     never bare — the P3 re-stamp trap. The consumer parses no `spec.md`.
 
 ## Linkage grammar (the load-bearing decision)
 
-A positive link is an **anchored** reference in a `spec.md` body that is
-**in-tree on `main` — i.e. merged, never a PR body** (open or draft; see
-_Evidence source_ below). Bare mentions are soft and RETAIN.
+A positive link is an **anchored** reference in a `spec.md` body **in-tree on
+`main` — merged, never a PR body** (see _Evidence source_). Bare mentions RETAIN.
 
 | Class            | Pattern (case-insensitive, anchored)                                                       | Action                        |
 | ---------------- | ------------------------------------------------------------------------------------------ | ----------------------------- |
@@ -107,11 +108,10 @@ literal corpus pins it in the SC 12 test:
   200). **Must-not-match:** `#27 / #22` (spec 50), bare `#128`, `likely composing
   #130`, ``` `Fixes #9` ``` in code, and mid-prose `Issue: #128`.
 
-**`Closes/Resolves/Fixes #N` is the widest, most spoofable anchor** — GitHub's
-auto-close verb set, a weaker "serves" claim than `Serves issue #N`, so it
-enlarges the false-DROP surface the RETAIN fail-safe guards. **Flagged for the
-approver** (like the `spec approved`-bypass Key Decision): kept for coverage, but
-carries a dedicated SC 12 spoof case (a `Closes #N` in a code span must not match).
+**`Closes/Resolves/Fixes #N` is the widest, most spoofable anchor** (GitHub's
+auto-close verb set, a weaker claim than `Serves issue #N`), so it enlarges the
+false-DROP surface. **Flagged for the approver** (like the `spec approved`-bypass
+Key Decision): kept for coverage, with a dedicated SC 12 code-span spoof case.
 
 ## Key Decisions
 
@@ -120,7 +120,7 @@ carries a dedicated SC 12 spoof case (a `Closes #N` in a code span must not matc
 | Evidence source         | In-tree `spec.md` on `main` only                                                       | Open-PR bodies — attacker-forgeable; anyone opening a PR could plant a reference and force a false drop. A forged link is confidently wrong, so RETAIN never catches it (SC 10).                                                                                                                                                                                                                                                                                    |
 | Linkage signal          | Anchored positive-reference phrase                                                     | Issue-number match (`#NN`==spec `NN`) — collides on unrelated numbers (#60 ≠ spec 60), silently dropping spec work (SC 3).                                                                                                                                                                                                                                                                                                                                          |
 | Soft mention            | Treat as ambiguous → RETAIN                                                            | Any-substring `#N` match — over-drops on incidental mentions; RETAIN-on-ambiguity is the fail-safe (SC 4).                                                                                                                                                                                                                                                                                                                                                          |
-| Compute / effect split  | Pure Node classifier; `github-script` does all I/O                                     | Script calls the GitHub API itself — needs token plumbing + `gh`, and moves decision logic out of unit-testable pure code.                                                                                                                                                                                                                                                                                                                                          |
+| Compute / effect split  | **Token-free `node` subprocess** computes the decisions; `github-script` consumer only applies them | Single `await import()` step — fixes the ESM crash but loads the parser + its deps into the `issues: write` VM (larger blast radius for identical behaviour); the *minimum* fallback, not the pick (sign-off §3). Third-party label-action — larger supply-chain surface. |
 | Effect surface          | First-party `actions/github-script`                                                    | A third-party label-action — larger supply-chain surface; spec forbids handing `GITHUB_TOKEN` to third-party actions.                                                                                                                                                                                                                                                                                                                                               |
 | Trigger                 | `schedule` + `workflow_dispatch`                                                       | `pull_request_target` / `workflow_run` — privileged-context traps; and `issues` typed events would self-retrigger on the gate's own label write.                                                                                                                                                                                                                                                                                                                    |
 | Manual strip            | Reconciler **replaces** the storyboard-shift strip                                     | Keep both — two writers on one label; the clean break retires the ad-hoc step (SC 7).                                                                                                                                                                                                                                                                                                                                                                               |
@@ -128,27 +128,30 @@ carries a dedicated SC 12 spoof case (a `Closes #N` in a code span must not matc
 | Token identity          | Kata App token (`actions/create-github-app-token`) **mint-scoped** with `permission-contents: read` + `permission-issues: write` | Default `GITHUB_TOKEN` — works for same-repo label writes but diverges from every other issue-mutating workflow here (`monitor-spec-design.yml`, `agent-dispatch.yml`) and attributes triage edits to `github-actions[bot]` instead of the kata bot. **Correction (security sign-off):** a `create-github-app-token` token carries the App *installation's* permissions — and the shared Kata installation is broader than this gate needs — unless minted with `permission-*` inputs; the job `permissions:` block bounds only the default `GITHUB_TOKEN`. So SC 8/11 hold on the *token actually used* only when mint-scoped, not on an unstated installation assumption. |
 | Reconcile trigger state | In-tree `spec.md` present on `main` (merged artifact)                                  | Gate on STATUS `spec approved` — REJECTED: #275's duplicates arise precisely from specs that merged-but-were-never-approved (off-gate merges are the norm under #196b); requiring approval would leave `needs-spec` re-firing for exactly those specs. Keying on in-tree presence closes the loop the spec exists to close. Surfaced for the approver: this reconciles demand a strict reading of the `needs-spec` convention (clear at `spec approved`) would not. |
 
-## Privileged-surface security sign-off (owned: security-engineer)
+## Privileged-surface security sign-off (security-owned; `wiki/design-inputs.md#spec-270`)
 
-1. **Token scope (SC 8/11) — mint-scoped, not installation-trust.**
-   `create-github-app-token` mints the App *installation's* permissions; the job
-   `permissions:` block bounds only `GITHUB_TOKEN`. Mint with
-   `permission-contents: read` + `permission-issues: write` (both exist at the
-   pinned `bcd2ba4…` v3.2.0). Do NOT rely on "the installation is limited" — that
-   is invisible in-tree and drifts silently.
-2. **`actions/github-script` SHA pin.** No in-repo pin to inherit. Pin
-   `actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0`
-   (current stable, `node24`; the resolved **commit**, not the annotated tag).
-   The `github-actions` Dependabot ecosystem (`.github/dependabot.yml`) tracks it.
-   `create-github-app-token`/`checkout` stay on the model workflows' SHAs
-   (`bcd2ba4…`, `3d3c42e…`) — one pin set, Dependabot-tracked.
-3. **ESM privileged-surface safety — `await import()` is sound; keep ONE step.**
-   The import specifier is a repo-constant literal (never a `${{ github.event.* }}`
-   value); untrusted text stays inert `env:`/octokit data — no new injection/exec
-   vector. Pure `labelOps`/`auditLine` + thin `github-script` beats a
-   `run: node … --json` handoff (which adds a shell-boundary re-parse). **Import
-   fails CLOSED, ordered before the first octokit call** — a mid-loop throw must
-   never leave a partial label set.
+1. **Token scope (SC 8/11) — scope AT MINT.** Mint the App token with
+   `permission-contents: read` + `permission-issues: write` (both supported at
+   pinned `bcd2ba49…` v3.2.0). A minted `create-github-app-token` carries the App
+   installation's FULL permissions unless narrowed by `permission-*`; the job
+   `permissions:` block bounds only the default `GITHUB_TOKEN` (unused here). The
+   "installation is limited" escape is unavailable — the same Kata App does
+   `contents: write` elsewhere. Keep the default-deny job block as defense-in-depth,
+   but the `permission-*` inputs are the actual bound.
+2. **SHA pin (SC 13).** `actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1`
+   — a 40-char commit SHA, never a tag; Dependabot `github-actions` tracks it by
+   directory. `create-github-app-token`/`checkout` stay on the model SHAs
+   (`bcd2ba49…`, `3d3c42e5…`).
+3. **ESM wiring — token-free subprocess (least-privilege).** The `spec.md`/issue
+   parse is the highest-risk code; a token-free `node` step keeps it off the
+   `issues: write` surface — strictly smaller blast radius than `await import()`
+   (the minimum crash-fix fallback). **Trust-boundary rules (any pattern):**
+   (i) decisions JSON is DATA — `JSON.parse` + structural iteration, never
+   `eval`/`run:` interpolation; (ii) the consumer re-validates each decision
+   (`action ∈ {reconcile,retain}`, `issue` positive int) and skips otherwise
+   (fail-safe RETAIN), never trusting a string to name a label; (iii) the
+   candidate list reaches the subprocess as a data file, never on the `node`
+   command line (argument injection).
 
 ## Fail-safe & idempotence
 
@@ -156,23 +159,21 @@ RETAIN is the default outcome of every path that is not a proven positive link,
 and each path carries a **named `reason` code and a test** so a future refactor
 cannot silently reroute a RETAIN into a drop:
 
-- **`no-link`** — no index entry. This is the code the absent-spec case (open/
-  draft PR, `spec.md` not on `main`) must resolve to; the SC 4b/16 test asserts
-  `reason === "no-link"`, not merely `action === "retain"` — pinning the code is
-  what keeps an absent-spec issue out of any "already handled" branch.
+- **`no-link`** — no index entry; the code the absent-spec case (open/draft PR,
+  `spec.md` not on `main`) resolves to. The SC 4b/16 test asserts
+  `reason === "no-link"`, not just `action === "retain"` — keeping it out of any
+  "already handled" branch.
 - **`soft-mention`** — a bare/incidental reference (SC 4a).
 - **`already-clear`** — the issue no longer carries `needs-spec` (idempotence).
 - **`parse-error`** — a malformed/unreadable `spec.md`; `parsePositiveLinks` is
-  caught **per-`spec.md`**. **Named fail-safe test (SC 4/10 class):** a fixture
-  whose body trips the parser RETAINs the issues linked only through that file
-  *and* leaves every other file's links intact — one bad spec cannot poison the
-  index.
+  caught **per-`spec.md`**. **Named test:** a body that trips the parser RETAINs
+  only the issues linked through that file — one bad spec cannot poison the index.
 
-A false drop silently loses spec work and is strictly worse than leaving a
-duplicate for triage. Idempotence has two guards: the query filter
-(`labels:needs-spec`) is primary — a reconciled issue never re-enters the
-candidate set — and the classifier's `already-clear` branch is defense-in-depth,
-so a query change cannot silently break idempotence without a failing test.
+A false drop loses spec work — strictly worse than a duplicate. Idempotence has
+two guards: the `labels:needs-spec` query filter is primary (a reconciled issue
+never re-enters the candidate set); the `already-clear` branch is defense-in-depth,
+so a query change can't break idempotence without a failing test. The plan pins
+the `decisions.json` schema and the consumer's `{triaged, needs-spec}` allowed set.
 
 ## Boundaries
 
@@ -192,9 +193,8 @@ so a query change cannot silently break idempotence without a failing test.
   draft, so there is nothing to restore (coach ruling, confirms Key Decision #1).
   This open-PR-only → RETAIN rule is SC 16's fixture-backed hinge; #130 (linked
   only via open PR #171 for spec 150) is its illustrative live instance.
-- **#129 coverage** is gated on a plan precondition — a `Serves issue #129.`
-  seed landing in already-merged spec 210 or 60 (in-tree, so it satisfies the
-  trusted-evidence constraint). Until then #129 correctly RETAINs. The plan
-  carries that seed; the design does not (SC 9).
+- **#129 coverage** needs a plan precondition — a `Serves issue #129.` seed in
+  already-merged spec 210 or 60 (in-tree → trusted-evidence). Until then #129
+  correctly RETAINs; the plan carries the seed, the design does not (SC 9).
 
 — Staff Engineer 🛠️
