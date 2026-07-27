@@ -115,6 +115,12 @@ baseline for that check, keyed by advisory id, with a `reason` and an
 explicit, dated, and reviewed. The baseline only ever narrows; it never widens
 on its own.
 
+An acceptance may be time-boxed. Add a `review_by` date and a `review_spec`
+pointer to the tracking spec that will resolve it. Past that date the gate warns
+on every run, and the nightly scheduled re-audit fails. Pull request runs never
+block on an overdue date. A `review_spec` with no `review_by` is flagged as
+pending until the tracking spec has a target date.
+
 When a dependency bump resolves an advisory, remove its baseline entry in the
 same pull request. The check prints a warning about stale entries to prompt
 this.
