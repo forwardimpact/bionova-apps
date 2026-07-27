@@ -68,11 +68,17 @@ Each maps to a success criterion and a test.
   parse — the highest-risk code — runs in a `node` subprocess with no
   `GITHUB_TOKEN` in env. The `github-script` consumer parses no `spec.md` (design
   "Compute / effect split" + sign-off §3).
-- **Least privilege, scoped AT MINT.** The App token is minted with
-  `permission-contents: read` + `permission-issues: write`; the job
-  `permissions: { contents: read, issues: write }` block is defense-in-depth on
-  the unused default `GITHUB_TOKEN` (design "Token identity" + sign-off §1;
-  SC 8, 11).
+- **Least privilege is a two-leg anti-bypass split, each leg independently
+  fixtured — do not collapse to just the block.** (a) NECESSARY: the job
+  `permissions:` block declares exactly `contents: read` + `issues: write`, no
+  `write-all` (SC 11 declared-block leg). (b) SUFFICIENT: the token that actually
+  performs the writes — the minted App token — is scoped AT MINT to exactly those
+  two `permission-*` inputs and no more, because the block bounds only the unused
+  default `GITHUB_TOKEN`, never a minted token (SC 8 effective-scope tooth + SC 11
+  minted-scope leg). Neither leg is deferred to the other; a spotless block
+  shipping alongside an over-scoped minted token still FAILS (SC 8). Each leg gets
+  its own Step-2 fixture — a good workflow plus a leg-specific over-scoped negative
+  (design "Token identity" + sign-off §1).
 - **Untrusted text is inert data.** No `${{ github.event.* }}` interpolated into
   any `run:`/inline script; the candidate list and decisions reach each step as a
   JSON **file**, never argv; issue title/body reach the classifier only via those
@@ -149,6 +155,21 @@ Author the ESM module with the design's "Module exports":
   `#<issue> → <link|—> <action>[(<reason>)]`, where `<action>` is bare on
   `reconcile` and carries `(<reason>)` on `retain` — e.g. `#128 → spec 140 reconcile`,
   `#60 → — retain(no-link)`. The Step 2 test asserts these literals (SC 15).
+- `declaredBlockOk(permissions) → boolean` and `mintScopeOk(mintInputs) → boolean`
+  — the two independent least-privilege predicates (SC 11 / SC 8), pure and
+  object-in so each is fixturable on its own. `declaredBlockOk` is true iff the
+  parsed job `permissions` map is EXACTLY `{contents:"read", issues:"write"}` —
+  no extra key, no `write-all`, no wider scope (SC 11 necessary leg).
+  `mintScopeOk` is true iff the minted-token step's `permission-*` inputs are
+  EXACTLY `{"permission-contents":"read","permission-issues":"write"}` — any
+  additional `permission-*` key fails (SC 8 effective-scope tooth + SC 11
+  minted-scope leg). They are independent by construction: neither reads the
+  other's input, so a good block with an over-scoped mint passes `declaredBlockOk`
+  and fails `mintScopeOk`. The workflow-header test (Step 2) extracts both maps
+  from the real `reconcile-needs-spec.yml` text with anchored line regexes — **no
+  YAML dependency is added** (dependency-free, matching the repo's text-check
+  style; SC 13 spirit) — and feeds them to these predicates, so the same rule that
+  the fixtures pin also guards the shipped file.
 - `gitSource(ref) / fsSource(root) → specSource` — reuse the watcher's shapes.
   **Copy the pattern; do not import** — the watcher's sources also read
   `STATUS.md`, which this module does not need. Keep the source minimal:
@@ -217,6 +238,18 @@ cannot reroute a RETAIN into a drop:
   **Assert** every candidate issue RETAINs, the missing spec's id appears in
   `buildLinkIndex().parseErrors`, and the sibling's positive link still
   `reconcile`s (one bad spec cannot poison the index or drop an issue).
+- **SC 11 declared-block leg (necessary), own fixture** — `declaredBlockOk`
+  returns true for `{contents:"read", issues:"write"}` and false for each
+  over-broad variant: an added `pull-requests:"write"` key, a `write-all`, and a
+  bare `contents:"write"`. Also assert it true against the map extracted from the
+  real `reconcile-needs-spec.yml`.
+- **SC 8 / SC 11 minted-scope leg (sufficient), own fixture** — `mintScopeOk`
+  returns true for `{"permission-contents":"read","permission-issues":"write"}`
+  and false for an added `permission-pull-requests:"write"` and for a missing
+  `permission-*`. **Independence tooth (SC 8):** the pair `{good block,
+  over-scoped mint}` → `declaredBlockOk` true AND `mintScopeOk` false — a spotless
+  block does NOT rescue an over-scoped minted token. Also assert `mintScopeOk`
+  true against the mint inputs extracted from the real workflow.
 - **`auditLine`** — assert the exact literal format from Step 1
   (`#128 → spec 140 reconcile`, `#60 → — retain(no-link)`) so Step 1 and the test
   agree on one string (SC 15).
@@ -333,7 +366,10 @@ workflow). P1 is a separate PR.
 
 SC 1 → Steps 1+3 (files exist, no profile touched). SC 2,3,4,5,6,9,10,12,16 →
 Step 2 (unit tests). SC 7 → Step 3 (cron ordering) + Step 4 (strip retirement).
-SC 8,11,13,14 → Step 3 (workflow header + mint scope). SC 15 → Step 1
-(`auditLine`) + Step 3 (`apply` log).
+SC 8,11 → Step 1 (`declaredBlockOk`/`mintScopeOk` predicates) + Step 2 (two
+independently-fixtured legs + the spotless-block/over-scoped-mint independence
+tooth) + Step 3 (workflow header + mint scope the predicates guard). SC 13,14 →
+Step 3 (SHA pins, base-context trigger). SC 15 → Step 1 (`auditLine`) + Step 3
+(`apply` log).
 
 — Staff Engineer 🛠️
