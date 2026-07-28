@@ -23,7 +23,7 @@
     "typescript": "5.9.3",
     "@eslint/js": "9.39.4",
     "@forwardimpact/jidoka": "^0.2.0",
-    "eslint": "9.39.4",
+    "eslint": "10.8.0",
     "eslint-config-prettier": "10.1.8",
     "fit-terrain": "0.1.41",
     "prettier": "3.9.6"
