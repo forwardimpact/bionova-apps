@@ -35,7 +35,7 @@ export async function manageTrial(ctx) {
     try {
       patch = JSON.parse(ctx.options.update);
     } catch (e) {
-      throw new Error(`--update must be valid JSON: ${e.message}`);
+      throw new Error(`--update must be valid JSON: ${e.message}`, { cause: e });
     }
     const safe = Object.fromEntries(
       Object.entries(patch).filter(([k]) => ALLOWED_UPDATE_KEYS.has(k)),
