@@ -144,7 +144,7 @@ export function fsSource(root) {
 export function gitSource(ref, statusPath) {
   const git = (args) =>
     execFileSync("git", args, { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] });
-  let tree = "";
+  let tree;
   try {
     tree = git(["ls-tree", "-r", "--name-only", ref]);
   } catch {
@@ -168,7 +168,7 @@ export function gitSource(ref, statusPath) {
   // Read STATUS.md from the working-tree wiki/ checkout (gemba-wiki-hydrated from
   // the wiki repo), not from `${ref}:wiki/STATUS.md`. Resolve it relative to the
   // git top-level so cwd does not matter; caller may override for tests.
-  let statusText = "";
+  let statusText;
   try {
     let path = statusPath;
     if (!path) {
