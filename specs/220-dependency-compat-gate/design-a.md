@@ -49,7 +49,7 @@ graph LR
 | --- | --- | --- | --- |
 | D1 | Detector = a dedicated evaluator script, not an install flag | Soundness invariant carried from the spec-110 design-input: a green must mean `engines` were *evaluated*, not that an install exited 0. bun ignores `engines` entirely; the check has to read them itself | `npm install --engine-strict` / `.npmrc engine-strict=true` — bun is the installer and ignores `.npmrc`; npm would re-resolve off a package-lock we do not keep (a second toolchain, and a self-heal/skip false-green surface) |
 | D2 | Read `engines.node` from `node_modules/**/package.json` after `bun install`, not from `bun.lock` | The lockfile carries resolution, **not** `engines`; the installed manifests are the only place each dep's `engines.node` actually exists | Parse `bun.lock` — no `engines` data in it → the gate would resolve zero constraints and pass green on everything (a false green, the SC4 trap) |
-| D3 | Pinned runtime = `.tool-versions` `nodejs`, reconciled to `package.json` `engines.node` by **floor-equality** (the pin must be the minimum version `engines.node` admits) | `.tool-versions` is what CI runs (setup-bun `bun-version-file`; the Node pin); `engines.node` is the external `npx`-consumer contract. Floor-equality keeps the two from silently drifting — editing either alone turns the check red (SC2) | **Satisfiability-only** (pin merely satisfies the range) — permits `.tool-versions` drifting *above* the declared floor, so a consumer is told a lower Node works while CI never tests it. **FLAG for approver: if a looser satisfiability rule is wanted, redirect here.** `deploy.yml node-version:'22'` stays excluded per spec scope |
+| D3 | Pinned runtime = `.tool-versions` `nodejs`, reconciled to `package.json` `engines.node` by **floor-equality** (the pin must be the minimum version `engines.node` admits) | `.tool-versions` `nodejs` is the workspace floor **of record** — the declared runtime the `engines.node` npx-consumer contract must agree with. (No `check-*` workflow runs `setup-node`; setup-bun's `bun-version-file` pins *bun* off the same file's `bun` line, not this Node line — so this is a declaration-vs-declaration reconciliation, not "the Node CI runs.") Floor-equality keeps the two from silently drifting — editing either alone turns the check red (SC2) | **Satisfiability-only** (pin merely satisfies the range) — permits `.tool-versions` drifting *above* the declared floor, so a consumer is told a lower Node works while CI never tests it. **FLAG for approver: if a looser satisfiability rule is wanted, redirect here.** `deploy.yml node-version:'22'` stays excluded per spec scope |
 | D4 | Host in a new dedicated `check-compat.yml`, not a job inside `check-quality.yml` | House convention (each `check-*.yml` isolates one concern); a dedicated workflow yields a stable, nameable status check — the requireable `check-*` the spec-196b branch-protection teeth depend on | A job in `check-quality.yml` — couples the gate to lint/typecheck and gives it no independently-requireable name |
 | D5 | Evaluate `engines` with `Bun.semver.satisfies`, not the `semver` npm package | It is a built-in of the bun runtime the gate already uses — zero new dependency, and no transitive dep for *this* compat gate to then have to police | Add `semver` as a devDependency — a new install surface, and mild recursion (the compat gate would gate its own range-checker). Note: if the evaluator ever must run under plain Node, swap to `semver` |
 
@@ -63,9 +63,11 @@ graph LR
   `node_modules/` (including scoped `@scope/*`); out — a sorted
   `violations[] = {name, range, pin}`; nonempty → exit 1. A dep with no
   `engines.node` is unconstrained (not a violation).
-- **Determinism / observability (SC4):** one line `evaluated <N> deps against
-  Node <pin>` on every run — a green with `N > 0` proves evaluation ran; a
-  resolved `N == 0` is treated as breakage and **fails** (no deps found ≠ clean).
+- **Determinism / observability (SC4):** one line `walked <N> manifests against
+  Node <pin>` on every run, where `N` counts manifests **walked** (not just those
+  carrying `engines.node`) — so a populated tree of only unconstrained deps still
+  reports `N > 0`. A green with `N > 0` proves the walk ran; a resolved `N == 0`
+  is treated as breakage and **fails** (empty `node_modules` ≠ clean).
 
 ## Shared shape with Spec 110 (per the spec's "share a design shape where practical")
 
