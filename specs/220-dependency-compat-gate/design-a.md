@@ -1,10 +1,5 @@
 # Design 220-a — CI dependency-compat gate (an explicit engines-vs-runtime evaluator)
 
-> **DESIGN DRAFT (spec 220, exp #234).** Submitted for Spec 220, which reached
-> `spec approved` on 2026-07-29. Holds `design draft` until a human `design
-> approved` signal lands; merges only through the full release-merge gate, never
-> by admin-merge (exp #98/#101 strict-hold).
-
 Closes obstacle #210: `bun install` never evaluates npm `engines`, so a bump
 whose `engines.node` floor exceeds the pinned Node runtime installs and checks
 green. This gate adds one explicit CI check that reads each installed
