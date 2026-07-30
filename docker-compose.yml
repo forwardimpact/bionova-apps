@@ -321,6 +321,10 @@ services:
       # webpack-rewritten new URL() path is not readable at runtime, so point
       # the handler at the real file. (Path follows outputFileTracingRoot.)
       POLARIS_ABOUT_PATH: /app/products/polaris/handlers/data/about.yaml
+      # Public origin for redirects. Unset here: local dev browses the published
+      # 3001 port directly, so relative redirects resolve correctly. Pin it for
+      # any deployment fronted by a reverse proxy, e.g. https://polaris.example.
+      # POLARIS_SITE_URL: https://polaris.example.org
     healthcheck:
       # node:20-bookworm-slim runner ships only bash; Next binds :3000 on start.
       test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/3000"]
