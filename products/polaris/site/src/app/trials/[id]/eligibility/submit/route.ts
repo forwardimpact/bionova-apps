@@ -48,11 +48,17 @@ export async function POST(
   const result = (await checkEligibility(ctx)) as { match_score: string };
   const score = result.match_score;
 
-  return NextResponse.redirect(
-    new URL(
-      `/trials/${id}/eligibility?score=${encodeURIComponent(score)}`,
-      request.url,
-    ),
-    303,
-  );
+  // Keep the browser on the public origin the patient is using. `request.url`
+  // is the container bind host (Next binds 0.0.0.0:3000 in the standalone
+  // image, per the Dockerfile), so it must never be the redirect base — that
+  // is what dead-ends the browser on an unreachable internal address. When an
+  // operator pins a public origin we build an absolute Location against it;
+  // otherwise we emit a relative Location, which the browser resolves against
+  // the origin it actually requested (RFC 7231 §7.1.2). We never echo a
+  // client-settable forwarded header such as X-Forwarded-Host, which would
+  // open a host-poisoning redirect.
+  const path = `/trials/${id}/eligibility?score=${encodeURIComponent(score)}`;
+  const base = process.env.POLARIS_SITE_URL;
+  const location = base ? new URL(path, base).toString() : path;
+  return new NextResponse(null, { status: 303, headers: { Location: location } });
 }
