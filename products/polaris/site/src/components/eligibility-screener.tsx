@@ -19,7 +19,7 @@ function Question({ text }: { text: string }) {
           <input type="radio" name={name} value="true" /> Yes
         </label>
         <label className="flex items-center gap-1">
-          <input type="radio" name={name} value="false" defaultChecked /> No
+          <input type="radio" name={name} value="false" /> No
         </label>
       </div>
     </fieldset>
