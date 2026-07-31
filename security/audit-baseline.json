@@ -5,14 +5,5 @@
     "high"
   ],
   "baselined_on": "2026-07-04",
-  "advisories": {
-    "GHSA-mh99-v99m-4gvg": {
-      "package": "brace-expansion",
-      "severity": "high",
-      "reason": "DoS via unbounded brace-expansion length (OOM crash), published 2026-07-24 as CVE-2026-14257, vulnerable <=5.0.7. REMEDIATED IN RUNTIME 2026-07-29: the `brace-expansion` override was bumped ^1.1.16 -> ^1.1.17 (package.json). 1.1.17 (published 2026-07-29 on the maintenance-v1 line) backports the length guard — `EXPANSION_MAX_LENGTH` citing CVE-2026-14257 — while keeping the bare CommonJS `module.exports = expand`, so eslint's transitive minimatch@10 (which `require`s it) stays green; the installed tree is a single copy at 1.1.17 and `lint:js` passes. The full 5.0.8 fix stays incompatible (dual ESM build: `type:module` + an `exports` map whose CJS entry is a named `exports.expand`). This entry is NOT a risk acceptance — it bridges an advisory-range lag: the GHSA/CVE record still lists only 5.0.8 as first_patched with vulnerable `<=5.0.7`, so `bun audit` coarsely flags 1.1.17 despite the backport. Remove this entry once the advisory range is updated to exclude the 1.x maintenance backport (or we migrate off the override to 5.x). Dev-only, transitive regardless: reached only through eslint glob matching over config/CLI patterns, not attacker-controlled runtime input — no production surface.",
-      "accepted_on": "2026-07-29",
-      "review_spec": "#279",
-      "review_by": "2026-08-29"
-    }
-  }
+  "advisories": {}
 }
