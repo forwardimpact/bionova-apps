@@ -73,11 +73,18 @@ advertises. The fix must **kill the nonsense-matches-everything failure while
 protecting near-miss recall.** That is a precision/recall operating point, not a
 one-line threshold bump.
 
+The frame is therefore not "add a floor" but **"make the existing floor
+effective and measured."** A floor exists; it fails because its value was guessed
+and never checked against the seed it guards. Correcting that — choosing the
+value by measurement (Decision 3) — is what turns a nominal floor into a real
+one.
+
 ## Scope
 
-This spec covers plain-language search **relevance** only: the condition-
-resolution step of `searchTrials` and the `match_conditions` RPC it calls. It
-resolves three decisions.
+This spec covers plain-language search **relevance**: the condition-resolution
+step of `searchTrials` and the `match_conditions` RPC it calls, plus the
+below-floor empty-state affordance on the surfaces that path serves (CLI and
+site). It resolves three decisions.
 
 ### Decision 1 — the relevance floor must be effective and set by measurement
 
@@ -92,9 +99,29 @@ the two probe classes named in Decision 3.
 ### Decision 2 — below-floor fails to empty, never to top-k or the catalog
 
 When no condition clears the floor, the plain-language path returns **an empty
-result** ("no trials matched your search"). It must return **neither top-k nor
-the catalog**. That is the WHAT; *how* the empty result is produced is a design
-decision.
+result** — it must return **neither top-k nor the catalog, and never a hedged
+"closest match."**
+
+**Empty is pinned here as a WHAT, not deferred to design.** The choice between a
+confident empty and a hedged low-confidence match is a persona-force trade-off
+(WHY), not a WHICH/WHERE mechanism call, so it belongs in the spec. The
+**Anxiety** force is decisive for both personas: a hedged "closest match" acted
+on in a short visit is exactly the mis-referral harm this spec removes (Referring
+Physician — *Refer in the Visit*), and for the Patient / Advocate it is false
+hope plus reading the wrong protocol. A confident empty beats a risky hedge.
+
+**The empty state must be an explicit "no confident match" affordance — never
+silence, never a bare zero-results screen.** It must say, in plain language, what
+happened and offer a next step (rephrase the query, or that no trial in the
+catalog matches). A bare "0 trials found" reads like the very bug #297 reports;
+an honest empty is a valid shortlist of zero and keeps the plain-language job
+intact. The exact copy is a design/content decision; the WHAT this spec pins is
+the affordance itself — explicit, actionable, on every surface the plain-language
+path serves (CLI and site).
+
+This is safe precisely because Decision 3 makes the floor **measured**: genuine
+paraphrases clear it by construction (the non-synonym positive), so the
+below-floor case is rare by design — and when it does happen, honesty wins.
 
 **Top-k is explicitly rejected** as the below-floor behavior: with the seed's
 five-of-six condition span, returning the top-k regardless of score is the
@@ -163,5 +190,6 @@ human reproduction of the same behavior.
 | SC4 | The relevance floor is verified against the actual rendered seed: a checked-in test or script embeds the labelled probe set and asserts every positive clears the floor and every negative falls below it. | the verification artifact runs green under `just test` |
 | SC5 | When the embedding service is unavailable, the plain-language path degrades to the keyword fallback and a nonsense token returns `total: 0` — never the catalog. | handler test stubs `embeddings.embed` to throw, asserts `searchTrials({condition:"banana"})` returns `total: 0` and a stored-synonym query (e.g. `"high blood sugar"`) returns only `diabetes-t2` trials |
 | SC6 | No screener behavior changes: eligibility-precheck and screener tests are unaffected by this change. | `just test` for the screener/eligibility suites passes unchanged |
+| SC7 | An empty plain-language result surfaces an explicit "no confident match" affordance with a next step (rephrase / no catalog match) on both surfaces — never a bare "0 trials found" or silence, and never a hedged match. | site test asserts the empty search render shows a no-confident-match notice with a next-step affordance (not a bare count); CLI test asserts the empty plain-language render carries the same explicit message; repro `just cli search --condition=banana` |
 
 — Staff Engineer 🛠️
