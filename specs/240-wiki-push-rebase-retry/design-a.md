@@ -64,6 +64,32 @@ graph TD
 | D4 | Bounded, fail-closed **RED**; fast-forward only; deletion override **never** auto-supplied; 3-way merge **never** `-X ours` | A local-favouring resolution or an auto-supplied "deliberate removal" *is* the launder; an unbounded/force path rewrites remote history and hides loss (spec SC 6/7) | Auto-supply the removal override on exhaustion, or `-X ours` to force convergence — the exact laundering paths the security review names |
 | D5 | Mechanism lands **upstream**; consumed here as an action **pin bump**; **gated on #84** | The push path is the shared `gemba-wiki`/`forwardimpact/wiki` binary, not this tree; safe replay *requires* #84's commit-scoping to exist first (spec § Dependency and ordering) | Fork the push logic into this repo — diverges the shared control plane and still lacks journal scoping without #84 |
 
+## WHERE-input — #310 push-half coverage rides on the CLI-layer locus (coach disposition 2026-07-31)
+
+Obstacle #310's push-rejection collision (a `push` refused because the remote
+advanced under a concurrent writer) is closed by this same pull-rebase-retry —
+but the coverage is **conditional on the locus already chosen in D1/D5**, and the
+boundary is load-bearing:
+
+- **CLOSES #310's push-half — only if the retry lives inside `gemba-wiki push`
+  itself (the CLI layer, D1/D5).** Because every writer reaches the remote
+  through that one command — the automated end-of-shift push *and* the
+  **facilitated-interactive actor** (a human/agent running `gemba-wiki push` by
+  hand mid-session) — seating recovery in the command covers both callers by
+  construction. No caller can reach the remote around it.
+- **Does NOT close it if recovery merely wraps the `Agent: Shift` workflow
+  step.** A retry bolted onto the `agent-shift.yml` job (or any single
+  workflow) recovers only that one caller's pushes; the facilitated-interactive
+  actor and every other entry point still hit the bare refusal. A
+  workflow-step wrapper is therefore explicitly rejected as the #310 locus — it
+  re-creates the per-caller blind spot the CLI-layer locus removes.
+
+This adds no new decision: it is the D1/D5 push-path locus stated as the *reason*
+#310's push-half is covered. It narrows nothing in the WHAT (spec SC 1–10) and
+seats no new success criterion. #310 stays open with the coach as owner-of-record;
+the duplication residual (an independent claim-blind actor) is a separate surface,
+tracked as #310 Facet B — not closed by this retry (see Risks).
+
 ## Rejected alternative — shared fleet-wide `concurrency` group (carried from the spec, verbatim invariants)
 
 Recorded considered-and-rejected **as the fix**, per security's seated finding 2:
@@ -109,5 +135,12 @@ Recorded considered-and-rejected **as the fix**, per security's seated finding 2
 - **Upstream / in-tree split.** The mechanism is not verifiable in this repo until
   the action pin bumps; the plan must state the manual upstream verification and
   the in-tree pin-bump-plus-smoke as the landing step.
+- **#310 Facet B (duplication residual) is NOT in this design's scope.** The
+  retry closes the *git-layer* collision (a refused push), not the *duplication*
+  a claim-blind independent actor can cause by doing a live session's curation
+  work under a divergent compression policy. That is a claim-aware guard on the
+  curate actor, and its locus is upstream (no in-tree curate cron exists — see
+  the Facet B reachability finding). Tracked separately under #310; do not fold
+  it into this push-path retry.
 
 — Release Engineer 🚀
