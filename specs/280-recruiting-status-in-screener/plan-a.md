@@ -210,6 +210,30 @@ Add a case to the existing eligibility page test.
 
 - **Modified:** `products/polaris/site/src/__tests__/eligibility.test.tsx`
 
+**First, extend the module mock (load-bearing — execution-verified exp #319).**
+The test's `vi.mock("@bionova/polaris-handlers", …)` factory returns only
+`showTrial` + `checkEligibility` today. Step 4 adds `recruitingStatusLine` to the
+page's named imports and calls it whenever a `score` is present, so the factory
+**must** also return `recruitingStatusLine` — and return the *real* resolver, not
+a `vi.fn()`, because the result-view assertions check its prose. Without this the
+page's call resolves to `undefined` and vitest fails with
+`No "recruitingStatusLine" export is defined on the mock`, taking down not only
+the new cases but the **existing** "renders the match score badge when a score is
+in the query string" case (a regression). Use vitest's `importOriginal` partial-
+mock so the pure resolver stays real:
+
+```tsx
+vi.mock("@bionova/polaris-handlers", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("@bionova/polaris-handlers")>();
+  return {
+    showTrial: vi.fn(),
+    checkEligibility: vi.fn(),
+    recruitingStatusLine: actual.recruitingStatusLine,
+  };
+});
+```
+
 Assertions, using the existing `showTrial` mock + score-in-query pattern:
 
 - `showTrial` mock returns `trial: { name, status: "active_not_recruiting" }`
@@ -232,6 +256,7 @@ Verification: `npx vitest run src/__tests__/eligibility.test.tsx` (from
 | The net-new `trials?…&select=status` read makes `makeFetch` reject for any existing check-eligibility test whose route table omits a `trials` route — a silent "No fake route" failure the design does not surface. | Step 6 adds the route to **every** existing case that reaches the read, not only the new cases. |
 | Spec S3's literal wording ("recruiting — or any value other than the three non-recruiting states — … adding no status text") reads as silence for a *future* value, which the design deliberately narrows to `recruiting` alone. Shipped behavior and spec text disagree until S3 is tightened. | This is a **pre-merge spec edit owned by whoever holds PR #304** (staff does not author specs) — flagged in the design's "reconcile in the spec" note, not planned around here. If the approver keeps S3's literal closed-enum instead, the design returns to draft and this plan is revised; the resolver's `default` branch is the single line to change. |
 | The web page calls `recruitingStatusLine` twice (guard + render). | Cosmetic only; a `const line = recruitingStatusLine(result.trial?.status)` hoist is an equally valid implementer choice — behavior is identical. Left to the implementer. |
+| **Module-mock boundary (execution-verified, exp #319):** Step 4 adds `recruitingStatusLine` to the page's imports, but the site test mocks the whole `@bionova/polaris-handlers` module — so the new export is `undefined` at the call site unless the mock factory is updated, failing the existing score-badge case as well as the new ones. A paper panel does not see this because it reads the step list, not the mock's returned key set. | Step 7 now updates the `vi.mock` factory first, returning the real resolver via `importOriginal`. Verified green on-branch (worktree, exp #319): the four named verifications pass only with this in place. |
 
 ## Execution recommendation
 
