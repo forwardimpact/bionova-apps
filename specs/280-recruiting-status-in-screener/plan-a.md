@@ -81,7 +81,7 @@ export { recruitingStatusLine } from "./recruiting-status.js";
 ```
 
 Verification: `bun test products/polaris/handlers/test/recruiting-status.test.js`
-(added in Step 5) passes.
+(added in Step 6) passes.
 
 ## Step 2: Read `status` in the handler and attach the line
 
@@ -103,7 +103,7 @@ const recruitingStatus = recruitingStatusLine(trialRows[0]?.status);
 const base = { ...viewModel, match_score, reasons, recruitingStatus };
 ```
 
-Verification: the handler cases in Step 6 pass; `git diff` shows no change under
+Verification: the handler cases in Step 7 pass; `git diff` shows no change under
 `services/polaris-functions/eligibility-check/` (C4).
 
 ## Step 3: Render the recruiting-status section in the CLI template
@@ -127,9 +127,32 @@ idiom the template already proves with `{{#signal_id}}`.
 omitted and the render is unchanged — C3.)
 
 Verification: `bun test products/polaris/handlers/test/templates.test.js` and the
-Step 6 end-to-end assertion via `just cli eligibility diabetes-prevention`.
+Step 7 end-to-end assertion via `just cli eligibility diabetes-prevention`.
 
-## Step 4: Render the line on the web screener result
+## Step 4: Declare the new export in the site type stub
+
+The site does **not** pick up the resolver's type from its JSDoc. It types
+`@bionova/polaris-handlers` through a hand-maintained ambient stub that
+enumerates the package's exports; TypeScript resolves the bare specifier to that
+stub, not the JS. So Step 5's page import fails `tsc --noEmit` with `TS2305`
+until the new symbol is declared there. (Measured on-branch — see the execution
+note.)
+
+- **Modified:** `products/polaris/site/src/types/modules.d.ts`
+
+Add to the `declare module "@bionova/polaris-handlers"` block, beside the eight
+handler declarations:
+
+```ts
+export function recruitingStatusLine(
+  status: string | null | undefined,
+): string | null;
+```
+
+Verification: `cd products/polaris/site && npx tsc --noEmit` exits 0 (it exits 2
+with `TS2305` if this step is skipped).
+
+## Step 5: Render the line on the web screener result
 
 Carry `status` on the page's `showTrial` return type and render the resolved
 line beside the unchanged `MatchScoreBadge` when a score is present. No new read
@@ -158,10 +181,10 @@ const result = (await showTrial(ctx)) as {
 ) : null}
 ```
 
-Verification: the site case in Step 7 passes; the `MatchScoreBadge` markup is
+Verification: the site case in Step 8 passes; the `MatchScoreBadge` markup is
 unchanged (C6).
 
-## Step 5: Resolver unit test
+## Step 6: Resolver unit test
 
 Cover every value-to-line mapping and the fail-safe branches, with `status` as
 the only input (C7).
@@ -180,7 +203,7 @@ Assertions:
 
 Verification: `bun test products/polaris/handlers/test/recruiting-status.test.js`.
 
-## Step 6: Handler tests
+## Step 7: Handler tests
 
 Add the new `trials` route to the existing check-eligibility route tables, then
 add the recruiting-status cases.
@@ -204,37 +227,36 @@ New cases:
 
 Verification: `bun test products/polaris/handlers/test/check-eligibility.test.js`.
 
-## Step 7: Site result test
+## Step 8: Site result test
 
 Add a case to the existing eligibility page test.
 
 - **Modified:** `products/polaris/site/src/__tests__/eligibility.test.tsx`
 
-**First, extend the module mock (load-bearing — execution-verified exp #319).**
-The test's `vi.mock("@bionova/polaris-handlers", …)` factory returns only
-`showTrial` + `checkEligibility` today. Step 4 adds `recruitingStatusLine` to the
-page's named imports and calls it whenever a `score` is present, so the factory
-**must** also return `recruitingStatusLine` — and return the *real* resolver, not
-a `vi.fn()`, because the result-view assertions check its prose. Without this the
-page's call resolves to `undefined` and vitest fails with
-`No "recruitingStatusLine" export is defined on the mock`, taking down not only
-the new cases but the **existing** "renders the match score badge when a score is
-in the query string" case (a regression). Use vitest's `importOriginal` partial-
-mock so the pure resolver stays real:
+**First, the mock contract (load-bearing — measured on-branch).** The page now
+imports `recruitingStatusLine` from `@bionova/polaris-handlers`, and the test's
+`vi.mock` factory replaces the *whole* module — so the existing
+`() => ({ showTrial, checkEligibility })` factory leaves `recruitingStatusLine`
+undefined and the page throws `No "recruitingStatusLine" export is defined on the
+mock` at render. This breaks not only the new cases but the *existing*
+score-badge case. Convert the factory to keep the real resolver (a pure
+presentation function whose actual text C2/C6 must exercise) while stubbing only
+the two data handlers:
 
-```tsx
+```ts
 vi.mock("@bionova/polaris-handlers", async (importOriginal) => {
   const actual =
     await importOriginal<typeof import("@bionova/polaris-handlers")>();
-  return {
-    showTrial: vi.fn(),
-    checkEligibility: vi.fn(),
-    recruitingStatusLine: actual.recruitingStatusLine,
-  };
+  return { ...actual, showTrial: vi.fn(), checkEligibility: vi.fn() };
 });
 ```
 
-Assertions, using the existing `showTrial` mock + score-in-query pattern:
+(`importOriginal` loads the real package index in vitest without pulling in a
+broken graph — verified on-branch. A re-implemented double is rejected: it would
+let the web-surface text drift from the resolver, the exact trap the shared
+resolver exists to prevent.)
+
+Assertions, using the `showTrial` mock + score-in-query pattern:
 
 - `showTrial` mock returns `trial: { name, status: "active_not_recruiting" }`
   **plus a `criteria` object** (`{ inclusion: { custom: [] }, exclusion: { custom: [] } }`
@@ -253,17 +275,50 @@ Verification: `npx vitest run src/__tests__/eligibility.test.tsx` (from
 
 | Risk | Mitigation |
 | --- | --- |
-| The net-new `trials?…&select=status` read makes `makeFetch` reject for any existing check-eligibility test whose route table omits a `trials` route — a silent "No fake route" failure the design does not surface. | Step 6 adds the route to **every** existing case that reaches the read, not only the new cases. |
+| The net-new `trials?…&select=status` read makes `makeFetch` reject for any existing check-eligibility test whose route table omits a `trials` route — a silent "No fake route" failure the design does not surface. | Step 7 adds the route to **every** existing case that reaches the read, not only the new cases. |
 | Spec S3's literal wording ("recruiting — or any value other than the three non-recruiting states — … adding no status text") reads as silence for a *future* value, which the design deliberately narrows to `recruiting` alone. Shipped behavior and spec text disagree until S3 is tightened. | This is a **pre-merge spec edit owned by whoever holds PR #304** (staff does not author specs) — flagged in the design's "reconcile in the spec" note, not planned around here. If the approver keeps S3's literal closed-enum instead, the design returns to draft and this plan is revised; the resolver's `default` branch is the single line to change. |
 | The web page calls `recruitingStatusLine` twice (guard + render). | Cosmetic only; a `const line = recruitingStatusLine(result.trial?.status)` hoist is an equally valid implementer choice — behavior is identical. Left to the implementer. |
-| **Module-mock boundary (execution-verified, exp #319):** Step 4 adds `recruitingStatusLine` to the page's imports, but the site test mocks the whole `@bionova/polaris-handlers` module — so the new export is `undefined` at the call site unless the mock factory is updated, failing the existing score-badge case as well as the new ones. A paper panel does not see this because it reads the step list, not the mock's returned key set. | Step 7 now updates the `vi.mock` factory first, returning the real resolver via `importOriginal`. Verified green on-branch (worktree, exp #319): the four named verifications pass only with this in place. |
+| **Module-mock boundary (execution-verified, exp #318 + #319):** Step 5 adds `recruitingStatusLine` to the page's imports, but the site test mocks the whole `@bionova/polaris-handlers` module — so the new export is `undefined` at the call site unless the mock factory is updated, failing the existing score-badge case as well as the new ones. A paper panel does not see this because it reads the step list, not the mock's returned key set. Note: vitest strips types, so this is the *runtime* half; the *type* half (the stub, Step 4) needs `tsc` — a check the plan's named verifications did not include until now. | Step 8 updates the `vi.mock` factory first, returning the real resolver via `importOriginal`. Verified green on-branch. |
 
 ## Execution recommendation
 
-Single engineering agent, sequential: Steps 1→4 are a straight dependency chain
-(resolver → handler → template → web), and Steps 5→7 verify each surface as it
-lands. No parallelism benefit — the whole change is a few hundred lines across
-one package boundary. Route to `kata-implement` on a `feat/280-recruiting-status-in-screener`
+Single engineering agent, sequential: Steps 1→5 are a straight dependency chain
+(resolver → handler → template → site type stub → web page — the stub precedes
+the page so the page typechecks), and Steps 6→8 verify each surface as it lands.
+No parallelism benefit — the whole change is a few hundred lines across one
+package boundary. Route to `kata-implement` on a `feat/280-recruiting-status-in-screener`
 branch once the design is approved and merged.
+
+## Execution verification (pre-flight, exp #318)
+
+This plan was applied to a throwaway working tree off the branch and its own
+named verifications were run — the pre-flight is execution-verified, not only
+panel-clean. Measured 2026-08-03:
+
+- `bun test products/polaris/handlers/test/` — **54 pass / 0 fail** (12 files).
+- `cd products/polaris/site && npx tsc --noEmit` — **exit 0** (1.9s). Skipping
+  Step 4 reproduces `TS2305` at exit 2.
+- `cd products/polaris/site && bun run test` (full vitest) — **14 pass / 0 fail**.
+
+Two defects surfaced that the paper `kata-plan` panel could not see; both are
+now folded in above (they do not change the design's shape — one shared resolver
+exported from the package, imported by both surfaces):
+
+1. **Site type stub (Step 4).** The design assumed the site typed the resolver
+   from its JSDoc; it types the package through the ambient stub
+   `modules.d.ts`, so the import fails `TS2305` until the export is declared
+   there. Added as an explicit step.
+2. **Site-test mock contract (Step 8).** The page's new import breaks the
+   whole-module `vi.mock` factory — including the existing badge case — until
+   the factory keeps the real resolver via `importOriginal`. Folded into Step 8.
+   Independently co-discovered by exp #319 (`c12678a`); the two runs converged
+   on the same `importOriginal` fix. #319 ran only the plan's named
+   verifications (vitest, which strips types) and so caught this runtime defect
+   but not defect 1 — the type-only stub gap `tsc` exposes. Adding `tsc
+   --noEmit` as a named verification (Step 4) closes that blind spot.
+
+The throwaway tree was discarded; only this plan and the design carry forward.
+Held at `spec draft` (PR #304): no PR, no merge, no ledger write — this touches
+no human-gated state and gate-merges only after human `spec approved`.
 
 — Staff Engineer 🛠️
