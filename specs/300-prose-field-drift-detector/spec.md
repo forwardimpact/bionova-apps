@@ -23,8 +23,8 @@ also disagrees with the structured field it derives from: that trial's `status`
 is `active_not_recruiting` at 298 of 300 enrolled — enrollment is essentially
 complete, so "not currently recruiting" is the true half. A patient reads the
 enrolling half, calls a coordinator, and lands the exact wasted click the
-Patient / Advocate job names as its Anxiety. The opposite-error variant sits one
-key over in the same bundle, so this is a class, not one string.
+Patient / Advocate job names as its Anxiety. The same contradiction class recurs
+elsewhere in the bundle, so this is a class, not one string.
 
 The bundle is vendored verbatim and SHA-guarded (`build-seed.sh` fails on any
 local edit; `PROVENANCE.md` forbids editing it). So the app cannot fix the
@@ -44,26 +44,41 @@ names it, and routes it upstream.
 An in-tree DETECT+ROUTE consistency gate over the vendored `data/synthetic/`
 bundle. Its rule, stated once and parameterized by field:
 
-> A generated `prose-cache.json` assertion must not contradict the `story.dsl`
-> structured field it derives from. On contradiction, flag it and route the
-> finding upstream to `fit-terrain`. Never edit the vendored bundle in-tree.
+> A generated prose assertion that ships to a patient must not contradict the
+> `story.dsl` structured field it derives from. On contradiction, flag it and
+> route the finding upstream to `fit-terrain`. Never edit the vendored bundle
+> in-tree.
+
+**The operand is the shipped prose.** The gate checks the rendered value a
+patient actually reads — the `trial_faqs.faq` row seeded by the verbatim hyphen
+`story.dsl` trial id — against that trial's structured field. It never
+identifies or dedupes shipped prose by a `prose-cache.json` key, its `#hash`, or
+a spelling heuristic: `#hash` is a prompt hash, so the same suffix recurs across
+spellings with different text, and only the rendered hyphen row ever ships. One
+shipped row per trial per family is the whole operand set.
 
 - **Charter field family — recruiting status (`status`).** Serves #299 in full.
-  A FAQ or explainer whose recruiting language contradicts the trial's
-  structured `status` is a contradiction the gate reports. A single trial can
-  own more than one prose variant (each `prose-cache.json` key carries a `#hash`
-  suffix — DIABPREV-201 has two diabetes-prevention FAQ variants, both in
-  conflict with `active_not_recruiting`); every variant is checked independently.
+  A trial FAQ whose recruiting language contradicts the trial's structured
+  `status` is a contradiction the gate reports. DIABPREV-201's shipped
+  diabetes-prevention FAQ is the live instance — its recruiting language
+  conflicts with `active_not_recruiting`.
 - **Second field family — criteria-in-prose.** Serves the *automatable slice* of
-  #127: any FAQ or explainer prose that restates an eligibility criterion and
+  #127: any trial-FAQ prose that restates an eligibility criterion and
   contradicts the structured criteria rows for that trial. The rule is the same
   code with a different field; this family lands as data, not a new detector.
   This family absorbs only the automatable slice of #127 — it does **not** close
   #127's headline residual (see Excluded).
+- **Charter is trial-FAQ only; condition-explainers are a declared future
+  extension.** Explainer prose is keyed by condition
+  (`clinical_condition_explainer_<condition>`), not by trial, so checking it
+  against one trial's structured fields needs a condition→trial join this spec
+  does not define and no success criterion exercises. The current charter covers
+  the trial FAQ; the explainer surface lands in a later spec once that join
+  exists.
 - **Detect and route only.** The gate cannot repair a self-contradictory string
   — an in-tree guard has no authority over vendored content. On a finding it
-  emits a durable, structured record naming the trial, the prose key, and the
-  structured field in conflict, addressed to the upstream source of record.
+  emits a durable, structured record naming the trial, the shipped FAQ row, and
+  the structured field in conflict, addressed to the upstream source of record.
 
 ### Explicitly excluded
 
@@ -71,6 +86,8 @@ bundle. Its rule, stated once and parameterized by field:
 | --- | --- |
 | Editing or auto-correcting the prose in-tree | `PROVENANCE.md` + the SHA gate forbid mutating the vendored bundle; the corrected string can only come from an upstream vendor-and-render cycle. |
 | #127's headline residual — the staff-flag workflow | `story.dsl` and its rendered listing agree with each other while both are stale versus the real-world protocol in force today. There is no second in-tree operand for "the protocol today," so no automatic detector sees it. That case needs a staff-initiated flag and stays open on #127. |
+| Condition-explainer prose | Keyed by condition, not trial; drift-checking it needs a condition→trial join this spec does not define. Declared here as a future extension, not part of the current charter. |
+| Unreferenced `prose-cache.json` keys (spelling-alias duplicates, orphan FAQ slugs that render zero rows) | These never ship, so they are not part of the shipped-prose operand SC1–SC6 cover. A gate MAY additionally flag a newly-unreferenced key as cache hygiene, but that is a distinct concern, separate from shipped-prose drift. |
 | Any change to the render path | Surfaces already pass prose through verbatim; this gate runs over the bundle, not the app. |
 
 **Cost stated plainly.** Because correction terminates upstream, the latency
@@ -86,10 +103,10 @@ data and changes no shipped behavior. No path is removed.
 
 | # | Criterion | Verified by |
 | --- | --- | --- |
-| SC1 | A generated prose assertion that contradicts the structured `status` it derives from is detected — the gate fails on the current bundle, naming the offending prose key(s). | Run the gate over the committed `data/synthetic/` bundle; it reports both DIABPREV-201 diabetes-prevention FAQ variants (keys `#654af833` and `#95cdcd2e`) as conflicting with `active_not_recruiting`. |
+| SC1 | A shipped prose assertion that contradicts the structured `status` it derives from is detected — the gate fails on the current bundle, naming the offending trial and its shipped FAQ row. | Run the gate over the committed `data/synthetic/` bundle; it reports DIABPREV-201's shipped diabetes-prevention FAQ row (`trial_faqs.faq`) as conflicting with `active_not_recruiting`. |
 | SC2 | A bundle whose prose agrees with its structured fields passes clean — no false positive on the consistent trials. | Run the gate over CARDIO-301 (`cardio-outcomes`, `status "recruiting"`, FAQ says "currently enrolling"); the gate reports no finding for it. |
 | SC3 | The gate never mutates the vendored bundle. | `sha256sum -c SOURCE.sha256` still passes after a gate run. |
-| SC4 | On a contradiction the gate emits a durable, structured record naming the trial, the offending prose key (including its `#hash`), and the conflicting structured field, addressed upstream. | Inspect the record the gate emits for the DIABPREV-201 finding. |
+| SC4 | On a contradiction the gate emits a durable, structured record naming the trial, its shipped FAQ row, and the conflicting structured field, addressed upstream. | Inspect the record the gate emits for the DIABPREV-201 finding. |
 | SC5 | Adding the criteria-in-prose field family reuses the same rule — a second family is expressed as data, not a second detector. | The design/implementation adds the criteria family without a parallel code path; reviewed at design. |
 | SC6 | The gate runs in CI over the bundle, so a future vendored contradiction is caught before merge. | The gate joins the existing seed-check CI job that already exercises the bundle (`check-seed`, which runs `build-seed.sh`); a seeded contradiction fails the check. |
 
