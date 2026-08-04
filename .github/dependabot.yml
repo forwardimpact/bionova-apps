@@ -16,6 +16,15 @@ updates:
     ignore:
       - dependency-name: "typescript"
         versions: ["7.x"]
+      # react-dom 19 (a major) violates the react 18.3.1 peer, failing
+      # check-test and check-e2e (PR #328). React 18->19 is a coupled bump we
+      # take deliberately, not one dep at a time. The npm groups above only
+      # cover minor/patch, so react-dom majors get their own PR that Dependabot
+      # recreates every run; a GitHub-App bot cannot issue `@dependabot ignore`,
+      # so this entry is the only durable hold. Majors only -- 18.x minor/patch
+      # still flow.
+      - dependency-name: "react-dom"
+        update-types: ["version-update:semver-major"]
     groups:
       npm-development:
         dependency-type: "development"
