@@ -1,0 +1,35 @@
+name: check-compat
+
+# Dependency-compat gate (spec 220 / obstacle #210). bun install never evaluates
+# npm `engines`, so a bump whose engines.node floor exceeds the pinned Node
+# runtime installs and checks green under every other gate. This gate reads each
+# installed dependency's engines.node itself and fails closed on an unrunnable
+# dep or a runtime declaration that has drifted out of agreement with the pin.
+#
+# A dedicated workflow (not a job inside check-quality) gives the gate a stable,
+# independently-requireable status-check name and keeps it isolated from
+# lint/typecheck — the house convention every other check-*.yml follows.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  dependency-compat:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version-file: .tool-versions
+      # Verify the gate's own reconciler/evaluator logic against committed
+      # fixtures before trusting it — as check-audit.yml runs audit-gate.test.js.
+      - run: bun test scripts/engines-gate.test.js
+      # Install so the gate has a real node_modules tree to walk, then evaluate
+      # every installed dependency's engines.node against the reconciled pin.
+      - run: bun install
+      - run: bun scripts/engines-gate.mjs
