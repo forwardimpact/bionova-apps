@@ -23,6 +23,13 @@ updates:
       # recreates every run; a GitHub-App bot cannot issue `@dependabot ignore`,
       # so this entry is the only durable hold. Majors only -- 18.x minor/patch
       # still flow.
+      #
+      # DELIBERATE BOUNDARY: ignore react-dom majors ONLY. Do NOT add `react`
+      # here. The react major PR is meant to keep recreating and failing
+      # check-test/check-e2e (react 19 + react-dom 18 peer break) -- that red PR
+      # is the intended migration tripwire tracked in #293. Silencing `react` to
+      # clean up the red would remove the only signal that the 18->19 upgrade is
+      # still owed.
       - dependency-name: "react-dom"
         update-types: ["version-update:semver-major"]
     groups:
