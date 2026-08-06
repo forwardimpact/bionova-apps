@@ -4,7 +4,8 @@
 guarantees — that a trial's recruiting status shown to a patient is true, and
 that public listings match the structured protocol data.
 
-Serves issue #299. Serves issue #127.
+Serves issue #299. Issue #127 is out of this spec's charter — see Explicitly
+excluded.
 
 ## Problem
 
@@ -58,8 +59,7 @@ and the `consent_summaries.summary` row. Each is seeded by the verbatim hyphen
 gate never identifies or dedupes shipped prose by a `prose-cache.json` key, its
 `#hash`, or a spelling heuristic: `#hash` is a prompt hash, so the same suffix
 recurs across spellings with different text, and only the rendered hyphen row
-ever ships. One shipped row per trial per surface per family is the whole operand
-set.
+ever ships. One shipped row per trial per surface is the whole operand set.
 
 - **Charter field family — recruiting status (`status`).** Serves #299 in full.
   A trial FAQ or consent summary whose recruiting language contradicts the
@@ -67,13 +67,10 @@ set.
   is the live instance on both surfaces: its shipped diabetes-prevention FAQ
   conflicts with `active_not_recruiting`, and its consent summary asserts "About
   300 people will join DIABPREV-201" while the trial sits at 298 of 300 enrolled.
-- **Second field family — criteria-in-prose.** Serves the *automatable slice* of
-  #127: any trial-keyed prose that restates an eligibility criterion and
-  contradicts the structured criteria rows for that trial. DIABPREV-201's consent
-  summary carries a "WHO CAN JOIN THIS STUDY" eligibility section, so both
-  surfaces feed this family. The rule is the same code with a different field;
-  this family lands as data, not a new detector. It absorbs only the automatable
-  slice of #127 — it does **not** close #127's headline residual (see Excluded).
+- **One charter field family — `status`.** This spec ships exactly the recruiting-status
+  family above. The rule table is parameterized by field so a later family (for
+  example criteria-in-prose) is added as data, but no second family is in this
+  spec's charter — see Explicitly excluded.
 - **The operand is the trial-keyed surfaces; other prose is a declared future
   extension.** Six prose tables render, and they split by key. Two are keyed by
   trial — `trial_faqs` and `consent_summaries` — so each checks directly against
@@ -97,6 +94,7 @@ set.
 | --- | --- |
 | Editing or auto-correcting the prose in-tree | `PROVENANCE.md` + the SHA gate forbid mutating the vendored bundle; the corrected string can only come from an upstream vendor-and-render cycle. |
 | #127's headline residual — the staff-flag workflow | `story.dsl` and its rendered listing agree with each other while both are stale versus the real-world protocol in force today. There is no second in-tree operand for "the protocol today," so no automatic detector sees it. That case needs a staff-initiated flag and stays open on #127. |
+| Criteria-in-prose drift — the automatable slice of #127 (prose that restates an eligibility criterion versus the structured criteria rows) | The bundle carries a criteria *surface* (DIABPREV-201's consent "WHO CAN JOIN THIS STUDY" section) but no demonstrated criteria *contradiction*, so a detection success criterion cannot be written from it and none of SC1–SC6 exercises it. Charting it now would over-claim #127 coverage the SC set does not test. It is a declared future extension: the field-parameterized rule table takes a `criteria` family as data once a live contradiction operand exists. The whole of #127 stays open. |
 | Non-trial-keyed prose — condition-explainers, `patient_stories`, `site_descriptions`, `therapy_descriptions` | Of the six rendered prose tables, these four are keyed by condition, story, site, or therapy — not by trial. Drift-checking any of them against a trial's structured fields needs a join this spec does not define. All four are declared future extensions, not part of the current charter; the two trial-keyed surfaces (`trial_faqs.faq`, `consent_summaries.summary`) are the whole operand. |
 | Unreferenced `prose-cache.json` keys (spelling-alias duplicates, orphan FAQ slugs that render zero rows) | These never ship, so they are not part of the shipped-prose operand SC1–SC6 cover. A gate MAY additionally flag a newly-unreferenced key as cache hygiene, but that is a distinct concern, separate from shipped-prose drift. |
 | Any change to the render path | Surfaces already pass prose through verbatim; this gate runs over the bundle, not the app. |
@@ -118,7 +116,7 @@ data and changes no shipped behavior. No path is removed.
 | SC2 | A bundle whose prose agrees with its structured fields passes clean — no false positive on the consistent trials. | Run the gate over CARDIO-301 (`cardio-outcomes`, `status "recruiting"`, FAQ says "currently enrolling"); the gate reports no finding for it. |
 | SC3 | The gate never mutates the vendored bundle. | `sha256sum -c SOURCE.sha256` still passes after a gate run. |
 | SC4 | On a contradiction the gate emits a durable, structured record naming the trial, its shipped prose row, and the conflicting structured field, addressed upstream. Each surface routes as its own record. | Inspect the records the gate emits for DIABPREV-201; the FAQ finding and the consent-summary finding are two distinct routable records. |
-| SC5 | The criteria-in-prose field family and the consent-summary surface both reuse the same rule — a second field family and a second prose surface are each expressed as data, not a second detector. | The design/implementation adds the criteria family and the consent surface without a parallel code path; reviewed at design. |
+| SC5 | The consent-summary surface reuses the same rule as the FAQ surface — the second prose surface is expressed as data (one reader feeding the shared join and rule table), not a second detector. | The design/implementation adds the consent surface without a parallel code path; reviewed at design. |
 | SC6 | The gate runs in CI over the bundle, so a future vendored contradiction is caught before merge. | The gate joins the existing seed-check CI job that already exercises the bundle (`check-seed`, which runs `build-seed.sh`); a seeded contradiction fails the check. |
 
 ## Approval
