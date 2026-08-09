@@ -65,9 +65,10 @@ In scope:
 | --- | --- |
 | S1 | Surface a non-recruiting trial's recruiting `status` with its screener result, so the fit outcome for a non-recruiting trial is never shown without stating the trial is not open to enrol. |
 | S2 | Surface **which** non-recruiting state applies, as distinct plain-language text that names the state — not a single "not recruiting" flag. The intended meaning per value: `active_not_recruiting` → not accepting new participants right now; `completed` → has finished enrolling; `not_yet_recruiting` → not yet open to participants. |
-| S3 | Render a trial whose `status` is `recruiting` — or any value other than the three non-recruiting states above — as it renders today, adding no status text (a recruiting trial's open state is the existing, unchanged render). |
+| S3 | Render a trial whose `status` is exactly `recruiting` as it renders today, adding no status text — a recruiting trial's open state is the existing, unchanged render. This no-status-text branch is scoped to `recruiting` alone; every other value routes through S1/S2 or S6, never to silence. |
 | S4 | Keep spec 10's non-judgmental, self-assessment-not-a-decision voice; the recruiting status is framing context, not a new medical determination. |
 | S5 | Carry this on **both** surfaces that render a result — the CLI/handler result and the web screener result — see the surface boundary below. |
+| S6 | Fail safe on an unknown or absent `status`: any value that is neither `recruiting` nor one of the three enumerated non-recruiting states (S2) — a future value such as `suspended`/`terminated`, or a missing status — resolves to a single generic not-confirmed-open framing (the trial's open state is not confirmed today), never to the no-status-text render. This routes the unenumerated case to one fail-safe message; it adds no new per-value prose, so the closed enumeration is not extended (X5). |
 
 Explicitly excluded:
 
@@ -123,5 +124,6 @@ test under `products/polaris/site/src/__tests__/` verifies the web surface.
 | C5 | The rendered result surfaces none of the raw underscored status identifiers — `active_not_recruiting`, `not_yet_recruiting`, `completed` — consistent with spec 10's no-raw-enum rule. | Template test asserting none of those identifier strings appears in the rendered result. |
 | C6 | The web screener's result view (shown after submit, when a score is present) renders equivalent recruiting-status text for a non-recruiting trial beside the fit-result badge, and the badge itself is unchanged (spec 10 X6 preserved). | A site-tier test under `products/polaris/site/src/__tests__/` asserting the post-submit web result view renders the recruiting-status text for a non-recruiting trial with the fit-result badge unchanged. |
 | C7 | The status text is determined solely by the `status` value — no per-trial status prose (X5). | A test that renders the status line from a `status` value alone, with no trial id or name as input, asserting the expected text for each of the three non-recruiting values; `rg` over `products/` finds none of the seed trial ids or names in the status-text source. |
+| C8 | An unenumerated or absent `status` resolves to the generic not-confirmed-open framing (S6) and never to the recruiting no-status-text render. The seed carries no unenumerated value, so this is verified on a fabricated one. | A `products/polaris/handlers/test/` resolver unit test passing a fabricated `status` (e.g. `suspended`) and `null`, asserting the rendered result contains the generic not-confirmed-open text and none of the three named-state phrases, and that the `recruiting` no-status-text branch does not fire. |
 
 — Staff Engineer 🛠️
