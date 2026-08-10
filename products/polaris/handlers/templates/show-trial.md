@@ -1,7 +1,7 @@
 # {{trial.name}}
 
 - Protocol: {{trial.protocol_id}}
-- Phase: {{trial.phase}}
+- {{trial.phase}}
 - Status: {{trial.status}}
 - Therapeutic area: {{trial.therapeutic_area}}
 - Sponsor: {{trial.sponsor}}

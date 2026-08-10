@@ -40,6 +40,24 @@ test("search-trials.md renders non-empty markdown for a sample result", () => {
   expect(md.length).toBeGreaterThan(0);
   expect(md).toContain("Diabetes Prevention Outcomes Study");
   expect(md).toContain("Type 2 Diabetes Mellitus");
+  // The seed stores the self-labeled "Phase N"; the template renders it once,
+  // not doubled to "Phase: Phase 3" (#355).
+  expect(md).toContain("- Phase 3");
+  expect(md).not.toContain("Phase: Phase 3");
+});
+
+// #355 — show-trial.md renders the self-labeled "Phase N" value once, without
+// re-prepending its own "Phase:" label.
+test("show-trial.md renders the phase value without doubling the label", () => {
+  const loader = createTemplateLoader(TEMPLATES_DIR, runtime);
+  const md = loader.render("show-trial.md", {
+    trial: { name: "T", id: "t1", phase: "Phase 2" },
+    criteria: { inclusion: {}, exclusion: {} },
+    sites: [],
+    conditions: [],
+  });
+  expect(md).toContain("- Phase 2");
+  expect(md).not.toContain("Phase: Phase 2");
 });
 
 test("every handler template renders non-empty output for a minimal shape", () => {

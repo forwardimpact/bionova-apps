@@ -15,7 +15,7 @@ describe("TrialPage", () => {
 
   it("shows trial fields, conditions, sites, FAQ and consent", async () => {
     vi.mocked(showTrial).mockResolvedValue({
-      trial: { id: "diabetes-prevention", name: "Diabetes Prevention Study", phase: "2", status: "recruiting" },
+      trial: { id: "diabetes-prevention", name: "Diabetes Prevention Study", phase: "Phase 2", status: "recruiting" },
       criteria: { inclusion: { custom: ["HbA1c between 7.0% and 10.5%"] }, exclusion: { custom: [] } },
       sites: [{ id: "site-1", name: "Boston Clinic", city: "Boston", state: "MA" }],
       conditions: [{ id: "diabetes-t2", name: "Type 2 Diabetes" }],
@@ -31,6 +31,9 @@ describe("TrialPage", () => {
 
     expect(screen.getByText("Diabetes Prevention Study")).toBeInTheDocument();
     expect(screen.getByText("Type 2 Diabetes")).toBeInTheDocument();
+    // Phase badge renders the self-labeled seed value once, not "Phase Phase 2" (#355).
+    expect(screen.getByText("Phase 2")).toBeInTheDocument();
+    expect(screen.queryByText("Phase Phase 2")).not.toBeInTheDocument();
     expect(screen.getByText(/Boston Clinic/)).toBeInTheDocument();
     expect(screen.getByText(/HbA1c between/)).toBeInTheDocument();
     expect(screen.getByText("How long is the study?")).toBeInTheDocument();

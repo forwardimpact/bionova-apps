@@ -10,7 +10,7 @@
 {{#trials}}
 ## {{name}} ({{id}})
 
-- Phase: {{phase}}
+- {{phase}}
 - Status: {{status}}
 - Therapeutic area: {{therapeutic_area}}
 - Enrollment: {{current_enrollment}} / {{target_enrollment}}

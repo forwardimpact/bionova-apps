@@ -27,7 +27,7 @@ describe("SearchPage", () => {
         {
           id: "diabetes-prevention",
           name: "Diabetes Prevention Study",
-          phase: "2",
+          phase: "Phase 2",
           status: "recruiting",
           conditions: [{ id: "diabetes-t2", name: "Type 2 Diabetes" }],
           sites_count: 3,
@@ -43,6 +43,10 @@ describe("SearchPage", () => {
 
     expect(screen.getByText("Diabetes Prevention Study")).toBeInTheDocument();
     expect(screen.getByText("1 trial found")).toBeInTheDocument();
+    // The seed stores the self-labeled "Phase N"; the badge renders it once,
+    // not doubled to "Phase Phase 2" (#355).
+    expect(screen.getByText("Phase 2")).toBeInTheDocument();
+    expect(screen.queryByText("Phase Phase 2")).not.toBeInTheDocument();
     expect(searchTrials).toHaveBeenCalledOnce();
     // The page threads the search param into the handler's options.
     const ctx = vi.mocked(searchTrials).mock.calls[0][0];
