@@ -27,7 +27,7 @@ describe("SearchPage", () => {
         {
           id: "diabetes-prevention",
           name: "Diabetes Prevention Study",
-          phase: "2",
+          phase: "Phase 2",
           status: "recruiting",
           conditions: [{ id: "diabetes-t2", name: "Type 2 Diabetes" }],
           sites_count: 3,

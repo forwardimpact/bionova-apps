@@ -15,7 +15,7 @@ describe("TrialPage", () => {
 
   it("shows trial fields, conditions, sites, FAQ and consent", async () => {
     vi.mocked(showTrial).mockResolvedValue({
-      trial: { id: "diabetes-prevention", name: "Diabetes Prevention Study", phase: "2", status: "recruiting" },
+      trial: { id: "diabetes-prevention", name: "Diabetes Prevention Study", phase: "Phase 2", status: "recruiting" },
       criteria: { inclusion: { custom: ["HbA1c between 7.0% and 10.5%"] }, exclusion: { custom: [] } },
       sites: [{ id: "site-1", name: "Boston Clinic", city: "Boston", state: "MA" }],
       conditions: [{ id: "diabetes-t2", name: "Type 2 Diabetes" }],
