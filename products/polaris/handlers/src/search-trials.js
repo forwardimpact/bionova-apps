@@ -18,6 +18,23 @@ const CATALOG_IDS = new Set([
 ]);
 
 /**
+ * Normalize a phase filter token to the seed's stored `"Phase N"` shape.
+ *
+ * The seed renders phase as the long form (`phase "Phase 2"` in story.dsl), so
+ * an exact match against the raw option never fired for the documented bare
+ * digit. The CLI keeps `1|2|3|4` canonical, but the site ships a free-text
+ * phase field, so we also accept the long form the user might type. A bare or
+ * prefixed digit becomes `Phase <n>`; anything else passes through unchanged.
+ * The caller compares with `ilike`, so the match is case-insensitive.
+ * @param {string} phase
+ * @returns {string} the value to compare against the stored `phase` column
+ */
+function phaseFilterValue(phase) {
+  const digits = String(phase).trim().match(/^(?:phase\s*)?(\d+)$/i);
+  return digits ? `Phase ${digits[1]}` : String(phase).trim();
+}
+
+/**
  * Is the query a plain-language phrase rather than a catalog id?
  * @param {string} q
  */
@@ -132,7 +149,8 @@ export async function searchTrials(ctx) {
     const inList = trialIds.map((t) => `"${t}"`).join(",");
     params.push(`id=in.(${inList})`);
   }
-  if (phase) params.push(`phase=eq.${encodeURIComponent(phase)}`);
+  if (phase)
+    params.push(`phase=ilike.${encodeURIComponent(phaseFilterValue(phase))}`);
   if (status) params.push(`status=eq.${encodeURIComponent(status)}`);
 
   let rows = (await db.get(`trials?${params.join("&")}`)) ?? [];

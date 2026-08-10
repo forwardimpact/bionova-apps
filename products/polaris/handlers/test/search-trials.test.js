@@ -84,6 +84,28 @@ test("searchTrials falls back to ILIKE when embeddings throws", async () => {
   expect(res.total).toBe(1);
 });
 
+test("searchTrials normalizes the phase filter to the stored 'Phase N' shape", async () => {
+  const seen = [];
+  const fetchImpl = (url) => {
+    seen.push(url);
+    return Promise.resolve(jsonResponse([trialsRow]));
+  };
+  const data = createDataContext(env, { fetchImpl });
+
+  // Canonical bare digit, long form, and mixed case all reach the same filter.
+  for (const phase of ["2", "Phase 2", "phase 2"]) {
+    await searchTrials({ data, args: {}, options: { phase } });
+  }
+
+  const trialUrls = seen.filter((u) => u.includes("trials?select"));
+  expect(trialUrls).toHaveLength(3);
+  for (const u of trialUrls) {
+    // Never a bare-digit compare; always the stored long form, case-insensitive.
+    expect(decodeURIComponent(u)).toContain("phase=ilike.Phase 2");
+    expect(decodeURIComponent(u)).not.toContain("phase=eq.2");
+  }
+});
+
 test("searchTrials results carry no PII (no email field)", async () => {
   const { fetchImpl } = makeFetch([
     route("trial_conditions?condition_id=in", [{ trial_id: "diabetes-prevention" }]),
