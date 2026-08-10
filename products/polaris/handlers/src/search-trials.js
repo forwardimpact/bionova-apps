@@ -78,6 +78,18 @@ async function semanticConditionIds({ db, embeddings }, condition) {
 }
 
 /**
+ * Normalize a phase filter to the stored form. The CLI documents `--phase` as a
+ * bare digit (1|2|3|4), but trials store the full string "Phase N". Map a bare
+ * digit to "Phase N" so the documented input matches; pass any other value
+ * through unchanged (an already-"Phase N" value, or a surface that sends it).
+ * @param {string} phase
+ * @returns {string}
+ */
+function normalizePhase(phase) {
+  return /^\d+$/.test(phase) ? `Phase ${phase}` : phase;
+}
+
+/**
  * @param {object} ctx
  * @param {{ db: object, embeddings: object }} ctx.data
  * @param {object} [ctx.options] - { condition?, phase?, status?, location? }
@@ -132,7 +144,9 @@ export async function searchTrials(ctx) {
     const inList = trialIds.map((t) => `"${t}"`).join(",");
     params.push(`id=in.(${inList})`);
   }
-  if (phase) params.push(`phase=eq.${encodeURIComponent(phase)}`);
+  if (phase) {
+    params.push(`phase=eq.${encodeURIComponent(normalizePhase(phase))}`);
+  }
   if (status) params.push(`status=eq.${encodeURIComponent(status)}`);
 
   let rows = (await db.get(`trials?${params.join("&")}`)) ?? [];

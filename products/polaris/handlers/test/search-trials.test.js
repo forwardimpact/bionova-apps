@@ -84,6 +84,37 @@ test("searchTrials falls back to ILIKE when embeddings throws", async () => {
   expect(res.total).toBe(1);
 });
 
+test("searchTrials normalizes a bare --phase digit to the stored 'Phase N' form (#344)", async () => {
+  const seen = [];
+  const fetchImpl = (url) => {
+    seen.push(url);
+    if (url.includes("trials?select")) return Promise.resolve(jsonResponse([trialsRow]));
+    return Promise.reject(new Error(`unexpected ${url}`));
+  };
+  const data = createDataContext(env, { fetchImpl });
+  const res = await searchTrials({ data, args: {}, options: { phase: "2" } });
+
+  // The CLI documents --phase as a bare digit, but the seed stores "Phase N".
+  // The query must carry the normalized value, or it matches nothing.
+  const trialsUrl = seen.find((u) => u.includes("trials?select"));
+  expect(trialsUrl).toContain("phase=eq.Phase%202");
+  // The echoed query preserves what the user actually asked.
+  expect(res.query.phase).toBe("2");
+});
+
+test("searchTrials passes an already-'Phase N' phase value through unchanged (#344)", async () => {
+  const seen = [];
+  const fetchImpl = (url) => {
+    seen.push(url);
+    if (url.includes("trials?select")) return Promise.resolve(jsonResponse([trialsRow]));
+    return Promise.reject(new Error(`unexpected ${url}`));
+  };
+  const data = createDataContext(env, { fetchImpl });
+  await searchTrials({ data, args: {}, options: { phase: "Phase 3" } });
+  const trialsUrl = seen.find((u) => u.includes("trials?select"));
+  expect(trialsUrl).toContain("phase=eq.Phase%203");
+});
+
 test("searchTrials results carry no PII (no email field)", async () => {
   const { fetchImpl } = makeFetch([
     route("trial_conditions?condition_id=in", [{ trial_id: "diabetes-prevention" }]),
