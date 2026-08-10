@@ -78,6 +78,22 @@ async function semanticConditionIds({ db, embeddings }, condition) {
 }
 
 /**
+ * Normalize the documented digit phase input to the value stored in the seed.
+ * The CLI documents `--phase` as a bare digit (`1|2|3|4`), but the rendered
+ * seed stores the full string `Phase N` (from data/synthetic/story.dsl), so a
+ * raw `phase=eq.2` filter never matches and the documented path returns a
+ * silent empty result. Map a bare digit to `Phase N`; a value already in
+ * `Phase N` form passes through unchanged. An unrecognised value is left as-is
+ * (so it correctly matches nothing rather than inventing a phase).
+ * @param {string} phase
+ * @returns {string}
+ */
+function phaseFilterValue(phase) {
+  const m = String(phase).trim().match(/^(?:phase\s+)?([1-4])$/i);
+  return m ? `Phase ${m[1]}` : phase;
+}
+
+/**
  * @param {object} ctx
  * @param {{ db: object, embeddings: object }} ctx.data
  * @param {object} [ctx.options] - { condition?, phase?, status?, location? }
@@ -132,7 +148,7 @@ export async function searchTrials(ctx) {
     const inList = trialIds.map((t) => `"${t}"`).join(",");
     params.push(`id=in.(${inList})`);
   }
-  if (phase) params.push(`phase=eq.${encodeURIComponent(phase)}`);
+  if (phase) params.push(`phase=eq.${encodeURIComponent(phaseFilterValue(phase))}`);
   if (status) params.push(`status=eq.${encodeURIComponent(status)}`);
 
   let rows = (await db.get(`trials?${params.join("&")}`)) ?? [];
