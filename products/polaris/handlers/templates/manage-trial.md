@@ -1,7 +1,7 @@
 # Admin — {{trial.name}} ({{trial.id}})
 
 - Status: {{trial.status}}
-- Phase: {{trial.phase}}
+- {{trial.phase}}
 - Enrollment: {{trial.current_enrollment}} / {{trial.target_enrollment}}
 - Estimated end: {{trial.estimated_end_date}}
 

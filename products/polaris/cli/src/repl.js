@@ -18,7 +18,7 @@ function parseKvArgs(args) {
 function formatTrials(trials) {
   if (!trials || trials.length === 0) return "No trials found.";
   return trials
-    .map((t, i) => `[${i}] ${t.id}  ${t.name}  (phase ${t.phase ?? "?"}, ${t.status ?? "?"})`)
+    .map((t, i) => `[${i}] ${t.id}  ${t.name}  (${t.phase ?? "?"}, ${t.status ?? "?"})`)
     .join("\n");
 }
 
@@ -26,7 +26,7 @@ function formatTrialDetail(detail) {
   const t = detail.trial ?? {};
   const lines = [
     `${t.name ?? detail.trial?.id ?? "Trial"}  [${t.id ?? ""}]`,
-    `Phase: ${t.phase ?? "?"}   Status: ${t.status ?? "?"}   Sponsor: ${t.sponsor ?? "?"}`,
+    `${t.phase ?? "?"}   Status: ${t.status ?? "?"}   Sponsor: ${t.sponsor ?? "?"}`,
   ];
   if (detail.conditions?.length) {
     lines.push(`Conditions: ${detail.conditions.map((c) => c.name ?? c.id).join(", ")}`);

@@ -17,7 +17,7 @@ export function TrialCard({ trial }: { trial: TrialSummary }) {
         <div className="flex flex-wrap gap-2 text-xs">
           {trial.phase ? (
             <Badge className="bg-muted text-muted-foreground">
-              Phase {trial.phase}
+              {trial.phase}
             </Badge>
           ) : null}
           {trial.status ? (

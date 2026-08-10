@@ -40,7 +40,7 @@ Configure the backend via env (defaults target the local stack):
 
 ```text
 bionova> /search --condition=diabetes
-[0] diabetes-prevention  DIABPREV-201  (phase Phase 2, active_not_recruiting)
+[0] diabetes-prevention  DIABPREV-201  (Phase 2, active_not_recruiting)
 bionova> /trial 0
 …detail of first hit…
 bionova> /help
