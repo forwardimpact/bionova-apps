@@ -84,6 +84,18 @@ test("searchTrials falls back to ILIKE when embeddings throws", async () => {
   expect(res.total).toBe(1);
 });
 
+test("searchTrials maps a documented digit --phase to the seed's 'Phase N' value (#344)", async () => {
+  const { fetchImpl, calls } = makeFetch([route("trials?", [trialsRow])]);
+  const data = createDataContext(env, { fetchImpl });
+  const res = await searchTrials({ data, args: {}, options: { phase: "3" } });
+
+  // The CLI documents a bare digit; the seed stores "Phase N". The filter must
+  // normalize to the stored form (url-encoded), not pass the raw digit.
+  const trialsCall = calls.find((c) => c.url.includes("trials?select"));
+  expect(trialsCall.url).toContain("phase=eq.Phase%203");
+  expect(res.total).toBe(1);
+});
+
 test("searchTrials results carry no PII (no email field)", async () => {
   const { fetchImpl } = makeFetch([
     route("trial_conditions?condition_id=in", [{ trial_id: "diabetes-prevention" }]),
