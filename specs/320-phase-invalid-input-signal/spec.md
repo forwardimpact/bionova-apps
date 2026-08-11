@@ -64,6 +64,10 @@ Two subtleties make a naive fix wrong:
 - **Referring Physician — Refer in the Visit.** With three minutes left in an
   appointment, a silent empty on bad input wastes scarce time and nudges toward
   the **Competes-With** of "not referring at all."
+- **Clinical Development Staff — Keep Listings True** is intentionally not
+  served here. That job is about the *accuracy of what is listed*; this spec
+  changes only how *search input* is echoed back. No listing content changes, so
+  the staff job is untouched by design, not overlooked.
 
 ## Scope
 
@@ -130,9 +134,9 @@ reversed — this spec adds a fail-loud-on-unrecognized-input signal beside it.
 | SC2 | A `phase` value that names a phase present in the domain but whose combined search returns nothing still renders the existing empty view. | CLI run: `search --phase=2 --location=nowhere` renders `No trials matched.`, not the unrecognized signal. |
 | SC3 | A recognized phase with matching trials is unchanged. | CLI run: `search --phase=2` lists trials; `just test` green. |
 | SC4 | The unrecognized-input signal names the phases actually available, derived from the rendered domain — it does not advertise a phase the catalog cannot return (e.g. no bare "1–4"). | The signal lists exactly the phases present in the seeded domain (today: 1, 2, 3 — cross-check `rg -oN 'Phase [0-9]' data/synthetic/story.dsl | sort -u`). Re-render the seed with the phase set changed and the signal changes with no code edit. |
-| SC5 | No hardcoded phase enumeration is introduced in application code. | Code review of the diff; `rg` finds no literal phase list added as a validator. |
+| SC5 | No hardcoded phase enumeration is introduced in application code. | Code review of the diff; `rg -n 'Phase\s*[0-9]\|1[ \|]*2[ \|]*3\|\[1-4\]' products/` surfaces no new literal phase list acting as the recognition or advertised source (the pre-existing `phaseFilterValue` shape map, whose disposition Scope leaves to design, is not a new addition). |
 | SC6 | The CLI `--phase` help description no longer advertises a phase the catalog cannot honor (no fixed `1\|2\|3\|4` list). | Read the search-command `phase` help description; it names no phase absent from the seed. |
-| SC7 | The site's phase field presents the distinct signal, not a silent empty results list. | Enter an unrecognized phase in the site search form; the results view renders the distinct unrecognized-input signal, not a bare "0 trials found" (the site's current `{n} trials found` copy) above an empty list. |
+| SC7 | The site's phase field presents the distinct signal, not a silent empty results list. | Enter an unrecognized phase in the site search form; the results view renders the distinct unrecognized-input signal, not a bare "0 trials found" (the site's current `{n} trials found` copy) above an empty list. The recognized-vs-unrecognized decision — including the `--phase=4` boundary of SC1b — is carried on the `searchTrials` result contract, so it holds identically on the site; SC7 checks the site *renders* that outcome, it does not re-litigate the boundary per surface. |
 
 ## Sequencing
 
