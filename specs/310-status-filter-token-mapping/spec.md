@@ -56,7 +56,7 @@ from. The site consumes the same handler — its search page and API route impor
 `searchTrials` from `@bionova/polaris-handlers`
 (`products/polaris/site/src/app/search/page.tsx`,
 `products/polaris/site/src/app/api/search/route.ts`) and forward `status`
-verbatim — so the blast radius is both surfaces.
+verbatim — so both surfaces are affected.
 
 This is not a normalization bug like #344 — the tokens do not just need
 reformatting. It needs a **product ruling**: what recruitment state(s) does each
@@ -111,8 +111,9 @@ A token must match only the state(s) it names — never a catch-all — so an
 unmapped state simply is not reachable by a filter until a token is defined for
 it, rather than being mis-surfaced under an existing one. This is the same
 fail-safe principle raised for the screener's status handling in
-[#298](https://github.com/forwardimpact/bionova-apps/issues/298) (its spec, 280,
-is in draft): an unrecognized status must never be silently mis-surfaced.
+[#298](https://github.com/forwardimpact/bionova-apps/issues/298) (its spec 280,
+PR #304, is in draft): an unrecognized status must never be silently
+mis-surfaced.
 
 ## Scope
 
@@ -122,7 +123,8 @@ surfaces that consume the handler (CLI and site) inherit the fix.
 
 The site's status dropdown is a distinct in-scope surface. The hard-coded
 `<option>` set in `products/polaris/site/src/components/search-form.tsx`
-(lines 52-55) is a persona-facing vocabulary surface, not shared-handler logic.
+(lines 53-55, below the `Any` sentinel) is a persona-facing vocabulary surface,
+not shared-handler logic.
 Handler inheritance covers the filter's *semantics* only — it does not reach the
 dropdown's options or labels. Today that dropdown offers `recruiting`, `active`,
 and `completed`, so `not-yet-recruiting` is unreachable on the web and the
@@ -135,7 +137,7 @@ defines.
 | Concern | Owning work | Why out of scope |
 | --- | --- | --- |
 | Invalid / undocumented `--status` value gives no "no such status" signal (silent empty on a token that is not in the set) | the invalid-input-signal arc opened for `--phase` in [#358](https://github.com/forwardimpact/bionova-apps/issues/358) | This spec fixes what the *documented* tokens match; the distinct-message-on-invalid-input affordance is the generalizable sibling concern, resolved once for every filter. Naming it here prevents scope bleed. |
-| The eligibility screener surfacing a trial's recruiting status (it reports "possibly eligible" for non-recruiting trials) | [#298](https://github.com/forwardimpact/bionova-apps/issues/298) (spec 280, in draft) | Screener output, not the search filter. |
+| The eligibility screener surfacing a trial's recruiting status (it reports "possibly eligible" for non-recruiting trials) | [#298](https://github.com/forwardimpact/bionova-apps/issues/298) (spec 280, PR #304, in draft) | Screener output, not the search filter. |
 | Normalizing a token's *form* (e.g. digit → `Phase N`) | fix #353 (`--phase`) | Already shipped; this spec is about *meaning*, not reformatting. |
 | The CLI REPL example output rendering the raw stored value `active_not_recruiting` (`products/polaris/cli/README.md:43`) | separate display-rendering follow-up (captured, not yet specced) | Display legibility of a rendered status value, not the filter's token-to-value semantics. Related legibility item, named here so it is not mistaken as covered by this spec. |
 
@@ -153,19 +155,23 @@ no existing token or result changes. No old path to remove.
 
 ## Success criteria
 
-Each criterion names the authoritative automated check; the `just cli` line is
-the human reproduction of the same behavior.
+Each criterion splits its proof to match what each layer can actually assert.
+The handler test mocks the data layer (`fetchImpl` in `search-trials.test.js`),
+so it asserts the token→PostgREST filter param the handler builds — the mapping
+— the way the existing tests inspect the built request, not real seed rows. The
+`just cli` repro runs against the rendered seed and asserts the seed rows and
+counts, which no mocked-fetch unit test can prove.
 
 | # | Criterion | Verified by |
 | --- | --- | --- |
-| SC1 | `--status=active-not-recruiting` returns the `active_not_recruiting` trial, not an empty result. | handler test asserts `searchTrials({status:"active-not-recruiting"})` returns the seed's one `active_not_recruiting` trial and a total of one matching trial; repro `just cli search --status=active-not-recruiting` shows that trial |
-| SC2 | `--status=active-not-recruiting` does **not** surface any `recruiting` or `not_yet_recruiting` trial — the token is not an umbrella. | handler test asserts the `status:"active-not-recruiting"` result excludes every `recruiting` and `not_yet_recruiting` trial |
-| SC3 | `--status=recruiting` returns exactly the `recruiting` trials and no `not_yet_recruiting` trial. | handler test asserts the `status:"recruiting"` result is the 3 `recruiting` trials and excludes the `not_yet_recruiting` trial; repro `just cli search --status=recruiting` |
-| SC4 | `--status=completed` returns exactly the `completed` trial (unchanged). | handler test asserts `searchTrials({status:"completed"})` returns the seed's one `completed` trial and a total of one matching trial |
-| SC5 | The `not_yet_recruiting` state is reachable by its own documented token and matches only that state. | handler test asserts a `not-yet-recruiting` token returns the `not_yet_recruiting` trial and no other; CLI definition documents the token; repro `just cli search --status=not-yet-recruiting` |
-| SC6 | A stored status matched by no documented token still appears in an unfiltered search and is never surfaced by a narrower token. | handler test asserts an unfiltered search returns all six trials, and — for every documented token — asserts the result contains only trials whose stored status is in that token's mapping, so no token acts as a catch-all |
+| SC1 | `--status=active-not-recruiting` matches the `active_not_recruiting` state, not an empty result. | handler test asserts `searchTrials({status:"active-not-recruiting"})` builds the filter `status=eq.active_not_recruiting`; repro `just cli search --status=active-not-recruiting` returns the seed's one `active_not_recruiting` trial and a total of one |
+| SC2 | `--status=active-not-recruiting` does **not** surface any `recruiting` or `not_yet_recruiting` trial — the token is not an umbrella. | handler test asserts the token builds a single-state equality filter (`status=eq.active_not_recruiting`), not a set/`in.` filter spanning other states; repro `just cli search --status=active-not-recruiting` shows no `recruiting` or `not_yet_recruiting` trial |
+| SC3 | `--status=recruiting` matches only the `recruiting` state and no `not_yet_recruiting` trial. | handler test asserts `status:"recruiting"` builds `status=eq.recruiting`; repro `just cli search --status=recruiting` returns the seed's 3 `recruiting` trials and no `not_yet_recruiting` trial |
+| SC4 | `--status=completed` matches only the `completed` state (unchanged). | handler test asserts `status:"completed"` builds `status=eq.completed`; repro `just cli search --status=completed` returns the seed's one `completed` trial |
+| SC5 | The `not_yet_recruiting` state is reachable by its own documented token and matches only that state. | handler test asserts a `not-yet-recruiting` token builds `status=eq.not_yet_recruiting` (only that state); CLI definition documents the token; repro `just cli search --status=not-yet-recruiting` returns the seed's one `not_yet_recruiting` trial and no other |
+| SC6 | A stored status matched by no documented token still appears in an unfiltered search and is never surfaced by a narrower token. | handler test asserts each documented token builds an equality filter naming only the state(s) in its mapping — no token builds a catch-all; repro `just cli search` (unfiltered) returns all six seed trials |
 | SC7 | The vendored seed is unchanged. | `git diff` shows no change under `data/synthetic/`; PROVENANCE check passes |
-| SC8 | The site status dropdown (`products/polaris/site/src/components/search-form.tsx` status `<select>`) offers a `not-yet-recruiting` option — today unreachable on the web — and its `active` option is renamed to `active-not-recruiting`, or, if a short value is kept, its visible label carries the closed-to-enrollment meaning (e.g. "Active — not accepting new patients"). | component/UI test asserts the status `<select>` includes an option reaching the `not_yet_recruiting` state and that the closed-to-enrollment option's value or label matches the ruling's `active-not-recruiting` meaning |
-| SC9 | The CLI `status` option description (`products/polaris/cli/src/definition.js:53`) names the new token set and carries the closed-to-enrollment meaning, not a bare `(recruiting|active|completed)` token list. | inspection: the `status` option description names `active-not-recruiting` (with its closed-to-enrollment meaning) and `not-yet-recruiting`, replacing the old three-token list |
+| SC8 | The site status dropdown (`products/polaris/site/src/components/search-form.tsx` status `<select>`, options at lines 53-55) offers a `not-yet-recruiting` option — today unreachable on the web — and its `active` option's value is `active-not-recruiting`, matching the ruling's token, with a label that carries the closed-to-enrollment meaning. No bare `active` option remains. | component/UI test asserts the status `<select>` includes an option whose value reaches the `not_yet_recruiting` state and an option whose value is `active-not-recruiting`, and asserts no option with value `active` remains |
+| SC9 | The CLI `status` option description (`products/polaris/cli/src/definition.js:53`) names the new token set and carries the closed-to-enrollment meaning, not a bare `(recruiting|active|completed)` token list. | inspection: the `status` option description names `active-not-recruiting` (with its closed-to-enrollment meaning) and `not-yet-recruiting`, replacing the old three-token list; the bare `active` token no longer appears in the documented set |
 
 — Product Manager 🌱
