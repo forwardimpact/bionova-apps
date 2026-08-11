@@ -38,9 +38,10 @@ the desired split is pinned in Scope and SC1/SC1b/SC2 below.
 
 Two subtleties make a naive fix wrong:
 
-1. **The documented enum lies.** Help text and the `phaseFilterValue` regex both
-   say `1|2|3|4`, but the rendered seed carries only **Phase 1, 2, 3** (verify:
-   `rg -oN 'Phase [0-9]' data/synthetic/story.dsl | sort | uniq -c`). A message
+1. **The documented enum does not match the seed.** Help text and the
+   `phaseFilterValue` regex both say `1|2|3|4`, but the rendered seed carries only
+   **Phase 1, 2, 3** (verify: `rg -oN 'Phase [0-9]' data/synthetic/story.dsl |
+   sort | uniq -c`). A message
    that reads "valid phases are 1–4" would itself mislead — it advertises a
    Phase 4 the catalog cannot return.
 2. **The domain is generated, not authored.** Per
@@ -95,11 +96,10 @@ Two subtleties make a naive fix wrong:
 - The unrecognized-input outcome is carried on the search result returned by the
   surface-agnostic `searchTrials` handler, so every consuming surface renders it
   its own way. Both phase-filtering surfaces present the signal: the CLI `--phase`
-  option and the site's free-text phase field (`search-form.tsx`). The two
-  surfaces do not share a render path — the CLI renders a result template, the
-  site renders the return object directly — so the shared seam is the
-  `searchTrials` result contract, which must carry the outcome. The exact field
-  shape is a design decision.
+  option and the site's free-text phase field. The two surfaces do not share a
+  render path — the CLI renders a result template, the site renders the return
+  object directly — so the shared seam is the `searchTrials` result contract,
+  which must carry the outcome. The exact field shape is a design decision.
 - The CLI `--phase` help description is reconciled with the source of record so
   it no longer advertises a fixed `1|2|3|4` list the catalog cannot honor.
 
@@ -133,10 +133,10 @@ reversed — this spec adds a fail-loud-on-unrecognized-input signal beside it.
 | SC1b | A phase the CLI documents but the catalog does not carry (today: `4`) is treated as unrecognized input, not as a recognized-but-empty phase. | CLI run: `search --phase=4` renders the unrecognized-input signal naming phases 1, 2, 3 — not `No trials matched.` |
 | SC2 | A `phase` value that names a phase present in the domain but whose combined search returns nothing still renders the existing empty view. | CLI run: `search --phase=2 --location=nowhere` renders `No trials matched.`, not the unrecognized signal. |
 | SC3 | A recognized phase with matching trials is unchanged. | CLI run: `search --phase=2` lists trials; `just test` green. |
-| SC4 | The unrecognized-input signal names the phases actually available, derived from the rendered domain — it does not advertise a phase the catalog cannot return (e.g. no bare "1–4"). | The signal lists exactly the phases present in the seeded domain (today: 1, 2, 3 — cross-check `rg -oN 'Phase [0-9]' data/synthetic/story.dsl | sort -u`). Re-render the seed with the phase set changed and the signal changes with no code edit. |
-| SC5 | No hardcoded phase enumeration is introduced in application code. | Code review of the diff; `rg -n 'Phase\s*[0-9]\|1[ \|]*2[ \|]*3\|\[1-4\]' products/` surfaces no new literal phase list acting as the recognition or advertised source (the pre-existing `phaseFilterValue` shape map, whose disposition Scope leaves to design, is not a new addition). |
+| SC4 | The unrecognized-input signal names the phases actually available, derived from the rendered domain — it does not advertise a phase the catalog cannot return (e.g. no bare "1–4"). | The signal lists exactly the phases present in the seeded domain (today: 1, 2, 3 — cross-check `rg -oN 'Phase [0-9]' data/synthetic/story.dsl | sort | uniq -c`, a test-time check against the source of record, not the app's runtime source). Re-render the seed with the phase set changed and the signal changes with no code edit. |
+| SC5 | No hardcoded phase enumeration is introduced in application code. | The SC4 re-render check is the proof: change the seed's phase set and the advertised list changes with no code edit — a recognition or advertised source that fails to track the seed is a hardcoded enumeration. Confirm with code review of the diff that no new literal phase list acts as the recognition or advertised source; the pre-existing `phaseFilterValue` shape map (`search-trials.js`, whose disposition Scope leaves to design) is exempt. |
 | SC6 | The CLI `--phase` help description no longer advertises a phase the catalog cannot honor (no fixed `1\|2\|3\|4` list). | Read the search-command `phase` help description; it names no phase absent from the seed. |
-| SC7 | The site's phase field presents the distinct signal, not a silent empty results list. | Enter an unrecognized phase in the site search form; the results view renders the distinct unrecognized-input signal, not a bare "0 trials found" (the site's current `{n} trials found` copy) above an empty list. The recognized-vs-unrecognized decision — including the `--phase=4` boundary of SC1b — is carried on the `searchTrials` result contract, so it holds identically on the site; SC7 checks the site *renders* that outcome, it does not re-litigate the boundary per surface. |
+| SC7 | The site's phase field presents the distinct signal, not a silent empty results list. | Enter an unrecognized phase in the site search form; the results view renders the distinct unrecognized-input signal, not a bare zero-count (the site's current render is `{result.total} trial(s) found` in `search/page.tsx`, with no empty-state branch today) above an empty list. The recognized-vs-unrecognized decision — including the `--phase=4` boundary of SC1b — is carried on the `searchTrials` result contract, so it holds identically on the site; SC7 checks the site *renders* that outcome, it does not re-litigate the boundary per surface. |
 
 ## Sequencing
 
